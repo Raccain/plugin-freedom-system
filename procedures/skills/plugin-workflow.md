@@ -24,16 +24,17 @@ Orchestrates the entire plugin development lifecycle with automated checkpoints,
 ## The 7 Stages
 
 ### Stage 0: Research
-**Goal:** Understand what we're building before writing code
+**Goal:** Create DSP architecture specification before writing code
 
 **Actions:**
-- Define plugin type and technical approach
+- Define plugin type and DSP architecture
 - Research professional examples (FabFilter, Waves, etc.)
 - Check DSP feasibility with Context7 (juce::dsp modules)
-- Research parameter ranges and industry standards
+- Specify processing components and signal flow
+- Make preliminary complexity estimate (determines research depth)
 - Check design sync if creative brief and mockup exist
 
-**Output:** `research.md`
+**Output:** `architecture.md` (DSP specification)
 
 **Duration:** 5-10 minutes
 
@@ -272,7 +273,7 @@ Continue to Phase 4.3?
 
 **Creates:**
 - `.continue-here.md` (handoff file)
-- `research.md` (Stage 0)
+- `architecture.md` (Stage 0 - DSP specification)
 - `plan.md` (Stage 1)
 - `CHANGELOG.md` (Stage 6)
 - `Presets/` directory (Stage 6)
@@ -283,7 +284,7 @@ Continue to Phase 4.3?
 
 **Simple plugin (single-pass):**
 ```
-Stage 0: Research → 5 min → research.md created
+Stage 0: Research → 5 min → architecture.md created (DSP specification)
 Stage 1: Planning → 2 min → plan.md (score: 1.4, single-pass)
 Stage 2: Foundation → 5 min → Compiles successfully
 Stage 3: Shell → 5 min → Loads in DAW

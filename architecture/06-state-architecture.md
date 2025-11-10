@@ -232,8 +232,8 @@ context-resume skill reads this file to:
    - Check for allocations in processBlock()
    - Verify denormal protection
 
-4. **Read research notes**
-   - Review `research.md` for [specific algorithm details]
+4. **Read DSP specification**
+   - Review `architecture.md` for [specific algorithm details and component implementation]
 
 ---
 
@@ -358,7 +358,7 @@ backups/
     └── v[X.Y.Z]/            # Complete snapshot before improvements
         ├── Source/          # Full source code
         ├── CMakeLists.txt   # Build configuration
-        ├── research.md      # Technical research
+        ├── architecture.md  # DSP specification
         ├── plan.md          # Implementation plan
         └── CHANGELOG.md     # Version history
 ```

@@ -95,7 +95,7 @@ taches-claude-juce-system/
 │       │               └── index.js
 │       ├── CMakeLists.txt            # Build configuration
 │       ├── plan.md                   # Stage-by-stage breakdown (from Stage 1)
-│       ├── research.md               # Technical investigation (from Stage 0)
+│       ├── architecture.md           # DSP specification (from Stage 0)
 │       ├── CHANGELOG.md              # Version history (from Stage 6 or plugin-improve)
 │       └── .continue-here.md         # Session state (temporary)
 │
@@ -154,7 +154,7 @@ plugins/[Name]/Source/              # Implementation
 plugins/[Name]/ui/public/           # UI assets
 plugins/[Name]/CMakeLists.txt       # Build config
 plugins/[Name]/plan.md              # Implementation plan
-plugins/[Name]/research.md          # Technical research
+plugins/[Name]/architecture.md      # DSP specification
 plugins/[Name]/CHANGELOG.md         # Version history
 PLUGINS.md                          # Registry
 .claude/                            # System config

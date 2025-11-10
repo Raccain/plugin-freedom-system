@@ -242,11 +242,15 @@ Implement `.continue-here.md` creation:
 
 ### Stage 0: Research
 
-- Plugin type analysis
-- Context7 JUCE documentation lookup
-- Professional plugin research
-- Output: `plugins/[Name]/.ideas/research.md`
-- Decision menu: Continue to planning / Review research / Pause
+- Plugin type analysis and DSP architecture specification
+- Context7 JUCE documentation lookup (juce::dsp modules)
+- Professional plugin research (similar commercial plugins)
+- Preliminary complexity estimate (determines research depth)
+  - Simple (1-2): Basic Context7 lookup
+  - Moderate (3): Enhanced research with web search
+  - Complex (4-5): Deep research with papers and comparisons
+- Output: `plugins/[Name]/.ideas/architecture.md` (DSP specification)
+- Decision menu: Continue to planning / Review architecture / Pause
 
 ### Stage 1: Planning
 
@@ -294,9 +298,11 @@ Placeholder dispatch logic:
 **Verification:**
 
 - [ ] `/implement TestPlugin` creates plugin directory
-- [ ] Stage 0 generates research.md with Context7 lookup
-- [ ] Stage 1 BLOCKS if contracts missing
-- [ ] Stage 1 generates plan.md with complexity score
+- [ ] Stage 0 generates architecture.md with Context7 lookup and DSP specification
+- [ ] Stage 0 makes preliminary complexity estimate from creative-brief.md
+- [ ] Stage 1 BLOCKS if contracts (parameter-spec.md or architecture.md) missing
+- [ ] Stage 1 calculates actual complexity score from architecture.md + parameter-spec.md
+- [ ] Stage 1 generates plan.md with complexity score and phasing
 - [ ] Stage 6 runs pluginval and updates status
 - [ ] Git commits created after each stage
 - [ ] `.continue-here.md` created and updated correctly

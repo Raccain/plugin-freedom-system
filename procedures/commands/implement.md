@@ -32,13 +32,14 @@ If no creative brief exists, the system will offer to run `/dream` first.
 
 **What happens:**
 - Technical investigation of DSP algorithms
-- JUCE API research
-- Reference implementation study
-- Feasibility analysis
+- JUCE API research (Context7 juce::dsp modules)
+- Reference implementation study (professional plugins)
+- DSP architecture specification
+- Preliminary complexity estimate
 
-**Output:** `plugins/[PluginName]/research.md`
+**Output:** `plugins/[PluginName]/architecture.md` (DSP specification)
 
-**Commit:** `feat: [PluginName] Stage 0 - research`
+**Commit:** `feat: [PluginName] Stage 0 - architecture`
 
 ### Stage 1: Planning
 **Duration:** 5-10 minutes

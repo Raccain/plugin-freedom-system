@@ -20,11 +20,12 @@
 
 | Plugin Name | Status | Version | Last Updated |
 |-------------|--------|---------|--------------|
-| TapeAge | 💡 Ideated | - | 2025-11-10 |
+| TapeAge | 🚧 Stage 2 | - | 2025-11-10 |
+| RadioMusic | 💡 Ideated | - | 2025-01-10 |
 
 ### TapeAge
 
-**Status:** 💡 **Ideated**
+**Status:** 🚧 **Stage 2**
 **Created:** 2025-11-10
 **Type:** Audio Effect
 
@@ -42,11 +43,41 @@ Vintage tape saturator with warm saturation and musical degradation (wow/flutter
 
 **Lifecycle Timeline:**
 - **2025-11-10:** Creative brief completed
+- **2025-11-10 (Stage 0):** Research completed - DSP approach defined
+- **2025-11-10 (Stage 1):** Planning - Complexity 3.8 (phased implementation)
+- **2025-11-10 (Stage 2):** Foundation created - CMakeLists.txt, basic structure
 
 **Known Issues:**
 - None
 
 **Last Updated:** 2025-11-10
+
+### RadioMusic
+
+**Status:** 💡 **Ideated**
+**Created:** 2025-01-10
+**Type:** MIDI-triggered Sampler
+
+**Description:**
+Creative audio file browser inspired by the Eurorack Radio Music module. Continuously plays files from a folder with MIDI-triggered re-sampling at user-defined start points. Discovery-focused sampling workflow.
+
+**Parameters (4 total):**
+- Station: 0-100% (file selector), default 0%
+- Start: 0-100% (re-trigger position), default 0%
+- Volume: -60dB to +12dB, default 0dB
+- Speed/Pitch: 0.25x-4.0x, default 1.0x
+
+**DSP:** Continuous file playback with MIDI re-triggering, tape-style speed/pitch control, seamless looping, support for 100+ files per folder.
+
+**GUI:** Large waveform display with adaptive start position masking, folder browser, file info display, four knobs (Station/Start/Volume/Speed).
+
+**Lifecycle Timeline:**
+- **2025-01-10:** Creative brief completed
+
+**Known Issues:**
+- None
+
+**Last Updated:** 2025-01-10
 
 ## Entry Template
 

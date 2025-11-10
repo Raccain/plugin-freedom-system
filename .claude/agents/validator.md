@@ -36,17 +36,19 @@ You ARE checking:
 
 ## Stage-Specific Validation
 
-### Stage 0: Research Validation
+### Stage 0: Architecture Specification Validation
 
 **Expected Inputs:**
-- `plugins/[PluginName]/.ideas/research.md`
+- `plugins/[PluginName]/.ideas/architecture.md`
 - `plugins/[PluginName]/.ideas/creative-brief.md`
 
 **Checks:**
-- ✓ Context7 JUCE module references present?
+- ✓ Core Components section with JUCE module specifications present?
+- ✓ Processing Chain diagram documented?
+- ✓ Parameter Mapping table complete?
+- ✓ Research References section with Context7 references?
 - ✓ Professional plugin examples documented with specifics?
-- ✓ Technical feasibility assessment includes challenges?
-- ✓ Research findings align with creative brief vision?
+- ✓ DSP architecture aligns with creative brief vision?
 
 **Example Report:**
 ```json
@@ -85,14 +87,14 @@ You ARE checking:
 - `plugins/[PluginName]/.ideas/plan.md`
 - `plugins/[PluginName]/.ideas/parameter-spec.md`
 - `plugins/[PluginName]/.ideas/architecture.md`
-- `plugins/[PluginName]/.ideas/research.md`
 
 **Checks:**
-- ✓ Complexity score calculation correct? (params + algos + features)
-- ✓ All contracts referenced in plan?
+- ✓ Complexity score calculation correct? (params + algos + features from both contracts)
+- ✓ All contracts (parameter-spec.md, architecture.md) referenced in plan?
 - ✓ Phase breakdown appropriate for complexity ≥3?
 - ✓ Single-pass strategy for complexity ≤2?
 - ✓ Stage breakdown includes all 7 stages?
+- ✓ Actual complexity matches or refines preliminary estimate from Stage 0?
 
 **Example Report:**
 ```json

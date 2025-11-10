@@ -127,7 +127,7 @@ Currently implementing parameter modulation system for ModDelay plugin.
 ## Completed So Far
 
 **Stage 0-3:** ✓ Complete
-- Research completed (research.md)
+- Architecture specified (architecture.md - DSP specification)
 - Plan created (plan.md, 3 DSP phases)
 - Foundation compiles successfully
 - Shell loads in DAW
@@ -164,8 +164,8 @@ Currently implementing parameter modulation system for ModDelay plugin.
 - Last build: Successful
 - Last test: Passed (automated tests)
 
-**Research References:**
-- research.md lines 34-56 (modulation approach)
+**Architecture References:**
+- architecture.md lines 34-56 (modulation approach and DSP components)
 - plan.md Phase 4.2 test criteria
 
 ## How to Resume

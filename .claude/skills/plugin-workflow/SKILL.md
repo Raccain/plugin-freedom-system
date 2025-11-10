@@ -95,28 +95,27 @@ function checkStagePreconditions(pluginName, stage) {
     return { allowed: true }
   }
 
-  // Stage 1: Requires research.md + contracts
+  // Stage 1: Requires architecture.md + parameter-spec.md contracts
   if (stage === 1) {
-    const researchExists = fileExists(`plugins/${pluginName}/.ideas/research.md`)
+    const architectureExists = fileExists(`plugins/${pluginName}/.ideas/architecture.md`)
     const paramSpecExists = fileExists(`plugins/${pluginName}/.ideas/parameter-spec.md`)
-    const archSpecExists = fileExists(`plugins/${pluginName}/.ideas/architecture.md`)
 
-    if (!researchExists) {
+    if (!architectureExists) {
       return {
         allowed: false,
-        reason: "Stage 0 research must complete before Stage 1",
+        reason: "Stage 0 architecture must complete before Stage 1",
         action: "Complete Stage 0 first"
       }
     }
 
-    if (!paramSpecExists || !archSpecExists) {
+    if (!paramSpecExists || !architectureExists) {
       return {
         allowed: false,
         reason: "Cannot proceed to Stage 1 - missing implementation contracts",
-        action: "Complete ui-mockup workflow and create architecture.md",
+        action: "Create parameter-spec.md (via ui-mockup) and architecture.md (via Stage 0)",
         contracts: {
           "parameter-spec.md": paramSpecExists,
-          "architecture.md": archSpecExists
+          "architecture.md": architectureExists
         }
       }
     }
@@ -316,7 +315,7 @@ cat plugins/[PluginName]/.ideas/creative-brief.md
    - If conflicts: Invoke design-sync skill
    - Document sync results
 
-**Output:** Create `plugins/[PluginName]/.ideas/research.md`
+**Output:** Create `plugins/[PluginName]/.ideas/architecture.md` (DSP specification)
 
 **Format:**
 
@@ -411,7 +410,7 @@ Research phase complete. Ready to proceed to planning.
 **JUCE Modules:** [List]
 
 **Files Created:**
-- plugins/[PluginName]/.ideas/research.md
+- plugins/[PluginName]/.ideas/architecture.md
 ```
 
 **Update PLUGINS.md:**
@@ -457,7 +456,7 @@ Use Edit tool to append to Lifecycle Timeline:
 **Git commit:**
 
 ```bash
-git add plugins/[PluginName]/.ideas/research.md plugins/[PluginName]/.continue-here.md PLUGINS.md
+git add plugins/[PluginName]/.ideas/architecture.md plugins/[PluginName]/.continue-here.md PLUGINS.md
 git commit -m "$(cat <<'EOF'
 feat: [PluginName] Stage 0 - research complete
 
@@ -512,7 +511,7 @@ Wait for user response. Handle:
 
 **Preconditions:**
 
-1. Stage 0 must be complete (research.md exists)
+1. Stage 0 must be complete (architecture.md exists)
 2. PLUGINS.md shows `🚧 Stage 0` or similar
 
 **Contract Prerequisites (CRITICAL - BLOCKING):**
@@ -522,7 +521,6 @@ Check for required contract files:
 ```bash
 test -f "plugins/${PLUGIN_NAME}/.ideas/parameter-spec.md" && echo "✓ parameter-spec.md" || echo "✗ parameter-spec.md MISSING"
 test -f "plugins/${PLUGIN_NAME}/.ideas/architecture.md" && echo "✓ architecture.md" || echo "✗ architecture.md MISSING"
-test -f "plugins/${PLUGIN_NAME}/.ideas/research.md" && echo "✓ research.md" || echo "✗ research.md MISSING"
 ```
 
 **If parameter-spec.md OR architecture.md is missing:**
@@ -540,7 +538,6 @@ Required contracts:
 ✓ creative-brief.md - exists
 [✓/✗] parameter-spec.md - [exists/MISSING (required)]
 [✓/✗] architecture.md - [exists/MISSING (required)]
-✓ research.md - exists
 
 WHY BLOCKED:
 Stage 1 planning requires complete specifications to prevent implementation
@@ -554,7 +551,7 @@ HOW TO UNBLOCK:
    - Finalization generates parameter-spec.md
 
 2. architecture.md: Create DSP architecture specification
-   - Use research.md findings (JUCE modules identified)
+   - Use architecture.md DSP specification (JUCE modules and processing chain)
    - Document DSP components and processing chain
    - Map parameters to DSP components
    - Save to plugins/[PluginName]/.ideas/architecture.md
@@ -574,11 +571,8 @@ Exit skill and wait for user to create contracts.
 # Read parameter specification
 cat plugins/[PluginName]/.ideas/parameter-spec.md
 
-# Read DSP architecture
+# Read DSP architecture specification
 cat plugins/[PluginName]/.ideas/architecture.md
-
-# Read research findings
-cat plugins/[PluginName]/.ideas/research.md
 ```
 
 2. Calculate complexity score:
@@ -1881,7 +1875,7 @@ git add [files]
 **Creates:**
 
 - `.continue-here.md` (handoff file)
-- `research.md` (Stage 0)
+- `architecture.md` (Stage 0 - DSP specification)
 - `plan.md` (Stage 1)
 - `CHANGELOG.md` (Stage 6)
 - `Presets/` directory (Stage 6)

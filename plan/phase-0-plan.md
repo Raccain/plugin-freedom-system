@@ -247,7 +247,7 @@ plugin-freedom-system/
 **Required Reading**:
 - @architecture/02-core-abstractions.md (sections: lines 111-183, contract enforcement rules)
 - @procedures/skills/plugin-ideation.md (sections: creative-brief.md generation)
-- @procedures/skills/plugin-workflow.md (sections: Stage 0 research.md, Stage 1 plan.md)
+- @procedures/skills/plugin-workflow.md (sections: Stage 0 architecture.md, Stage 1 plan.md)
 
 **Dependencies**: Task 1 (skill directories with assets/ must exist)
 

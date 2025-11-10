@@ -312,7 +312,7 @@ What was done:
 
 Files created:
 - plugins/DelayPlugin/Source/PluginProcessor.cpp (DSP logic)
-- plugins/DelayPlugin/research.md (algorithm notes)
+- plugins/DelayPlugin/architecture.md (DSP specification and components)
 - plugins/DelayPlugin/plan.md (implementation plan)
 
 Recommended next step:

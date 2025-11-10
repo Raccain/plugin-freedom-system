@@ -45,7 +45,7 @@ Verify preconditions, then invoke plugin-workflow skill at Stage 0.
 ## The 7 Stages
 
 The plugin-workflow skill executes:
-1. **Stage 0:** Research (15-30 min) → research.md
+1. **Stage 0:** Research (15-30 min) → architecture.md (DSP specification)
 2. **Stage 1:** Planning (5-10 min) → plan.md
 3. **Stage 2:** Foundation (10-15 min) → CMakeLists.txt, structure
 4. **Stage 3:** Shell (5-10 min) → Compiling skeleton

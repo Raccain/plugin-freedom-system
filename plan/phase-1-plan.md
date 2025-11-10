@@ -350,7 +350,7 @@ Total: 9 command files in `.claude/commands/`
    - Define plugin type and approach
    - Use Context7 MCP for JUCE docs lookup
    - Research professional examples
-   - Output: `plugins/[Name]/.ideas/research.md`
+   - Output: `plugins/[Name]/.ideas/architecture.md` (DSP specification)
    - Create `.continue-here.md` after completion
    - Decision menu: Continue to Stage 1 / Review research / Pause
 

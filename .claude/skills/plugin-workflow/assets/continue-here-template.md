@@ -17,8 +17,8 @@ phased_implementation: true | false
 ## Completed So Far
 
 **Stage 0:** ✓ Complete
-- Research completed → research.md created
-- JUCE modules identified
+- DSP architecture specified → architecture.md created
+- JUCE modules and processing chain identified
 - Professional examples researched
 - Technical feasibility confirmed
 
@@ -56,8 +56,8 @@ phased_implementation: true | false
 - Last test: [Passed | Failed | Not run]
 - Issues: [Any known issues]
 
-**Research References:**
-- research.md lines [X-Y] ([what they cover])
+**Architecture References:**
+- architecture.md lines [X-Y] ([DSP components and processing details])
 - plan.md [specific sections]
 - [Any other relevant contract references]
 

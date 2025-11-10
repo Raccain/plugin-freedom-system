@@ -308,7 +308,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>`
 
 **Verification:**
 - Automated: `git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"` - Validates commit format
-- Manual: STOP AND ASK LEX: "Please verify that after completing Stage 0, exactly one git commit is created with format 'feat: [Plugin] Stage 0 - research complete' and it includes changes to .ideas/research.md, PLUGINS.md, and .continue-here.md in a single atomic commit"
+- Manual: STOP AND ASK LEX: "Please verify that after completing Stage 0, exactly one git commit is created with format 'feat: [Plugin] Stage 0 - architecture specified' and it includes changes to .ideas/architecture.md, PLUGINS.md, and .continue-here.md in a single atomic commit"
 
 ---
 
@@ -445,9 +445,9 @@ Choose (1-${options.length}): _`
 
 ### Phase 2b: Workflow Stages 0 & 1
 
-#### Task 6: Implement Stage 0 (Research)
+#### Task 6: Implement Stage 0 (Research & Architecture Specification)
 
-**Description**: Build research stage with Context7 JUCE docs lookup and professional plugin research.
+**Description**: Build research stage with Context7 JUCE docs lookup, professional plugin research, and DSP architecture specification generation.
 
 **Required Reading:**
 - `procedures/skills/plugin-workflow.md` (lines 25-38) - Stage 0 specification
@@ -467,14 +467,21 @@ Choose (1-${options.length}): _`
    - Model: Opus (complex reasoning for algorithm comparison)
    - Extended thinking: ENABLED
    - Budget: 10000 tokens
-3. Implement research workflow:
+3. Make preliminary complexity estimate from creative-brief.md:
+   - Count parameters mentioned (simple estimate)
+   - Identify algorithm types
+   - Estimate complexity (1-5 scale) to determine research depth:
+     * Simple (1-2): Basic Context7 lookup
+     * Moderate (3): Enhanced research with web search
+     * Complex (4-5): Deep research with papers and comparisons
+4. Implement graduated research workflow based on complexity:
    a. Read creative-brief.md for plugin concept
    b. Identify plugin type (Audio Effect / MIDI Instrument / Synth)
    c. **Context7 JUCE documentation lookup:**
       - Resolve library ID: `mcp__context7__resolve-library-id("JUCE")`
       - Get docs: `mcp__context7__get-library-docs("/juce-framework/JUCE", topic="dsp modules")`
       - Extract relevant JUCE DSP modules for plugin type
-   d. Research professional plugin examples:
+   d. Research professional plugin examples (depth scaled by complexity):
       - Identify industry leaders (FabFilter, Waves, etc.)
       - Document sonic characteristics
       - Note parameter ranges used
@@ -485,24 +492,26 @@ Choose (1-${options.length}): _`
       - Verify JUCE modules support requirements
       - Note complexity factors
       - Identify potential challenges
-4. Generate `plugins/[Name]/.ideas/research.md` with sections:
-   - Plugin Type Analysis
-   - JUCE Modules Identified (with Context7 references)
-   - Professional Examples Researched
-   - Parameter Range Recommendations
-   - Technical Feasibility Assessment
-   - Design Sync Results (if applicable)
-5. Update state:
-   - Update handoff file: stage=0, status=complete
-   - Add timeline entry to PLUGINS.md: "Stage 0: Research completed"
-   - Git commit: `feat: [Plugin] Stage 0 - research complete`
-6. Present decision menu (hard checkpoint):
+5. Generate `plugins/[Name]/.ideas/architecture.md` (DSP specification) with sections:
+   - Core Components (JUCE modules and classes)
+   - Processing Chain (signal flow diagram)
+   - Parameter Mapping (which parameters affect which components)
+   - Algorithm Details (implementation approach)
+   - Special Considerations (thread safety, performance, sample rate handling)
+   - Research References (Context7 docs, professional examples, technical resources)
+6. Update state:
+   - Update handoff file: stage=0, status=complete, preliminary_complexity=[estimate]
+   - Add timeline entry to PLUGINS.md: "Stage 0: Architecture specified"
+   - Git commit: `feat: [Plugin] Stage 0 - architecture specified`
+7. Present decision menu (hard checkpoint):
    ```
-   ✓ Stage 0 complete: research documented
+   ✓ Stage 0 complete: DSP architecture specified
+
+   Preliminary complexity estimate: [X]/5 (will be finalized in Stage 1)
 
    What's next?
    1. Continue to Stage 1 (recommended)
-   2. Review research findings
+   2. Review architecture specification
    3. Improve creative brief based on research
    4. Run deeper investigation (deep-research skill)
    5. Pause here
@@ -510,17 +519,18 @@ Choose (1-${options.length}): _`
    ```
 
 **Expected Output:**
-- `plugins/[Name]/.ideas/research.md` created with Context7 JUCE references
-- Professional plugin research documented
-- Technical feasibility assessed
+- `plugins/[Name]/.ideas/architecture.md` created with DSP specification
+- Context7 JUCE references and professional examples embedded in Research References section
+- Processing chain and component specifications documented
+- Preliminary complexity estimate made (determines research depth)
 - Handoff file created
 - PLUGINS.md updated: 🚧 Stage 0 complete
 - Git commit created
 - Decision menu presented
 
 **Verification:**
-- Automated: `scripts/test-stage0.sh` - Validates research.md structure, Context7 references, git commit
-- Manual: STOP AND ASK LEX: "Please verify Stage 0 research.md contains: (1) Context7 JUCE module references with library IDs, (2) professional plugin examples with specific parameter ranges, (3) technical feasibility assessment, and (4) decision menu appears with 6 options after completion"
+- Automated: `scripts/test-stage0.sh` - Validates architecture.md structure, DSP components, Context7 references, git commit
+- Manual: STOP AND ASK LEX: "Please verify Stage 0 architecture.md contains: (1) Core Components section with JUCE module specifications, (2) Processing Chain diagram, (3) Research References with Context7 library IDs and professional plugin examples, (4) preliminary complexity estimate shown in decision menu, and (5) decision menu appears with 6 options after completion"
 
 ---
 
@@ -542,12 +552,11 @@ Choose (1-${options.length}): _`
    function checkStage1Preconditions(pluginName) {
      const paramSpecExists = fileExists(`plugins/${pluginName}/.ideas/parameter-spec.md`)
      const archSpecExists = fileExists(`plugins/${pluginName}/.ideas/architecture.md`)
-     const researchExists = fileExists(`plugins/${pluginName}/.ideas/research.md`)
 
-     if (!researchExists) {
+     if (!archSpecExists) {
        return {
          allowed: false,
-         reason: "Stage 0 research must complete before Stage 1",
+         reason: "Stage 0 architecture must complete before Stage 1",
          action: "Complete Stage 0 first"
        }
      }
@@ -605,8 +614,8 @@ Choose (1-${options.length}): _`
    }
    ```
 4. Implement planning logic:
-   - Read contracts: parameter-spec.md (from ui-mockup Phase 4.5), architecture.md, research.md
-   - Calculate complexity score
+   - Read contracts: parameter-spec.md (from ui-mockup Phase 4.5), architecture.md
+   - Calculate actual complexity score from both contracts (refines preliminary estimate)
    - If score ≥3: Generate phase breakdown for Stage 4 (DSP) and Stage 5 (GUI)
    - If score ≤2: Single-pass implementation (one commit per stage)
 5. Generate `plugins/[Name]/.ideas/plan.md` with sections:
@@ -700,7 +709,7 @@ Choose (1-${options.length}): _`
 2. Implement stage precondition checker:
    ```typescript
    function checkStagePreconditions(pluginName, stage) {
-     // Stage 1: Requires research.md + contracts
+     // Stage 1: Requires architecture.md + parameter-spec.md contracts
      if (stage === 1) {
        return checkStage1Preconditions(pluginName) // From Task 7
      }
@@ -801,7 +810,7 @@ Choose (1-${options.length}): _`
    ---
    ```
 3. Implement validator logic with 7 validation points (component-architecture.md lines 253-409):
-   - **After Stage 0:** research.md complete with Context7 references
+   - **After Stage 0:** architecture.md complete with DSP specification and Context7 references
    - **After Stage 1:** plan.md references all contracts, complexity score valid
    - **After Stage 2:** CMakeLists.txt exists, builds successfully (stub in Phase 2)
    - **After Stage 3:** APVTS parameters match parameter-spec.md (stub in Phase 2)
@@ -827,7 +836,7 @@ Choose (1-${options.length}): _`
    }
    ```
 5. Implement Stage 0 validation:
-   - Check research.md exists
+   - Check architecture.md exists
    - Verify Context7 JUCE references present
    - Confirm professional examples documented
    - Validate technical feasibility section
@@ -884,7 +893,7 @@ Return JSON validation report with status, checks, and recommendation.
 
 **Verification:**
 - Automated: `scripts/test-validator.sh` - Tests Stage 0, 1, 6 validation with pass/fail cases
-- Manual: STOP AND ASK LEX: "Please verify the validator subagent: (1) validates Stage 0 research.md has Context7 references, (2) validates Stage 1 plan.md references contracts correctly, and (3) returns JSON report with status PASS/FAIL, checks array, and recommendation"
+- Manual: STOP AND ASK LEX: "Please verify the validator subagent: (1) validates Stage 0 architecture.md has Core Components section and Context7 references, (2) validates Stage 1 plan.md references contracts correctly, and (3) returns JSON report with status PASS/FAIL, checks array, and recommendation"
 
 ---
 
@@ -1420,7 +1429,7 @@ For now, marking stage as stub and continuing...
 2. Execute full workflow test:
    - Run: `/implement TestWorkflowPhase2`
    - Verify Stage 0:
-     - research.md created with Context7 JUCE references
+     - architecture.md created with DSP specification and Context7 JUCE references
      - Decision menu appears (6 options)
      - Choose "1. Continue to Stage 1"
    - Verify Stage 1:
@@ -1498,7 +1507,7 @@ For now, marking stage as stub and continuing...
    - Verify "Pause here" creates clean checkpoint
    - Verify "Other" accepts free-form input and re-presents menu
 7. Test validator integration:
-   - Verify validator called after Stage 0 (validates research.md)
+   - Verify validator called after Stage 0 (validates architecture.md DSP specification)
    - Verify validator called after Stage 1 (validates plan.md)
    - Verify validator called after Stage 6 (validates CHANGELOG, presets)
 8. Test hook system:
@@ -1556,7 +1565,7 @@ git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"
 
 # Test 6: Stage 0 research
 ./scripts/test-stage0.sh
-# Verifies: research.md structure, Context7 references, decision menu
+# Verifies: architecture.md structure, DSP components, Context7 references, decision menu
 
 # Test 7: Context resume parsing
 ./scripts/test-context-resume.sh
@@ -1622,7 +1631,7 @@ git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"
 
 **Stage 0 (Research):**
 - [ ] Context7 JUCE documentation lookup executes
-- [ ] research.md contains Context7 library references
+- [ ] architecture.md contains DSP specification with Context7 library references
 - [ ] Professional plugin examples documented
 - [ ] Technical feasibility assessment included
 - [ ] Decision menu appears with 6 options
@@ -1657,7 +1666,7 @@ git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"
 
 **Validator Integration:**
 - [ ] Validator subagent file exists: `.claude/agents/validator.md`
-- [ ] Validator called after Stage 0 (validates research.md)
+- [ ] Validator called after Stage 0 (validates architecture.md)
 - [ ] Validator called after Stage 1 (validates plan.md, contracts)
 - [ ] Validator called after Stage 6 (validates CHANGELOG, presets)
 - [ ] Validator returns JSON with status, checks, recommendation
@@ -1701,7 +1710,7 @@ git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"
 ls -la .claude/skills/plugin-workflow/assets/continue-here-template.md
 
 # Test plugin outputs
-ls -la plugins/TestWorkflowPhase2/.ideas/research.md
+ls -la plugins/TestWorkflowPhase2/.ideas/architecture.md
 ls -la plugins/TestWorkflowPhase2/.ideas/plan.md
 ls -la plugins/TestWorkflowPhase2/CHANGELOG.md
 ls -la plugins/TestWorkflowPhase2/Presets/
@@ -1755,7 +1764,7 @@ ls -la scripts/test-*.sh
 5. Choose "1. Continue" → verify proceeds automatically
 
 **Validator Integration:**
-1. Complete Stage 0 → verify validator validates research.md
+1. Complete Stage 0 → verify validator validates architecture.md DSP specification
 2. Validator reports PASS → workflow continues
 3. Complete Stage 1 → verify validator validates plan.md and contracts
 4. Complete Stage 6 → verify validator validates CHANGELOG and presets
@@ -1915,7 +1924,7 @@ Phase 2 is COMPLETE when:
 - `.claude/hooks/UserPromptSubmit.sh` (context injection hook)
 - `.claude/hooks/Stop.sh` (stage enforcement hook)
 - `.claude/hooks/PreCompact.sh` (contract preservation hook)
-- `plugins/[Name]/.ideas/research.md` (Stage 0 output)
+- `plugins/[Name]/.ideas/architecture.md` (Stage 0 output - DSP specification)
 - `plugins/[Name]/.ideas/plan.md` (Stage 1 output)
 - `plugins/[Name]/CHANGELOG.md` (Stage 6 output)
 - `plugins/[Name]/Presets/` (Stage 6 factory presets)
