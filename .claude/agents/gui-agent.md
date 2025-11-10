@@ -59,9 +59,63 @@ You will receive the following contract files:
 
 ## Task
 
-Integrate the finalized WebView UI mockup into the plugin editor and bind ALL parameters using the Relay Pattern.
+Integrate UI into the plugin editor and bind ALL parameters. Use finalized WebView mockup if available, otherwise generate native JUCE components.
 
 ## Implementation Steps
+
+### Phase 0: Determine UI Type (WebView or Native JUCE)
+
+**Check for finalized WebView mockup:**
+
+```bash
+# Look for finalized mockup files
+WEBVIEW_MOCKUP_DIR="plugins/$PLUGIN_NAME/.ideas/mockups/"
+
+# Find highest version number with implementation files
+LATEST_VERSION=$(find "$WEBVIEW_MOCKUP_DIR" -name "v*-ui.html" 2>/dev/null | \
+    sed 's/.*v\([0-9]*\)-.*/\1/' | sort -n | tail -1)
+
+if [ -n "$LATEST_VERSION" ]; then
+    # Check if all implementation files exist
+    if [ -f "${WEBVIEW_MOCKUP_DIR}v${LATEST_VERSION}-ui.html" ] && \
+       [ -f "${WEBVIEW_MOCKUP_DIR}v${LATEST_VERSION}-PluginEditor.h" ] && \
+       [ -f "${WEBVIEW_MOCKUP_DIR}v${LATEST_VERSION}-PluginEditor.cpp" ]; then
+        UI_TYPE="webview"
+        WEBVIEW_VERSION="$LATEST_VERSION"
+    fi
+fi
+
+# Default to native JUCE if no WebView mockup found
+if [ -z "$UI_TYPE" ]; then
+    UI_TYPE="native-juce"
+fi
+```
+
+**Decision:**
+- If `UI_TYPE="webview"`: Use finalized WebView mockup files (Workflow A)
+- If `UI_TYPE="native-juce"`: Generate native JUCE components (Workflow B)
+
+## Workflow Routing
+
+Based on Phase 0 detection:
+
+### Workflow A: WebView Implementation (if mockup exists)
+
+Follow steps 1-12 below for WebView integration.
+
+### Workflow B: Native JUCE Implementation (fallback)
+
+**[TO BE IMPLEMENTED]** Generate basic native JUCE UI:
+- Create PluginEditor with juce::Slider/ToggleButton/ComboBox components
+- Layout components vertically with labels
+- Use juce::AudioProcessorValueTreeState::SliderAttachment for bindings
+- Minimal styling (default JUCE look and feel)
+
+**Note:** Native JUCE workflow is a fallback for quick iteration. For production plugins, always use WebView mockup workflow for better visual design.
+
+---
+
+## WebView Implementation (Workflow A)
 
 ### 1. Identify Finalized Mockup
 
@@ -76,46 +130,84 @@ Integrate the finalized WebView UI mockup into the plugin editor and bind ALL pa
 - JavaScript dependencies
 - All CSS/image assets
 
-### 2. Copy UI Files to ui/public/
+### 1.5. Validate Mockup Consistency
+
+**⚠️ CRITICAL: Verify parameter IDs in mockup match parameter-spec.md**
+
+```python
+# Extract parameter IDs from HTML (simplified example)
+# Real implementation: parse HTML for elements with data-param-id or id attributes
+import re
+from pathlib import Path
+
+# Read HTML
+html_content = Path(f"plugins/{PLUGIN_NAME}/.ideas/mockups/v{VERSION}-ui.html").read_text()
+
+# Extract parameter IDs from HTML (look for data-param-id, id attributes on input elements)
+html_param_ids = set(re.findall(r'data-param-id=["\'](\w+)["\']', html_content))
+html_param_ids.update(re.findall(r'<(?:input|select)[^>]+id=["\'](\w+)["\']', html_content))
+
+# Read parameter-spec.md
+spec_content = Path(f"plugins/{PLUGIN_NAME}/.ideas/parameter-spec.md").read_text()
+
+# Extract parameter IDs from spec (format: "- **ID:** PARAM_NAME")
+spec_param_ids = set(re.findall(r'\*\*ID:\*\*\s+(\w+)', spec_content))
+
+# Compare
+missing_in_html = spec_param_ids - html_param_ids
+extra_in_html = html_param_ids - spec_param_ids
+
+if missing_in_html:
+    print(f"ERROR: Parameters in spec but missing in HTML: {missing_in_html}")
+    print("Resolution: Update mockup to include all parameters, or update spec")
+    exit(1)
+
+if extra_in_html:
+    print(f"WARNING: Parameters in HTML but not in spec: {extra_in_html}")
+    print("Resolution: Update spec to include these parameters, or remove from HTML")
+```
+
+**If validation fails:** Stop and report parameter ID mismatch. User must fix mockup or spec before proceeding.
+
+### 2. Copy UI Files to Source/ui/public/
 
 **Create UI directory structure:**
 
 ```bash
 cd plugins/[PluginName]
-mkdir -p ui/public/js
-mkdir -p ui/public/css
-mkdir -p ui/public/images
+mkdir -p Source/ui/public/js/juce
+mkdir -p Source/ui/public/css
+mkdir -p Source/ui/public/images
 ```
 
 **Copy finalized mockup:**
 
 ```bash
-cp .ideas/mockups/v[N]-ui.html ui/public/index.html
+cp .ideas/mockups/v[N]-ui.html Source/ui/public/index.html
 ```
 
 **If mockup includes separate CSS/JS files, copy those too:**
-- `v[N]-styles.css` → `ui/public/css/styles.css`
-- `v[N]-app.js` → `ui/public/js/app.js`
+- `v[N]-styles.css` → `Source/ui/public/css/styles.css`
+- `v[N]-app.js` → `Source/ui/public/js/app.js`
 
-### 3. Download JUCE Frontend Library
+### 3. Copy JUCE JavaScript Bridge
 
-**Add JUCE's JavaScript library for WebView communication:**
+**Copy JUCE's JavaScript library from JUCE installation:**
 
 ```bash
-cd ui/public/js
-curl -o juce.js https://raw.githubusercontent.com/juce-framework/JUCE/master/modules/juce_gui_extra/native/javabridge/juce.js
+# JUCE provides the JavaScript bridge in its modules
+# Copy from JUCE installation (typically in modules/juce_gui_extra/native/)
+cp "$JUCE_PATH/modules/juce_gui_extra/native/javabridge/juce.js" \
+   Source/ui/public/js/juce/index.js
 ```
 
-**Or copy from JUCE installation:**
-```bash
-cp /path/to/JUCE/modules/juce_gui_extra/native/javabridge/juce.js ui/public/js/
-```
+**Note:** The JUCE JavaScript library is part of JUCE 8+ and is embedded as binary data, not fetched remotely. Path may vary by JUCE version.
 
 ### 4. Update index.html to Import JUCE
 
-**Edit `ui/public/index.html`:**
+**Edit `Source/ui/public/index.html`:**
 
-Add JUCE import to `<head>` section:
+Verify JUCE import is in `<head>` section (should already be present from mockup):
 
 ```html
 <head>
@@ -126,7 +218,7 @@ Add JUCE import to `<head>` section:
 
     <!-- JUCE WebView Bridge -->
     <script type="module">
-        import * as Juce from "./js/juce.js";
+        import * as Juce from "./js/juce/index.js";
         window.Juce = Juce;  // Make available globally
     </script>
 
@@ -134,9 +226,11 @@ Add JUCE import to `<head>` section:
 </head>
 ```
 
-### 5. Create Parameter Binding JavaScript
+**Note:** Finalized mockups from ui-mockup skill already include JUCE imports. This step is verification only.
 
-**Create or edit `ui/public/js/app.js`:**
+### 5. Verify Parameter Binding JavaScript
+
+**Verify `Source/ui/public/js/app.js` has correct parameter bindings:**
 
 ```javascript
 // Import JUCE if not already global
@@ -208,11 +302,38 @@ function bindParameter(paramId, type) {
 
 **Critical: Parameter IDs in HTML must match APVTS parameter IDs exactly (case-sensitive).**
 
-### 6. Add Relay Members to PluginEditor.h
+### 6. Generate PluginEditor.h from parameter-spec.md
+
+**⚠️ IMPORTANT: DO NOT copy mockup C++ files directly** - they are templates with placeholders like `{{GENERATE_RELAY_DECLARATIONS}}`. Generate actual code from parameter-spec.md.
 
 **⚠️ CRITICAL: Member declaration order prevents 90% of release build crashes.**
 
-**Edit `Source/PluginEditor.h`:**
+**Generate relay declarations from parameter-spec.md:**
+
+```python
+# Pseudo-code for generating relay declarations
+for param in parameters:
+    if param.type in ["float", "int"]:  # Slider/Knob
+        print(f"std::unique_ptr<juce::WebSliderRelay> {param.id.lower()}Relay;")
+    elif param.type == "bool":  # Toggle
+        print(f"std::unique_ptr<juce::WebToggleButtonRelay> {param.id.lower()}Relay;")
+    elif param.type == "choice":  # Dropdown
+        print(f"std::unique_ptr<juce::WebComboBoxRelay> {param.id.lower()}Relay;")
+```
+
+**Generate attachment declarations:**
+
+```python
+for param in parameters:
+    if param.type in ["float", "int"]:
+        print(f"std::unique_ptr<juce::WebSliderParameterAttachment> {param.id.lower()}Attachment;")
+    elif param.type == "bool":
+        print(f"std::unique_ptr<juce::WebToggleButtonParameterAttachment> {param.id.lower()}Attachment;")
+    elif param.type == "choice":
+        print(f"std::unique_ptr<juce::WebComboBoxParameterAttachment> {param.id.lower()}Attachment;")
+```
+
+**Write `Source/PluginEditor.h`:**
 
 ```cpp
 #pragma once
@@ -267,9 +388,42 @@ When plugin reloads (DAW closes editor):
 
 **Wrong order causes:** Crashes in release builds when attachments try to call `evaluateJavascript()` on already-destroyed WebView.
 
-### 7. Implement PluginEditor Constructor
+### 7. Generate PluginEditor.cpp from parameter-spec.md
 
-**Edit `Source/PluginEditor.cpp`:**
+**Generate relay creation from parameter-spec.md:**
+
+```python
+# Pseudo-code for generating relay initialization
+for param in parameters:
+    if param.type in ["float", "int"]:
+        print(f', {param.id.lower()}Relay(std::make_unique<juce::WebSliderRelay>("{param.id}"))')
+    elif param.type == "bool":
+        print(f', {param.id.lower()}Relay(std::make_unique<juce::WebToggleButtonRelay>("{param.id}"))')
+    elif param.type == "choice":
+        print(f', {param.id.lower()}Relay(std::make_unique<juce::WebComboBoxRelay>("{param.id}"))')
+```
+
+**Generate relay registration from parameter-spec.md:**
+
+```python
+# Pseudo-code for generating .withOptionsFrom() calls
+for param in parameters:
+    print(f'        .withOptionsFrom(*{param.id.lower()}Relay)')
+```
+
+**Generate attachment creation from parameter-spec.md:**
+
+```python
+# Pseudo-code for generating attachment initialization
+for param in parameters:
+    attachment_type = get_attachment_type(param.type)  # WebSliderParameterAttachment, etc.
+    print(f', {param.id.lower()}Attachment(std::make_unique<{attachment_type}>(')
+    print(f'    *processorRef.apvts.getParameter("{param.id}"),')
+    print(f'    *{param.id.lower()}Relay')
+    print(f'))')
+```
+
+**Write `Source/PluginEditor.cpp`:**
 
 ```cpp
 #include "PluginEditor.h"
@@ -375,66 +529,37 @@ std::optional<juce::WebBrowserComponent::Resource>
 
 ### 9. Update CMakeLists.txt for WebView
 
-**Edit `CMakeLists.txt`:**
+**Add WebView configuration to existing CMakeLists.txt:**
 
 ```cmake
-# Enable WebView support
-juce_add_plugin([PluginName]
-    COMPANY_NAME "YourCompany"
-    PLUGIN_MANUFACTURER_CODE Manu
-    PLUGIN_CODE Plug
-    FORMATS VST3 AU Standalone
-    PRODUCT_NAME "[Plugin Name]"
-    NEEDS_WEB_BROWSER TRUE        # ← Enable WebView
-    NEEDS_WEBVIEW2 TRUE           # ← Enable WebView2 (Windows)
-)
-
-# Embed UI files as binary data
-juce_add_binary_data([PluginName]Data
+# WebView UI Resources
+juce_add_binary_data(${PRODUCT_NAME}_UIResources
     SOURCES
-        ui/public/index.html
-        ui/public/css/styles.css
-        ui/public/js/app.js
-        ui/public/js/juce.js
-        # Add any images, fonts, etc.
+        Source/ui/public/index.html
+        Source/ui/public/js/juce/index.js
+        # Add any CSS, images, fonts from Source/ui/public/
 )
 
-# Link binary data to plugin
-target_link_libraries([PluginName]
+target_link_libraries(${PRODUCT_NAME}
     PRIVATE
-        [PluginName]Data  # ← Link embedded UI files
-        juce::juce_audio_basics
-        juce::juce_audio_devices
-        juce::juce_audio_formats
-        juce::juce_audio_plugin_client
-        juce::juce_audio_processors
-        juce::juce_audio_utils
-        juce::juce_core
-        juce::juce_data_structures
-        juce::juce_events
-        juce::juce_graphics
-        juce::juce_gui_basics
-        juce::juce_gui_extra  # ← Contains WebBrowserComponent
-    PUBLIC
-        juce::juce_recommended_config_flags
-        juce::juce_recommended_lto_flags
-        juce::juce_recommended_warning_flags
+        ${PRODUCT_NAME}_UIResources
+        juce::juce_gui_extra  # Required for WebBrowserComponent
 )
 
-# Compile definitions for WebView
-target_compile_definitions([PluginName]
+# Enable WebView
+target_compile_definitions(${PRODUCT_NAME}
     PUBLIC
-        JUCE_WEB_BROWSER=1      # ← Enable WebBrowserComponent
-        JUCE_USE_CURL=0         # ← Disable CURL (not needed)
-        JUCE_VST3_CAN_REPLACE_VST2=0
+        JUCE_WEB_BROWSER=1
+        JUCE_USE_CURL=0
 )
 ```
 
-**Critical changes:**
-- `NEEDS_WEB_BROWSER TRUE` - Enables WebView support
-- `NEEDS_WEBVIEW2 TRUE` - Enables WebView2 on Windows
-- `juce_add_binary_data` - Embeds UI files in binary
-- `JUCE_WEB_BROWSER=1` - Enables WebBrowserComponent API
+**Key points:**
+- Use `${PRODUCT_NAME}_UIResources` naming convention
+- File paths start with `Source/ui/public/`
+- Include `juce::juce_gui_extra` module (contains WebBrowserComponent)
+- Enable `JUCE_WEB_BROWSER=1` compile definition
+- Disable `JUCE_USE_CURL=0` (not needed for WebView)
 
 ### 10. Update resized() for Layout
 
@@ -460,32 +585,55 @@ void [PluginName]AudioProcessorEditor::paint(juce::Graphics& g)
 
 ### 11. Self-Validation
 
-**Verify UI integration (code only, build and DAW testing handled by plugin-workflow):**
+**Comprehensive verification checklist:**
 
-1. **File verification:**
-   - ✅ `ui/public/index.html` exists
-   - ✅ `ui/public/js/juce.js` exists
-   - ✅ `ui/public/js/app.js` exists (parameter binding code)
-   - ✅ All CSS/image assets copied
+**Automated checks:**
 
-2. **Code verification:**
-   - ✅ Read `Source/PluginEditor.h`
-   - ✅ Verify member order: Relays → WebView → Attachments
-   - ✅ Count relays: One per parameter from parameter-spec.md
-   - ✅ Count attachments: One per parameter
-   - ✅ Verify relay IDs match parameter-spec.md IDs exactly
+- [ ] Member order correct in PluginEditor.h (relays → webView → attachments)
+- [ ] All parameter IDs from spec have matching relays
+- [ ] All relays registered in WebView options (`.withOptionsFrom()` calls)
+- [ ] All parameters have matching attachments
+- [ ] Resource provider maps all UI files (getResource() implementation)
+- [ ] CMakeLists.txt includes `juce_add_binary_data`
+- [ ] CMakeLists.txt includes `juce::juce_gui_extra` module
+- [ ] CMakeLists.txt defines `JUCE_WEB_BROWSER=1`
+- [ ] No CSS contains viewport units (`100vh`, `100vw`)
+- [ ] HTML includes native feel CSS (`user-select: none`)
+- [ ] All UI files copied to `Source/ui/public/`
+- [ ] Parameter ID consistency: mockup IDs match parameter-spec.md IDs
 
-3. **CMake verification:**
-   - ✅ `NEEDS_WEB_BROWSER TRUE` present
-   - ✅ `juce_add_binary_data` includes all UI files
-   - ✅ `JUCE_WEB_BROWSER=1` defined
+**Verification logic:**
 
-**Extract parameter IDs from code:**
-```regex
-WebSliderRelay\s+(\w+)Relay\s*\{\s*"(\w+)"\s*\}
+```python
+# 1. Verify file structure
+assert Path("Source/ui/public/index.html").exists()
+assert Path("Source/ui/public/js/juce/index.js").exists()
+assert Path("Source/PluginEditor.h").exists()
+assert Path("Source/PluginEditor.cpp").exists()
+
+# 2. Verify member order in PluginEditor.h
+header_content = Path("Source/PluginEditor.h").read_text()
+# Extract member declarations in order
+# Verify relays come before webView, webView before attachments
+
+# 3. Verify parameter consistency
+spec_params = extract_params_from_spec("parameter-spec.md")
+html_params = extract_params_from_html("Source/ui/public/index.html")
+cpp_relays = extract_relays_from_cpp("Source/PluginEditor.h")
+assert spec_params == html_params == cpp_relays
+
+# 4. Verify CMake configuration
+cmake_content = Path("CMakeLists.txt").read_text()
+assert "juce_add_binary_data" in cmake_content
+assert "juce::juce_gui_extra" in cmake_content
+assert "JUCE_WEB_BROWSER=1" in cmake_content
+
+# 5. Verify CSS constraints
+html_content = Path("Source/ui/public/index.html").read_text()
+assert "100vh" not in html_content
+assert "100vw" not in html_content
+assert "user-select: none" in html_content
 ```
-
-**Compare with parameter-spec.md:** All IDs must match exactly.
 
 **Note:** Build verification, plugin installation, and DAW testing handled by plugin-workflow via build-automation skill after gui-agent completes. This agent only creates/modifies UI code and configuration.
 
@@ -587,7 +735,32 @@ WebSliderRelay\s+(\w+)Relay\s*\{\s*"(\w+)"\s*\}
 3. Registration in WebView options (`.withOptionsFrom(gainRelay)`)
 4. JavaScript binding code in `app.js`
 
-## Common Issues
+## Common Issues and Resolutions
+
+**Issue 1: Parameter ID mismatch**
+- Symptom: HTML references parameter IDs not in spec
+- Resolution: Regenerate mockup with correct IDs, or update spec to match mockup
+- Detection: Step 1.5 validation should catch this
+
+**Issue 2: Wrong member order**
+- Symptom: Generated PluginEditor.h has attachments before relays
+- Resolution: Enforce order: relays → webView → attachments
+- Impact: Causes crashes in release builds on plugin reload
+
+**Issue 3: CSS viewport units**
+- Symptom: HTML uses `100vh` or `100vw`
+- Resolution: Replace with `100%`, add `html, body { height: 100%; }`
+- Impact: WebView may not render correctly
+
+**Issue 4: Missing resource mappings**
+- Symptom: WebView blank on load
+- Resolution: Verify all files in `Source/ui/public/` are mapped in `getResource()`
+- Check: Ensure `juce_add_binary_data` includes all UI files
+
+**Issue 5: Relay not registered in WebView options**
+- Symptom: Parameter doesn't respond to UI interaction
+- Resolution: Add `.withOptionsFrom(*relay)` for missing relay
+- Verification: Count `.withOptionsFrom()` calls matches relay count
 
 **Blank WebView:**
 - Missing `.withNativeIntegrationEnabled()`

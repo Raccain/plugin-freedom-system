@@ -90,26 +90,43 @@ target_link_libraries([PluginName]
         juce::juce_events
         juce::juce_graphics
         juce::juce_gui_basics
-        juce::juce_gui_extra
+        juce::juce_gui_extra  # Required for WebBrowserComponent
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags
 )
 
+# WebView UI Resources (uncommented by gui-agent if WebView UI used)
+# juce_add_binary_data(${PRODUCT_NAME}_UIResources
+#     SOURCES
+#         Source/ui/public/index.html
+#         Source/ui/public/js/juce/index.js
+# )
+#
+# target_link_libraries(${PRODUCT_NAME}
+#     PRIVATE
+#         ${PRODUCT_NAME}_UIResources
+# )
+
 # Compile definitions
 target_compile_definitions([PluginName]
     PUBLIC
-        JUCE_WEB_BROWSER=0
-        JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
 )
+
+# WebView support (uncommented by gui-agent if WebView UI used)
+# target_compile_definitions([PluginName]
+#     PUBLIC
+#         JUCE_WEB_BROWSER=1
+#         JUCE_USE_CURL=0
+# )
 ```
 
 **Key points:**
 - Use JUCE 8 compatible configuration
-- Include all standard audio modules
-- Set JUCE_WEB_BROWSER=0 for Stage 2 (WebView added in Stage 5)
+- Include all standard audio modules including juce_gui_extra (required for WebBrowserComponent)
+- WebView configuration commented out (gui-agent will uncomment if WebView UI is used)
 - Generate VST3, AU, and Standalone formats
 
 ### 3. Create Source/PluginProcessor.h
