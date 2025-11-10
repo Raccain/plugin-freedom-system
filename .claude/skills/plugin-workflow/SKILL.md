@@ -317,59 +317,49 @@ cat plugins/[PluginName]/.ideas/creative-brief.md
 
 **Output:** Create `plugins/[PluginName]/.ideas/architecture.md` (DSP specification)
 
-**Format:**
+**CRITICAL:** Use the DSP architecture contract template from `assets/architecture.md`.
 
+**Required sections:**
+1. Title: `# DSP Architecture: [PluginName]`
+2. Contract header: `**CRITICAL CONTRACT:** This specification is immutable...`
+3. `## Core Components` - List each DSP component with JUCE class, purpose, parameters affected, configuration
+4. `## Processing Chain` - ASCII diagram showing signal flow and parameter connections
+5. `## Parameter Mapping` - Table mapping every parameter ID to DSP component and usage
+6. `## Algorithm Details` - Implementation approach for each algorithm
+7. `## Special Considerations` - Thread safety, performance, denormal protection, sample rate handling
+8. `## Research References` - Context7 docs, professional plugins, technical resources
+
+**How to populate from research:**
+
+- **Similar Plugins research** → `## Research References` (Professional Examples section)
+- **JUCE modules identified** → `## Core Components` (one subsection per component with structured format)
+- **Parameter research** → `## Parameter Mapping` (table linking parameter IDs to components)
+- **Technical approach** → `## Processing Chain` (ASCII diagram) + `## Algorithm Details`
+- **Technical feasibility** → `## Special Considerations`
+
+**Example Core Component entry:**
 ```markdown
-# [PluginName] - Research
-
-**Date:** [YYYY-MM-DD]
-**Plugin Type:** [Effect/Synth/Utility]
-
-## Similar Plugins
-
-- [Plugin 1]: [Key features, parameter ranges]
-- [Plugin 2]: [Key features, parameter ranges]
-- [Plugin 3]: [Key features, parameter ranges]
-
-## Technical Approach
-
-**Processing Type:** [Time-domain/Frequency-domain/etc.]
-**JUCE Modules Identified** (from Context7):
-- `juce::dsp::[Module1]` - [Purpose]
-- `juce::dsp::[Module2]` - [Purpose]
-- (List all identified modules with Context7 library reference)
-
-**Custom DSP Required:** [Any algorithms not available in JUCE]
-
-## Parameter Research
-
-| Parameter | Typical Range | Default | Skew | Notes (Industry Standard) |
-| --------- | ------------- | ------- | ---- | ------------------------- |
-| [Name]    | [Min-Max]     | [Value] | [X]  | [Professional plugin ranges] |
-
-## Technical Feasibility
-
-**JUCE Support:** [All modules available? / Custom implementation needed?]
-**Complexity Factors:** [Feedback loops? FFT? Multiband? Modulation?]
-**Implementation Challenges:** [Known gotchas from research]
-
-## Design Sync Results
-
-[If mockup exists]
-- Brief ↔ Mockup consistency: [Pass/Conflicts found]
-- Conflicts: [List if any]
-- Resolution: [How resolved]
-
-[If no mockup]
-- No mockup found (OK - will create during workflow)
-
-## References
-
-- Context7 JUCE Library: [Library ID used]
-- Professional Plugins: [URLs to researched plugins]
-- JUCE Documentation: [Specific doc pages]
-- Papers/Resources: [DSP papers if applicable]
+### File Manager
+- **JUCE Class:** `juce::AudioFormatManager`
+- **Purpose:** Detect audio file formats and create readers
+- **Parameters Affected:** station
+- **Configuration:** registerBasicFormats() for WAV/AIFF/MP3/FLAC/OGG
 ```
+
+**Example Processing Chain:**
+```
+MIDI In → Trigger Detection → Set Playback Position
+                                        ↓
+File Manager ← station parameter → AudioFormatReader
+      ↓
+Resampler ← speed_pitch parameter
+      ↓
+Volume Control ← volume parameter
+      ↓
+Output
+```
+
+See `assets/architecture.md` for complete template structure.
 
 **Create handoff file:** `plugins/[PluginName]/.continue-here.md`
 
