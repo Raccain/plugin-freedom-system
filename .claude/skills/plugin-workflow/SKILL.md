@@ -836,276 +836,1451 @@ Wait for user response. Handle:
 
 ---
 
-## Stage 2: Foundation (STUB - Phase 3)
+## Stage 2: Foundation
 
 **Goal:** Create plugin structure that compiles
 
-**Duration:** 5 minutes (when implemented in Phase 3)
+**Duration:** 5 minutes
 
-**NOTE:** Stage 2 is a STUB in Phase 2. foundation-agent will be implemented in Phase 3.
+**Preconditions:**
+- Stage 1 complete (plan.md exists)
+- creative-brief.md exists
+- architecture.md exists
 
-**Current Implementation:**
+**Actions:**
 
-Display stub message in formatted box:
+### 1. Prepare Contracts for Subagent
 
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Stage 2: Foundation (Build System Setup)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Read contract files that foundation-agent needs:
 
-TODO (Phase 3): Dispatch foundation-agent subagent
-
-Expected implementation:
-- Generate CMakeLists.txt with JUCE 8 configuration
-- Create empty PluginProcessor.h/cpp
-- Create empty PluginEditor.h/cpp
-- Verify compilation with --no-install flag
-
-For now, marking stage as stub and continuing...
+```bash
+cat plugins/[PluginName]/.ideas/creative-brief.md
+cat plugins/[PluginName]/.ideas/architecture.md
+cat plugins/[PluginName]/.ideas/plan.md
 ```
 
-**Update handoff file:**
+### 2. Invoke foundation-agent via Task Tool
 
-```yaml
-stage: 2
-status: in_progress
-```
-
-Add to "Completed So Far":
-- **Stage 2 (stub):** Foundation stub executed
-
-Add to "Next Steps":
-- Complete Phase 3 to implement foundation-agent
-- foundation-agent will create build system and empty plugin files
-
-**Update PLUGINS.md:**
-
-Update status: `🚧 Stage 2 (stub)`
-
-**Do NOT create git commit** (stub stages are not committed)
-
-**Decision menu:**
-
-```
-✓ Stage 2 stub executed (Phase 3 will implement)
-
-What's next?
-1. Continue to Stage 3 (stub) (recommended)
-2. Review handoff file
-3. Skip to Stage 6 (test stub workflow)
-4. Pause here
-5. Other
-
-Choose (1-5): _
-```
-
----
-
-## Stage 3: Shell (STUB - Phase 3)
-
-**Goal:** Plugin loads in DAW, does nothing yet
-
-**Duration:** 5 minutes (when implemented in Phase 3)
-
-**NOTE:** Stage 3 is a STUB in Phase 2. shell-agent will be implemented in Phase 3.
-
-**Current Implementation:**
-
-Display stub message in formatted box:
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Stage 3: Shell (Parameter Setup)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-TODO (Phase 3): Dispatch shell-agent subagent
-
-Expected implementation:
-- Create APVTS with all parameters from parameter-spec.md
-- Implement basic processBlock stub
-- Empty editor with placeholder text
-- Verify plugin loads in DAW
-
-For now, marking stage as stub and continuing...
-```
-
-**Update handoff file:**
-
-```yaml
-stage: 3
-status: in_progress
-```
-
-Add to "Completed So Far":
-- **Stage 3 (stub):** Shell stub executed
-
-Add to "Next Steps":
-- Complete Phase 3 to implement shell-agent
-- shell-agent will implement parameters and basic structure
-
-**Update PLUGINS.md:**
-
-Update status: `🚧 Stage 3 (stub)`
-
-**Do NOT create git commit** (stub stages are not committed)
-
-**Decision menu:**
-
-```
-✓ Stage 3 stub executed (Phase 3 will implement)
-
-What's next?
-1. Continue to Stage 4 (stub) (recommended)
-2. Review handoff file
-3. Skip to Stage 6 (test stub workflow)
-4. Pause here
-5. Other
-
-Choose (1-5): _
-```
-
----
-
-## Stage 4: DSP (STUB - Phase 3)
-
-**Goal:** Audio processing works, parameters functional
-
-**Duration:** 15-45 minutes (when implemented in Phase 3, depending on complexity)
-
-**NOTE:** Stage 4 is a STUB in Phase 2. dsp-agent will be implemented in Phase 3.
-
-**Current Implementation:**
-
-Check if phased implementation is needed:
+Call foundation-agent subagent with complete specification:
 
 ```typescript
-const plan = readFile(`plugins/${pluginName}/.ideas/plan.md`)
-const phased = plan.includes("Stage 4.1") // Check if phased
+const foundationResult = Task({
+  subagent_type: "foundation-agent",
+  model: "sonnet",
+  description: `Create build system for ${pluginName}`,
+  prompt: `
+You are foundation-agent. Your task is to create the JUCE plugin build system and verify compilation for ${pluginName}.
+
+**Plugin Name:** ${pluginName}
+**Plugin Location:** plugins/${pluginName}/
+
+**Contract Files:**
+
+creative-brief.md:
+\`\`\`
+${creativeBriefContent}
+\`\`\`
+
+architecture.md:
+\`\`\`
+${architectureContent}
+\`\`\`
+
+plan.md:
+\`\`\`
+${planContent}
+\`\`\`
+
+Follow the instructions in .claude/agents/foundation-agent.md exactly.
+
+Extract PRODUCT_NAME from creative-brief, determine plugin type from architecture, create CMakeLists.txt, create minimal PluginProcessor and PluginEditor classes, build with --no-install flag.
+
+Return JSON report in the exact format specified in foundation-agent.md.
+  `
+})
 ```
 
-Display stub message in formatted box:
+### 3. Parse JSON Report with Error Handling
 
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Stage 4: DSP (Audio Processing)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-TODO (Phase 3): Dispatch dsp-agent subagent
-
-Expected implementation:
-- Implement processBlock with DSP algorithms from architecture.md
-- ${phased ? 'Phased execution: Stage 4.1, 4.2, 4.3 with test criteria' : 'Single-pass implementation'}
-- Real audio processing
-- Automated stability tests after completion
-
-For now, marking stage as stub and continuing...
-```
-
-**Update handoff file:**
-
-```yaml
-stage: 4
-status: in_progress
-```
-
-Add to "Completed So Far":
-- **Stage 4 (stub):** DSP stub executed
-
-Add to "Next Steps":
-- Complete Phase 3 to implement dsp-agent
-- dsp-agent will implement audio processing from architecture.md
-
-**Update PLUGINS.md:**
-
-Update status: `🚧 Stage 4 (stub)`
-
-**Do NOT create git commit** (stub stages are not committed)
-
-**Decision menu:**
-
-```
-✓ Stage 4 stub executed (Phase 3 will implement)
-
-What's next?
-1. Continue to Stage 5 (stub) (recommended)
-2. Review handoff file
-3. Skip to Stage 6 (test stub workflow)
-4. Pause here
-5. Other
-
-Choose (1-5): _
-```
-
----
-
-## Stage 5: GUI (STUB - Phase 3)
-
-**Goal:** Professional UI with working controls
-
-**Duration:** 20-60 minutes (when implemented in Phase 3, depending on complexity)
-
-**NOTE:** Stage 5 is a STUB in Phase 2. gui-agent will be implemented in Phase 3.
-
-**Current Implementation:**
-
-Check if phased implementation is needed:
+**Implement robust JSON parsing:**
 
 ```typescript
-const plan = readFile(`plugins/${pluginName}/.ideas/plan.md`)
-const phased = plan.includes("Stage 5.1") // Check if phased
-```
+function parseSubagentReport(rawOutput: string): object | null {
+  try {
+    // Strategy 1: Extract from markdown code blocks
+    const codeBlockMatch = rawOutput.match(/```json\n([\s\S]*?)\n```/)
+    if (codeBlockMatch) {
+      return JSON.parse(codeBlockMatch[1])
+    }
 
-Display stub message in formatted box:
+    // Strategy 2: Find JSON object via brace matching
+    const braceStart = rawOutput.indexOf('{')
+    const braceEnd = rawOutput.lastIndexOf('}')
+    if (braceStart !== -1 && braceEnd !== -1 && braceEnd > braceStart) {
+      const jsonCandidate = rawOutput.substring(braceStart, braceEnd + 1)
+      return JSON.parse(jsonCandidate)
+    }
 
-```
+    // Strategy 3: Try parsing entire output
+    return JSON.parse(rawOutput)
+  } catch (error) {
+    console.error("JSON parsing failed:", error)
+    return null
+  }
+}
+
+const report = parseSubagentReport(foundationResult)
+
+if (!report) {
+  // JSON parsing failed - present error to user
+  console.log(`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Stage 5: GUI (User Interface)
+✗ Stage 2 Error: Could not parse foundation-agent report
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-TODO (Phase 3): Dispatch gui-agent subagent
+The foundation-agent subagent completed but returned malformed output.
 
-Expected implementation:
-- Create WebView UI with parameter bindings
-- ${phased ? 'Phased execution: Stage 5.1, 5.2 with test criteria' : 'Single-pass implementation'}
-- FlexBox/Grid layout (never manual setBounds)
-- Automated stability tests after completion
+Raw output:
+${foundationResult}
 
-For now, marking stage as stub and continuing...
-```
-
-**Update handoff file:**
-
-```yaml
-stage: 5
-status: in_progress
-```
-
-Add to "Completed So Far":
-- **Stage 5 (stub):** GUI stub executed
-
-Add to "Next Steps":
-- Complete Phase 3 to implement gui-agent
-- gui-agent will create WebView UI with parameter bindings
-
-**Update PLUGINS.md:**
-
-Update status: `🚧 Stage 5 (stub)`
-
-**Do NOT create git commit** (stub stages are not committed)
-
-**Decision menu:**
-
-```
-✓ Stage 5 stub executed (Phase 3 will implement)
-
-What's next?
-1. Continue to Stage 6 (real implementation) (recommended)
-2. Review handoff file
-3. Pause here
-4. Other
+What would you like to do?
+1. Retry foundation-agent dispatch
+2. Show full subagent output
+3. Report bug (subagent should return valid JSON)
+4. Manual intervention (I'll fix and say "resume automation")
 
 Choose (1-4): _
+  `)
+
+  // Wait for user response, handle accordingly
+  return
+}
 ```
+
+### 4. Validate Required Fields
+
+**Check JSON structure:**
+
+```typescript
+function validateFoundationReport(report: any): { valid: boolean; error?: string } {
+  if (!report.agent || report.agent !== "foundation-agent") {
+    return { valid: false, error: "Missing or wrong 'agent' field" }
+  }
+
+  if (!report.status || !["success", "failure"].includes(report.status)) {
+    return { valid: false, error: "Missing or invalid 'status' field" }
+  }
+
+  if (!report.outputs || typeof report.outputs !== 'object') {
+    return { valid: false, error: "Missing 'outputs' object" }
+  }
+
+  if (!report.hasOwnProperty('ready_for_next_stage')) {
+    return { valid: false, error: "Missing 'ready_for_next_stage' field" }
+  }
+
+  return { valid: true }
+}
+
+const validation = validateFoundationReport(report)
+if (!validation.valid) {
+  console.log(`
+✗ Invalid report format: ${validation.error}
+
+Report received:
+${JSON.stringify(report, null, 2)}
+
+What would you like to do?
+1. Retry with fresh foundation-agent
+2. Report bug (malformed JSON structure)
+3. Manual intervention
+
+Choose (1-3): _
+  `)
+  return
+}
+```
+
+### 5. Handle Success/Failure
+
+**If status="success":**
+
+```typescript
+if (report.status === "success" && report.ready_for_next_stage) {
+  console.log(`✓ Stage 2 complete: Build system created`)
+  console.log(`  - Plugin: ${report.outputs.plugin_name}`)
+  console.log(`  - Build artifacts: ${report.outputs.build_artifacts?.length || 0}`)
+
+  // Continue to stage completion workflow
+}
+```
+
+**If status="failure":**
+
+```typescript
+if (report.status === "failure") {
+  console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✗ Stage 2 Failed: Build System Creation
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Error: ${report.outputs.error_message || "Unknown error"}
+Type: ${report.outputs.error_type || "N/A"}
+
+Issues:
+${report.issues.map(issue => `  - ${issue}`).join('\n')}
+
+${report.outputs.build_log_path ? `Build log: ${report.outputs.build_log_path}` : ''}
+
+What would you like to do?
+1. Investigate (invoke troubleshooter for root cause analysis)
+2. Show me the code (display CMakeLists.txt and source files)
+3. Show me the build output (full build log)
+4. I'll fix it manually (say "resume automation" when ready)
+
+Choose (1-4): _
+  `)
+
+  // Wait for user response
+  const choice = getUserInput()
+
+  if (choice === "1" || choice === "investigate") {
+    // Invoke troubleshooter agent
+    console.log("Launching troubleshooter to investigate build failure...")
+
+    const troubleshootResult = Task({
+      subagent_type: "troubleshooter",
+      description: `Investigate Stage 2 build failure for ${pluginName}`,
+      prompt: `
+Investigate build failure for ${pluginName} at Stage 2 (foundation).
+
+Error: ${report.outputs.error_message}
+Build log: ${report.outputs.build_log_path}
+
+Analyze the root cause and suggest fix.
+      `
+    })
+
+    console.log("\nTroubleshooter findings:")
+    console.log(troubleshootResult)
+
+    console.log("\nWould you like to:")
+    console.log("1. Apply suggested fix")
+    console.log("2. Show code")
+    console.log("3. Manual fix")
+    console.log("\nChoose (1-3): _")
+  }
+
+  if (choice === "2" || choice === "show code") {
+    // Display generated files
+    const cmakeContent = readFile(`plugins/${pluginName}/CMakeLists.txt`)
+    const processorH = readFile(`plugins/${pluginName}/Source/PluginProcessor.h`)
+
+    console.log("\n=== CMakeLists.txt ===")
+    console.log(cmakeContent)
+    console.log("\n=== PluginProcessor.h ===")
+    console.log(processorH)
+
+    // Re-present menu
+  }
+
+  if (choice === "3" || choice === "show output") {
+    // Display build log
+    const buildLog = readFile(report.outputs.build_log_path)
+    console.log("\n=== Build Log ===")
+    console.log(buildLog)
+
+    // Re-present menu
+  }
+
+  if (choice === "4" || choice === "manual") {
+    console.log("\n⏸ Paused for manual intervention.")
+    console.log("Fix the issue, then say 'resume automation' to continue.")
+    return  // Exit, wait for user to say "resume automation"
+  }
+}
+```
+
+**NEVER auto-retry.** Always present menu and wait for user decision.
+
+### 6. Update State Files
+
+**Update .continue-here.md:**
+
+```typescript
+updateHandoff(
+  pluginName,
+  2,  // stage
+  "Stage 2: Foundation - Build system created, compilation verified",
+  ["Stage 3: Implement parameters", "Review build artifacts", "Test compilation"],
+  complexityScore,
+  phased
+)
+```
+
+**Update PLUGINS.md:**
+
+```typescript
+updatePluginStatus(pluginName, "🚧 Stage 2")
+updatePluginTimeline(pluginName, 2, "Foundation complete - build system operational")
+```
+
+### 7. Git Commit
+
+**Atomic commit of all Stage 2 changes:**
+
+```bash
+git add plugins/[PluginName]/Source/
+git add plugins/[PluginName]/CMakeLists.txt
+git add plugins/[PluginName]/.continue-here.md
+git add PLUGINS.md
+
+git commit -m "$(cat <<'EOF'
+feat: [PluginName] Stage 2 - foundation
+
+Build system created with JUCE 8 configuration
+Minimal PluginProcessor and PluginEditor classes
+Compilation verified (VST3, AU, Standalone)
+
+🤖 Generated with Claude Code
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+)"
+```
+
+Display commit hash:
+```bash
+git log -1 --format='✓ Committed: %h - Stage 2 complete'
+```
+
+### 8. Decision Menu
+
+**Present decision menu:**
+
+```
+✓ Stage 2 complete: Build system operational
+
+Plugin: [PluginName]
+Build artifacts: VST3, AU, Standalone
+Status: Compiles successfully (no DSP yet)
+
+What's next?
+1. Continue to Stage 3 (implement parameters) (recommended)
+2. Review build artifacts
+3. Test compilation manually
+4. Review Stage 2 code
+5. Pause here
+6. Other
+
+Choose (1-6): _
+```
+
+**Handle responses:**
+- 1 or "continue": Proceed to Stage 3
+- 2: Show build artifacts list
+- 3: Provide manual test instructions
+- 4: Display CMakeLists.txt and source files
+- 5 or "pause": Update handoff, exit
+- 6 or "other": Ask "What would you like to do?" then re-present menu
+
+---
+
+## Stage 3: Shell
+
+**Goal:** Implement ALL parameters, plugin loads in DAW with parameter system
+
+**Duration:** 5 minutes
+
+**Preconditions:**
+- Stage 2 complete (build system operational)
+- parameter-spec.md exists (from finalized UI mockup)
+
+**Actions:**
+
+### 1. Precondition Check: parameter-spec.md REQUIRED
+
+**BLOCKING check before proceeding:**
+
+```bash
+if [ ! -f "plugins/${PLUGIN_NAME}/.ideas/parameter-spec.md" ]; then
+  echo "
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✗ BLOCKED: Cannot proceed to Stage 3
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Missing required contract: parameter-spec.md
+
+Stage 3 requires a complete parameter specification to implement the APVTS.
+This contract is the single source of truth for all plugin parameters.
+
+WHY BLOCKED:
+Without parameter-spec.md, shell-agent cannot know:
+- Which parameters to create
+- Parameter types (Float/Bool/Choice)
+- Parameter ranges and defaults
+- Parameter IDs for UI binding
+
+HOW TO UNBLOCK:
+1. Complete UI mockup workflow (/mockup)
+2. Design UI with parameter controls
+3. Finalize a design version (Phase 4.5)
+4. Finalization auto-generates parameter-spec.md
+5. Then resume Stage 3 with /continue ${PLUGIN_NAME}
+
+Current status: parameter-spec.md NOT FOUND
+
+Cannot proceed without this contract.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  "
+  exit 1
+fi
+```
+
+**If parameter-spec.md missing:** STOP IMMEDIATELY, exit skill, wait for user to create contract.
+
+### 2. Prepare Contracts for Subagent
+
+Read contract files that shell-agent needs:
+
+```bash
+cat plugins/[PluginName]/.ideas/parameter-spec.md
+cat plugins/[PluginName]/.ideas/creative-brief.md
+cat plugins/[PluginName]/.ideas/architecture.md
+```
+
+### 3. Invoke shell-agent via Task Tool
+
+Call shell-agent subagent with complete specification:
+
+```typescript
+const shellResult = Task({
+  subagent_type: "shell-agent",
+  model: "sonnet",
+  description: `Implement parameters for ${pluginName}`,
+  prompt: `
+You are shell-agent. Your task is to implement ALL parameters from parameter-spec.md for ${pluginName}.
+
+**Plugin Name:** ${pluginName}
+**Plugin Location:** plugins/${pluginName}/
+
+**Contract Files:**
+
+parameter-spec.md:
+\`\`\`
+${parameterSpecContent}
+\`\`\`
+
+creative-brief.md:
+\`\`\`
+${creativeBriefContent}
+\`\`\`
+
+architecture.md:
+\`\`\`
+${architectureContent}
+\`\`\`
+
+Follow the instructions in .claude/agents/shell-agent.md exactly.
+
+Create APVTS with ALL parameters from parameter-spec.md, implement state management, update processBlock stub, build and install plugin.
+
+CRITICAL: Use JUCE 8 ParameterID format: juce::ParameterID { "id", 1 }
+
+Return JSON report in the exact format specified in shell-agent.md.
+  `
+})
+```
+
+### 4. Parse JSON Report (Same as Stage 2)
+
+Use same `parseSubagentReport()` function with robust error handling.
+
+### 5. Validate shell-agent Report
+
+```typescript
+function validateShellReport(report: any): { valid: boolean; error?: string } {
+  if (!report.agent || report.agent !== "shell-agent") {
+    return { valid: false, error: "Wrong agent (expected shell-agent)" }
+  }
+
+  if (!report.status || !["success", "failure"].includes(report.status)) {
+    return { valid: false, error: "Invalid status" }
+  }
+
+  if (report.status === "success") {
+    if (!report.outputs.parameters_implemented || !Array.isArray(report.outputs.parameters_implemented)) {
+      return { valid: false, error: "Missing parameters_implemented array" }
+    }
+
+    if (!report.outputs.parameter_count || typeof report.outputs.parameter_count !== 'number') {
+      return { valid: false, error: "Missing parameter_count" }
+    }
+  }
+
+  return { valid: true }
+}
+```
+
+### 6. Handle Success/Failure
+
+**If status="success":**
+
+```typescript
+if (report.status === "success" && report.ready_for_next_stage) {
+  console.log(`✓ Stage 3 complete: Parameters implemented`)
+  console.log(`  - Plugin: ${report.outputs.plugin_name}`)
+  console.log(`  - Parameters: ${report.outputs.parameter_count}`)
+  console.log(`  - APVTS created: ${report.outputs.apvts_created ? 'Yes' : 'No'}`)
+
+  // List parameters
+  console.log(`\n  Parameters implemented:`)
+  report.outputs.parameters_implemented.forEach(param => {
+    console.log(`    - ${param.id} (${param.type}): ${param.range || param.default}`)
+  })
+
+  // Continue to stage completion workflow
+}
+```
+
+**If status="failure":**
+
+Present 4-option failure menu same as Stage 2, with shell-agent specific context:
+
+```typescript
+if (report.status === "failure") {
+  // If error_type is "parameter_mismatch" - contract violation
+  if (report.outputs.error_type === "parameter_mismatch") {
+    console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✗ Stage 3 Failed: Parameter Contract Violation
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Error: Not all parameters from parameter-spec.md were implemented
+
+Expected parameters: ${report.outputs.expected_count}
+Implemented: ${report.outputs.actual_count}
+Missing: ${report.outputs.missing_parameters.join(', ')}
+
+This is a ZERO-DRIFT violation. All parameters from the spec must be implemented.
+
+What would you like to do?
+1. Investigate (why were parameters missing?)
+2. Show me the code (PluginProcessor.cpp)
+3. Show me the parameter-spec.md
+4. I'll fix it manually (say "resume automation" when ready)
+
+Choose (1-4): _
+    `)
+  } else {
+    // Other error types (compilation, build failure, etc.)
+    console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✗ Stage 3 Failed: Parameter Implementation
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Error: ${report.outputs.error_message}
+Type: ${report.outputs.error_type}
+
+Issues:
+${report.issues.map(i => `  - ${i}`).join('\n')}
+
+What would you like to do?
+1. Investigate
+2. Show me the code
+3. Show me the build output
+4. I'll fix it manually (say "resume automation" when ready)
+
+Choose (1-4): _
+    `)
+  }
+
+  // Handle choice (same pattern as Stage 2)
+}
+```
+
+### 7. Update State Files
+
+```typescript
+updateHandoff(
+  pluginName,
+  3,  // stage
+  `Stage 3: Shell - ${report.outputs.parameter_count} parameters implemented`,
+  ["Stage 4: Implement DSP", "Test parameters in DAW", "Review APVTS code"],
+  complexityScore,
+  phased
+)
+
+updatePluginStatus(pluginName, "🚧 Stage 3")
+updatePluginTimeline(pluginName, 3, `Shell complete - ${report.outputs.parameter_count} parameters`)
+```
+
+### 8. Git Commit
+
+```bash
+git add plugins/[PluginName]/Source/
+git add plugins/[PluginName]/.continue-here.md
+git add PLUGINS.md
+
+git commit -m "$(cat <<'EOF'
+feat: [PluginName] Stage 3 - shell
+
+Implemented [N] parameters with APVTS
+State management (save/load) implemented
+Plugin loads in DAW with parameter system
+
+🤖 Generated with Claude Code
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+)"
+```
+
+### 9. Decision Menu
+
+```
+✓ Stage 3 complete: Parameter system operational
+
+Plugin: [PluginName]
+Parameters: [N] parameters implemented
+APVTS: Created and functional
+Status: Plugin loads in DAW (no audio processing yet)
+
+What's next?
+1. Continue to Stage 4 (implement DSP) (recommended)
+2. Test parameters in DAW
+3. Review parameter code
+4. Show parameter list
+5. Pause here
+6. Other
+
+Choose (1-6): _
+```
+
+---
+
+## Stage 4: DSP
+
+**Goal:** Implement audio processing, parameters control DSP
+
+**Duration:** 15-45 minutes (depending on complexity)
+
+**Preconditions:**
+- Stage 3 complete (parameters implemented)
+- architecture.md exists (DSP component specifications)
+- plan.md exists (complexity score, phase breakdown)
+
+**Actions:**
+
+### 1. Read Complexity Score from plan.md
+
+Determine if phased implementation is required:
+
+```typescript
+const planContent = readFile(`plugins/${pluginName}/.ideas/plan.md`)
+
+// Extract complexity score
+const complexityMatch = planContent.match(/Complexity Score:\*\*\s*([\d.]+)/)
+const complexityScore = complexityMatch ? parseFloat(complexityMatch[1]) : 0
+
+// Check if plan specifies phases
+const hasPhases = planContent.includes("### Phase 4.1") || planContent.includes("## Stage 4: DSP Phases")
+
+console.log(`Complexity: ${complexityScore} (${hasPhases ? 'phased' : 'single-pass'})`)
+```
+
+### 2a. Single-Pass Implementation (Complexity ≤2)
+
+**If complexity ≤2 OR no phases defined:**
+
+Invoke dsp-agent once for complete DSP implementation:
+
+```typescript
+const dspResult = Task({
+  subagent_type: "dsp-agent",
+  model: "sonnet",  // Sonnet for simple DSP
+  description: `Implement DSP for ${pluginName}`,
+  prompt: `
+You are dsp-agent. Your task is to implement audio processing for ${pluginName}.
+
+**Plugin Name:** ${pluginName}
+**Plugin Location:** plugins/${pluginName}/
+**Complexity:** ${complexityScore} (single-pass implementation)
+
+**Contract Files:**
+
+architecture.md:
+\`\`\`
+${architectureContent}
+\`\`\`
+
+parameter-spec.md:
+\`\`\`
+${parameterSpecContent}
+\`\`\`
+
+plan.md:
+\`\`\`
+${planContent}
+\`\`\`
+
+Follow the instructions in .claude/agents/dsp-agent.md exactly.
+
+Implement all DSP components from architecture.md in processBlock(), connect all parameters, ensure real-time safety (no allocations, use juce::ScopedNoDenormals), build and install plugin.
+
+Return JSON report in the exact format specified in dsp-agent.md.
+  `
+})
+
+// Parse and validate report (same as Stage 2/3)
+const report = parseSubagentReport(dspResult)
+
+if (report.status === "success") {
+  console.log(`✓ Stage 4 complete: DSP implemented`)
+  console.log(`  - Components: ${report.outputs.dsp_components_implemented.length}`)
+  console.log(`  - Parameters connected: ${report.outputs.parameters_connected.length}`)
+  console.log(`  - Real-time safe: ${report.outputs.real_time_safe ? 'Yes' : 'No'}`)
+
+  // Continue to auto-test (Step 5)
+}
+```
+
+### 2b. Phased Implementation (Complexity ≥3)
+
+**If complexity ≥3 AND plan.md defines phases:**
+
+Parse phase breakdown from plan.md:
+
+```typescript
+// Extract phases from plan.md
+const phasePattern = /### Phase (4\.\d+):\s*(.+?)\n/g
+const phases = []
+let match
+
+while ((match = phasePattern.exec(planContent)) !== null) {
+  phases.push({
+    number: match[1],  // e.g., "4.1"
+    description: match[2]  // e.g., "Core Processing"
+  })
+}
+
+console.log(`Stage 4 will execute in ${phases.length} phases:`)
+phases.forEach(phase => {
+  console.log(`  - Phase ${phase.number}: ${phase.description}`)
+})
+```
+
+**Execute each phase sequentially:**
+
+```typescript
+for (let i = 0; i < phases.length; i++) {
+  const phase = phases[i]
+
+  console.log(`\n━━━ Stage ${phase.number} - ${phase.description} ━━━\n`)
+
+  // Determine model based on complexity
+  const model = complexityScore >= 4 ? "opus" : "sonnet"
+
+  const phaseResult = Task({
+    subagent_type: "dsp-agent",
+    model: model,  // Opus for complexity ≥4
+    description: `Implement DSP Phase ${phase.number} for ${pluginName}`,
+    prompt: `
+You are dsp-agent. Your task is to implement Phase ${phase.number} of DSP for ${pluginName}.
+
+**Plugin Name:** ${pluginName}
+**Plugin Location:** plugins/${pluginName}/
+**Complexity:** ${complexityScore}
+**Current Phase:** ${phase.number} - ${phase.description}
+**Total Phases:** ${phases.length}
+
+**Contract Files:**
+
+architecture.md:
+\`\`\`
+${architectureContent}
+\`\`\`
+
+parameter-spec.md:
+\`\`\`
+${parameterSpecContent}
+\`\`\`
+
+plan.md (Phase ${phase.number} section):
+\`\`\`
+${extractPhaseSection(planContent, phase.number)}
+\`\`\`
+
+Follow the instructions in .claude/agents/dsp-agent.md exactly.
+
+Implement ONLY the components specified for Phase ${phase.number}. Build on existing code from previous phases. Ensure real-time safety.
+
+After completion, update plan.md with phase completion timestamp.
+
+Return JSON report with phase_completed: "${phase.number}".
+    `
+  })
+
+  const phaseReport = parseSubagentReport(phaseResult)
+
+  if (!phaseReport || phaseReport.status === "failure") {
+    console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✗ Stage ${phase.number} Failed
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Phase ${phase.number} (${phase.description}) failed.
+
+Error: ${phaseReport?.outputs.error_message || "Unknown error"}
+
+What would you like to do?
+1. Investigate
+2. Show me the code
+3. Show me the build output
+4. I'll fix it manually (say "resume automation" when ready)
+
+Choose (1-4): _
+    `)
+
+    // Handle failure (same 4-option menu as Stage 2/3)
+    return  // Stop phased execution on failure
+  }
+
+  // Phase succeeded
+  console.log(`✓ Phase ${phase.number} complete: ${phase.description}`)
+  console.log(`  - Components: ${phaseReport.outputs.components_this_phase?.join(', ') || 'N/A'}`)
+
+  // Git commit for this phase
+  await bash(`
+git add plugins/${pluginName}/Source/
+git add plugins/${pluginName}/.ideas/plan.md
+git add plugins/${pluginName}/.continue-here.md
+
+git commit -m "$(cat <<'EOF'
+feat: ${pluginName} Stage ${phase.number} - ${phase.description}
+
+Phase ${i + 1} of ${phases.length} complete
+Components implemented this phase
+
+🤖 Generated with Claude Code
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+)"
+  `)
+
+  console.log(`✓ Committed: ${await bash('git log -1 --format="%h"')}`)
+
+  // Update plan.md with phase timestamp
+  const timestamp = new Date().toISOString()
+  updatePlanMd(pluginName, phase.number, timestamp)
+
+  // Update handoff
+  updateHandoff(
+    pluginName,
+    phase.number,  // e.g., "4.1"
+    `Phase ${phase.number} complete: ${phase.description}`,
+    i < phases.length - 1
+      ? [`Phase ${phases[i+1].number}: ${phases[i+1].description}`, "Review current phase", "Test", "Pause"]
+      : ["Auto-test Stage 4 output", "Review complete DSP", "Pause"],
+    complexityScore,
+    true  // phased
+  )
+
+  // Decision menu after each phase
+  if (i < phases.length - 1) {
+    // Not last phase
+    console.log(`
+✓ Phase ${phase.number} complete
+
+Progress: ${i + 1} of ${phases.length} phases complete
+
+What's next?
+1. Continue to Phase ${phases[i+1].number} (${phases[i+1].description}) (recommended)
+2. Review Phase ${phase.number} code
+3. Test current state in DAW
+4. Pause here
+5. Other
+
+Choose (1-5): _
+    `)
+
+    const choice = getUserInput()
+    if (choice === "4" || choice === "pause") {
+      console.log("\n⏸ Paused between phases. Resume with /continue to continue Phase ${phases[i+1].number}.")
+      return
+    }
+    // Other choices: review, test, etc., then re-present menu
+  }
+
+  // Last phase - continue to auto-test
+}
+
+console.log(`\n✓ All ${phases.length} phases complete!`)
+```
+
+### 3. Handle Non-Phased Success
+
+**After single-pass success:**
+
+```typescript
+// Update state
+updateHandoff(
+  pluginName,
+  4,
+  "Stage 4: DSP - Audio processing implemented",
+  ["Auto-test Stage 4", "Review DSP code", "Test audio manually"],
+  complexityScore,
+  false
+)
+
+updatePluginStatus(pluginName, "🚧 Stage 4")
+updatePluginTimeline(pluginName, 4, `DSP complete - ${report.outputs.dsp_components_implemented.length} components`)
+
+// Git commit
+bash(`
+git add plugins/${pluginName}/Source/
+git add plugins/${pluginName}/.continue-here.md
+git add PLUGINS.md
+
+git commit -m "$(cat <<'EOF'
+feat: ${pluginName} Stage 4 - DSP
+
+Audio processing implemented
+${report.outputs.dsp_components_implemented.length} DSP components
+All parameters connected to audio engine
+Real-time safe implementation
+
+🤖 Generated with Claude Code
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+)"
+`)
+```
+
+### 4. Handle Failure (Single-Pass or Any Phase)
+
+**4-option failure menu:**
+
+```typescript
+if (report.status === "failure") {
+  console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✗ Stage 4 Failed: DSP Implementation
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Error: ${report.outputs.error_message}
+Type: ${report.outputs.error_type}
+
+Issues:
+${report.issues.map(i => `  - ${i}`).join('\n')}
+
+What would you like to do?
+1. Investigate (invoke troubleshooter)
+2. Show me the code (PluginProcessor.cpp)
+3. Show me the build output
+4. I'll fix it manually (say "resume automation" when ready)
+
+Choose (1-4): _
+  `)
+
+  // Handle choice (same as Stage 2/3)
+}
+```
+
+### 5. Auto-Invoke plugin-testing Skill
+
+**After Stage 4 succeeds (all phases if phased):**
+
+```typescript
+console.log("\n━━━ Running automated tests ━━━\n")
+
+const testResult = Task({
+  subagent_type: "general-purpose",  // Or invoke plugin-testing skill directly
+  description: `Test ${pluginName} after Stage 4`,
+  prompt: `
+Run automated tests for ${pluginName} after Stage 4 DSP implementation.
+
+Use the plugin-testing skill to run the 5 automated tests:
+1. Build test (already passed)
+2. Load test (plugin loads without crash)
+3. Process test (audio processing works)
+4. Parameter test (parameters affect audio)
+5. State test (save/load works)
+
+Report results.
+  `
+})
+
+console.log(testResult)
+
+// Parse test results
+const testsPassed = testResult.includes("✓ All tests passed") || testResult.includes("PASS")
+
+if (!testsPassed) {
+  console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✗ Stage 4 Tests FAILED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Stage 4 DSP implementation completed, but automated tests failed.
+
+Test results:
+${testResult}
+
+CANNOT proceed to Stage 5 (GUI) with failing DSP tests.
+
+What would you like to do?
+1. Investigate test failures
+2. Show me the DSP code
+3. Show me the test output
+4. I'll fix it manually (say "resume automation" when ready)
+
+Choose (1-4): _
+  `)
+
+  // STOP - Do not proceed to Stage 5 with failing tests
+  return
+}
+
+console.log("✓ All Stage 4 tests passed")
+```
+
+### 6. Decision Menu (After Tests Pass)
+
+```
+✓ Stage 4 complete: Audio processing operational
+
+Plugin: [PluginName]
+DSP components: [N]
+Parameters connected: [N]
+Tests: All passed
+
+What's next?
+1. Continue to Stage 5 (implement UI) (recommended)
+2. Test audio manually in DAW
+3. Review DSP code
+4. Adjust DSP before UI
+5. Pause here
+6. Other
+
+Choose (1-6): _
+```
+
+**CRITICAL: Do NOT proceed to Stage 5 if tests fail.**
+
+---
+
+## Stage 5: GUI
+
+**Goal:** Integrate WebView UI with parameter bindings
+
+**Duration:** 20-60 minutes (depending on complexity)
+
+**Preconditions:**
+- Stage 4 complete and tests passed (DSP operational)
+- Finalized UI mockup exists (v[N]-ui.html)
+- parameter-spec.md exists
+
+**Actions:**
+
+### 1. Locate Finalized UI Mockup
+
+**Scan for finalized mockup version:**
+
+```bash
+cd plugins/${PLUGIN_NAME}/.ideas/mockups/
+
+# Find highest version number
+LATEST_MOCKUP=$(ls -1 v*-ui.html 2>/dev/null | sort -V | tail -1)
+
+if [ -z "$LATEST_MOCKUP" ]; then
+  echo "
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✗ BLOCKED: Cannot proceed to Stage 5
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Missing required contract: Finalized UI mockup
+
+Stage 5 requires a finalized UI mockup (v[N]-ui.html) to integrate.
+
+WHY BLOCKED:
+Without a finalized UI mockup, gui-agent cannot know:
+- UI layout and styling
+- Parameter control types (sliders, knobs, toggles)
+- Visual design and branding
+- Dimensions and layout
+
+HOW TO UNBLOCK:
+1. Run /mockup to create UI mockup
+2. Design UI through iterative refinement
+3. Finalize a design version (marks it as v[N])
+4. Then resume Stage 5 with /continue ${PLUGIN_NAME}
+
+Current status: No finalized mockup found in .ideas/mockups/
+
+Cannot proceed without this contract.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  "
+  exit 1
+fi
+
+echo "✓ Found finalized mockup: $LATEST_MOCKUP"
+```
+
+**If no mockup found:** STOP IMMEDIATELY, exit skill, wait for user to create mockup.
+
+### 2. Read Complexity and Check for Phases
+
+Same as Stage 4 - check if phased implementation needed:
+
+```typescript
+const planContent = readFile(`plugins/${pluginName}/.ideas/plan.md`)
+const complexityScore = extractComplexityScore(planContent)
+const hasPhases = planContent.includes("### Phase 5.1") || planContent.includes("## Stage 5: GUI Phases")
+
+console.log(`Complexity: ${complexityScore} (${hasPhases ? 'phased' : 'single-pass'})`)
+```
+
+### 3a. Single-Pass Implementation (Complexity ≤2)
+
+**If complexity ≤2 OR no phases defined:**
+
+Invoke gui-agent once for complete UI integration:
+
+```typescript
+const mockupPath = findLatestMockup(pluginName)
+const mockupContent = readFile(mockupPath)
+
+const guiResult = Task({
+  subagent_type: "gui-agent",
+  model: "sonnet",
+  description: `Integrate WebView UI for ${pluginName}`,
+  prompt: `
+You are gui-agent. Your task is to integrate the finalized WebView UI for ${pluginName}.
+
+**Plugin Name:** ${pluginName}
+**Plugin Location:** plugins/${pluginName}/
+**Finalized Mockup:** ${mockupPath}
+**Complexity:** ${complexityScore} (single-pass implementation)
+
+**Contract Files:**
+
+Finalized UI mockup (${mockupPath}):
+\`\`\`html
+${mockupContent}
+\`\`\`
+
+parameter-spec.md:
+\`\`\`
+${parameterSpecContent}
+\`\`\`
+
+creative-brief.md:
+\`\`\`
+${creativeBriefContent}
+\`\`\`
+
+Follow the instructions in .claude/agents/gui-agent.md exactly.
+
+Copy finalized mockup to ui/public/index.html, download JUCE frontend library, create relay members in PluginEditor.h (CRITICAL: Relays → WebView → Attachments order), implement parameter bindings, update CMakeLists.txt for WebView, build and install.
+
+⚠️ CRITICAL: Member declaration order prevents 90% of release build crashes.
+
+Return JSON report in the exact format specified in gui-agent.md.
+  `
+})
+
+// Parse and validate report
+const report = parseSubagentReport(guiResult)
+
+if (report.status === "success") {
+  console.log(`✓ Stage 5 complete: UI integrated`)
+  console.log(`  - Mockup version: ${report.outputs.ui_mockup_version}`)
+  console.log(`  - Bindings: ${report.outputs.binding_count}`)
+  console.log(`  - All parameters bound: ${report.outputs.all_parameters_bound ? 'Yes' : 'No'}`)
+  console.log(`  - Member order correct: ${report.outputs.member_order_correct ? 'Yes' : 'No'}`)
+
+  // Continue to auto-test (Step 5)
+}
+```
+
+### 3b. Phased Implementation (Complexity ≥3)
+
+**If complexity ≥3 AND plan.md defines UI phases:**
+
+Parse phase breakdown (similar to Stage 4):
+
+```typescript
+// Extract Phase 5.1, 5.2, etc. from plan.md
+const phasePattern = /### Phase (5\.\d+):\s*(.+?)\n/g
+const phases = []
+let match
+
+while ((match = phasePattern.exec(planContent)) !== null) {
+  phases.push({
+    number: match[1],  // e.g., "5.1"
+    description: match[2]  // e.g., "Layout and Basic Controls"
+  })
+}
+
+console.log(`Stage 5 will execute in ${phases.length} phases:`)
+phases.forEach(phase => {
+  console.log(`  - Phase ${phase.number}: ${phase.description}`)
+})
+
+// Execute each phase sequentially (same pattern as Stage 4)
+for (let i = 0; i < phases.length; i++) {
+  const phase = phases[i]
+
+  console.log(`\n━━━ Stage ${phase.number} - ${phase.description} ━━━\n`)
+
+  const phaseResult = Task({
+    subagent_type: "gui-agent",
+    model: "sonnet",
+    description: `Implement UI Phase ${phase.number} for ${pluginName}`,
+    prompt: `
+You are gui-agent. Your task is to implement Phase ${phase.number} of UI for ${pluginName}.
+
+**Current Phase:** ${phase.number} - ${phase.description}
+**Total Phases:** ${phases.length}
+
+[Include mockup, contracts, phase-specific instructions]
+
+Return JSON report with phase_completed: "${phase.number}".
+    `
+  })
+
+  const phaseReport = parseSubagentReport(phaseResult)
+
+  if (!phaseReport || phaseReport.status === "failure") {
+    console.log(`✗ Phase ${phase.number} failed`)
+    // 4-option menu, stop on failure
+    return
+  }
+
+  // Phase succeeded - git commit, update plan, handoff, decision menu
+  console.log(`✓ Phase ${phase.number} complete`)
+
+  // Git commit for this phase
+  bash(`
+git add plugins/${pluginName}/Source/
+git add plugins/${pluginName}/ui/
+git add plugins/${pluginName}/CMakeLists.txt
+git add plugins/${pluginName}/.ideas/plan.md
+git add plugins/${pluginName}/.continue-here.md
+
+git commit -m "feat: ${pluginName} Stage ${phase.number} - ${phase.description}"
+  `)
+
+  // Decision menu between phases
+  if (i < phases.length - 1) {
+    console.log(`
+✓ Phase ${phase.number} complete
+
+Progress: ${i + 1} of ${phases.length} phases complete
+
+What's next?
+1. Continue to Phase ${phases[i+1].number} (recommended)
+2. Review Phase ${phase.number} code
+3. Test UI in DAW
+4. Pause here
+5. Other
+
+Choose (1-5): _
+    `)
+
+    const choice = getUserInput()
+    if (choice === "4" || choice === "pause") {
+      console.log(`\n⏸ Paused between UI phases. Resume with /continue.`)
+      return
+    }
+  }
+}
+
+console.log(`\n✓ All ${phases.length} UI phases complete!`)
+```
+
+### 4. Handle Non-Phased Success
+
+**After single-pass success:**
+
+```typescript
+// Update state
+updateHandoff(
+  pluginName,
+  5,
+  "Stage 5: GUI - WebView UI integrated, all parameters bound",
+  ["Auto-test Stage 5", "Test UI in DAW", "Review bindings"],
+  complexityScore,
+  false
+)
+
+updatePluginStatus(pluginName, "🚧 Stage 5")
+updatePluginTimeline(pluginName, 5, `GUI complete - ${report.outputs.binding_count} parameter bindings`)
+
+// Git commit
+bash(`
+git add plugins/${pluginName}/Source/
+git add plugins/${pluginName}/ui/
+git add plugins/${pluginName}/CMakeLists.txt
+git add plugins/${pluginName}/.continue-here.md
+git add PLUGINS.md
+
+git commit -m "$(cat <<'EOF'
+feat: ${pluginName} Stage 5 - GUI
+
+WebView UI integrated from ${report.outputs.ui_mockup_version}
+${report.outputs.binding_count} parameter bindings created
+Member order: Relays → WebView → Attachments
+CMakeLists.txt updated for WebView support
+
+🤖 Generated with Claude Code
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+)"
+`)
+```
+
+### 5. Handle Failure
+
+**4-option failure menu:**
+
+```typescript
+if (report.status === "failure") {
+  // Special handling for binding_mismatch error
+  if (report.outputs.error_type === "binding_mismatch") {
+    console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✗ Stage 5 Failed: Parameter Binding Mismatch
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Error: Not all parameters from parameter-spec.md have UI bindings
+
+Expected: ${report.outputs.expected_count} parameters
+Implemented: ${report.outputs.actual_count} relay/attachment pairs
+Missing: ${report.outputs.missing_bindings.join(', ')}
+
+This is a ZERO-DRIFT violation. All parameters must be bound to UI.
+
+What would you like to do?
+1. Investigate (why were bindings missing?)
+2. Show me the code (PluginEditor.h)
+3. Show me the parameter-spec.md
+4. I'll fix it manually (say "resume automation" when ready)
+
+Choose (1-4): _
+    `)
+  } else {
+    // Other errors (build failure, member order wrong, etc.)
+    console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✗ Stage 5 Failed: UI Integration
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Error: ${report.outputs.error_message}
+Type: ${report.outputs.error_type}
+
+Issues:
+${report.issues.map(i => `  - ${i}`).join('\n')}
+
+What would you like to do?
+1. Investigate
+2. Show me the code (PluginEditor.h/cpp)
+3. Show me the build output
+4. I'll fix it manually (say "resume automation" when ready)
+
+Choose (1-4): _
+    `)
+  }
+
+  // Handle choice (same pattern as Stages 2-4)
+}
+```
+
+### 6. Auto-Invoke plugin-testing Skill
+
+**After Stage 5 succeeds (all phases if phased):**
+
+```typescript
+console.log("\n━━━ Running automated tests (including UI validation) ━━━\n")
+
+const testResult = Task({
+  subagent_type: "general-purpose",
+  description: `Test ${pluginName} after Stage 5`,
+  prompt: `
+Run automated tests for ${pluginName} after Stage 5 UI integration.
+
+Use the plugin-testing skill to run all 5 tests plus UI-specific checks:
+1. Build test (already passed)
+2. Load test (plugin loads without crash)
+3. Process test (audio processing works)
+4. Parameter test (parameters affect audio)
+5. State test (save/load works)
+6. UI test (WebView renders, parameters sync)
+
+Report results.
+  `
+})
+
+console.log(testResult)
+
+// Parse test results
+const testsPassed = testResult.includes("✓ All tests passed") || testResult.includes("PASS")
+
+if (!testsPassed) {
+  console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✗ Stage 5 Tests FAILED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Stage 5 UI integration completed, but automated tests failed.
+
+Test results:
+${testResult}
+
+CANNOT proceed to Stage 6 (validation) with failing UI tests.
+
+What would you like to do?
+1. Investigate test failures
+2. Show me the UI code
+3. Show me the test output
+4. I'll fix it manually (say "resume automation" when ready)
+
+Choose (1-4): _
+  `)
+
+  // STOP - Do not proceed to Stage 6 with failing tests
+  return
+}
+
+console.log("✓ All Stage 5 tests passed (including UI validation)")
+```
+
+### 7. Decision Menu (After Tests Pass)
+
+```
+✓ Stage 5 complete: UI operational
+
+Plugin: [PluginName]
+UI: WebView integrated from [mockup version]
+Bindings: [N] parameters bound to UI
+Tests: All passed (including UI sync)
+
+What's next?
+1. Continue to Stage 6 (final validation) (recommended)
+2. Test UI manually in DAW
+3. Review UI code
+4. Adjust UI styling
+5. Pause here
+6. Other
+
+Choose (1-6): _
+```
+
+**CRITICAL: Do NOT proceed to Stage 6 if tests fail.**
 
 ---
 

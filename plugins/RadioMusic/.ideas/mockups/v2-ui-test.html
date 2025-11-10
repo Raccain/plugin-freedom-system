@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RadioMusic UI Mockup v2 - Browser Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #d4c4b0, #b8a690);
+            padding: 20px;
+        }
+
+        .plugin-container {
+            width: 700px;
+            height: 500px;
+            background: linear-gradient(145deg, #e8dcc8, #d9cbb5);
+            border-radius: 12px;
+            box-shadow: -8px -8px 16px rgba(255, 255, 255, 0.6),
+                        8px 8px 16px rgba(0, 0, 0, 0.15);
+            padding: 48px;
+            display: flex;
+            flex-direction: column;
+            gap: 36px;
+        }
+
+        /* Waveform Section */
+        .waveform-section {
+            width: 604px;
+            height: 280px;
+            position: relative;
+            background: #3a3a3a;
+            border-radius: 8px;
+            box-shadow: inset -2px -2px 4px rgba(255, 255, 255, 0.6),
+                        inset 2px 2px 4px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .waveform-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            color: #e8dcc8;
+            font-size: 14px;
+            font-weight: 300;
+            letter-spacing: 0.03em;
+        }
+
+        .browse-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: opacity 150ms ease;
+            opacity: 0.7;
+            padding: 0;
+        }
+
+        .browse-button:hover {
+            opacity: 1;
+        }
+
+        .browse-button:active {
+            transform: scale(0.95);
+        }
+
+        .browse-button svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .file-info {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            color: #e8dcc8;
+            font-size: 12px;
+            font-weight: 300;
+            letter-spacing: 0.03em;
+            opacity: 0;
+            transition: opacity 200ms ease;
+        }
+
+        .waveform-section.loaded .file-info {
+            opacity: 1;
+        }
+
+        .waveform-section.loaded .empty-state {
+            display: none;
+        }
+
+        /* Controls Section */
+        .controls-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 604px;
+        }
+
+        .knob-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .knob {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(145deg, #d4c2ae, #c4b19d);
+            border-radius: 50%;
+            box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.6),
+                        4px 4px 8px rgba(0, 0, 0, 0.15);
+            position: relative;
+            cursor: pointer;
+            transition: all 150ms ease;
+        }
+
+        .knob:active {
+            transform: scale(0.95);
+            box-shadow: -2px -2px 4px rgba(255, 255, 255, 0.6),
+                        2px 2px 4px rgba(0, 0, 0, 0.15);
+        }
+
+        .knob-indicator {
+            position: absolute;
+            width: 3px;
+            height: 30px;
+            background: #8c6d54;
+            top: 10px;
+            left: 50%;
+            transform-origin: center 30px;
+            border-radius: 2px;
+            transition: transform 100ms ease;
+        }
+
+        .knob-label {
+            color: #6b5846;
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .knob-value {
+            color: #7a6652;
+            font-size: 13px;
+            font-weight: 300;
+            letter-spacing: 0.03em;
+            margin-top: 4px;
+        }
+
+        /* Minimal texture overlay */
+        .plugin-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                135deg,
+                transparent,
+                transparent 2px,
+                rgba(255, 255, 255, 0.02) 2px,
+                rgba(255, 255, 255, 0.02) 4px
+            );
+            pointer-events: none;
+            border-radius: 12px;
+        }
+
+        /* Debug console */
+        .debug-console {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #0f0;
+            font-family: monospace;
+            font-size: 11px;
+            padding: 12px;
+            border-radius: 6px;
+            max-width: 400px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .debug-console div {
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="plugin-container">
+        <div class="waveform-section" id="waveformSection">
+            <canvas class="waveform-canvas" id="waveformCanvas"></canvas>
+            <div class="empty-state">Load Folder</div>
+            <button class="browse-button" id="browseButton">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 8C3 6.89543 3.89543 6 5 6H9L11 8H19C20.1046 8 21 8.89543 21 10V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V8Z"
+                          stroke="#e8dcc8"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          fill="none"/>
+                </svg>
+            </button>
+            <div class="file-info" id="fileInfo">0/0: No file loaded</div>
+        </div>
+
+        <div class="controls-section">
+            <div class="knob-container">
+                <div class="knob" id="stationKnob" data-param="station">
+                    <div class="knob-indicator"></div>
+                </div>
+                <div class="knob-label">STATION</div>
+                <div class="knob-value" id="stationValue">0%</div>
+            </div>
+
+            <div class="knob-container">
+                <div class="knob" id="startKnob" data-param="start">
+                    <div class="knob-indicator"></div>
+                </div>
+                <div class="knob-label">START</div>
+                <div class="knob-value" id="startValue">0%</div>
+            </div>
+
+            <div class="knob-container">
+                <div class="knob" id="speedKnob" data-param="speed_pitch">
+                    <div class="knob-indicator"></div>
+                </div>
+                <div class="knob-label">SPEED</div>
+                <div class="knob-value" id="speedValue">1.00x</div>
+            </div>
+
+            <div class="knob-container">
+                <div class="knob" id="volumeKnob" data-param="volume">
+                    <div class="knob-indicator"></div>
+                </div>
+                <div class="knob-label">VOLUME</div>
+                <div class="knob-value" id="volumeValue">0.0dB</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="debug-console" id="debugConsole">
+        <div><strong>Parameter Messages:</strong></div>
+    </div>
+
+    <script>
+        // Mock parameter state
+        const state = {
+            station: 0.0,
+            start: 0.0,
+            speed_pitch: 1.0,
+            volume: 0.0,
+            folderLoaded: false,
+            currentFile: 0,
+            totalFiles: 0,
+            fileName: '',
+            playbackPosition: 0.0
+        };
+
+        const mockFiles = [
+            'ambient_drone_001.wav',
+            'break_amen_170bpm.wav',
+            'field_recording_rain.flac',
+            'synth_pad_cmaj.aiff',
+            'vocal_sample_ah.mp3'
+        ];
+
+        // Debug logging
+        function log(message) {
+            const console = document.getElementById('debugConsole');
+            const div = document.createElement('div');
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            console.appendChild(div);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        // Knob interaction
+        let activeKnob = null;
+        let startY = 0;
+        let startValue = 0;
+
+        document.querySelectorAll('.knob').forEach(knob => {
+            knob.addEventListener('mousedown', (e) => {
+                activeKnob = knob;
+                startY = e.clientY;
+                const param = knob.dataset.param;
+                startValue = state[param];
+                e.preventDefault();
+            });
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!activeKnob) return;
+
+            const param = activeKnob.dataset.param;
+            const delta = (startY - e.clientY) * 0.5;
+
+            let newValue;
+            if (param === 'station' || param === 'start') {
+                newValue = Math.max(0, Math.min(100, startValue + delta));
+            } else if (param === 'speed_pitch') {
+                newValue = Math.max(0.25, Math.min(4.0, startValue + delta * 0.01));
+            } else if (param === 'volume') {
+                newValue = Math.max(-60, Math.min(12, startValue + delta * 0.2));
+            }
+
+            updateParameter(param, newValue);
+        });
+
+        document.addEventListener('mouseup', () => {
+            activeKnob = null;
+        });
+
+        function updateParameter(param, value) {
+            state[param] = value;
+
+            const knob = document.querySelector(`[data-param="${param}"]`);
+            const indicator = knob.querySelector('.knob-indicator');
+            const valueDisplay = document.getElementById(`${param.replace('_', '')}Value`);
+
+            // Update knob rotation (-135° to 135° range)
+            let normalizedValue;
+            if (param === 'station' || param === 'start') {
+                normalizedValue = value / 100;
+            } else if (param === 'speed_pitch') {
+                normalizedValue = (value - 0.25) / (4.0 - 0.25);
+            } else if (param === 'volume') {
+                normalizedValue = (value + 60) / 72;
+            }
+
+            const rotation = -135 + (normalizedValue * 270);
+            indicator.style.transform = `rotate(${rotation}deg)`;
+
+            // Update value display
+            if (param === 'station' || param === 'start') {
+                valueDisplay.textContent = `${Math.round(value)}%`;
+            } else if (param === 'speed_pitch') {
+                valueDisplay.textContent = `${value.toFixed(2)}x`;
+            } else if (param === 'volume') {
+                valueDisplay.textContent = `${value.toFixed(1)}dB`;
+            }
+
+            // Log parameter change
+            log(`${param}: ${value.toFixed(2)}`);
+
+            // Update waveform if start parameter changed
+            if (param === 'start' && state.folderLoaded) {
+                drawWaveform();
+            }
+
+            // Update file selection if station changed
+            if (param === 'station' && state.folderLoaded) {
+                const fileIndex = Math.floor((value / 100) * state.totalFiles);
+                state.currentFile = Math.min(fileIndex, state.totalFiles - 1);
+                state.fileName = mockFiles[state.currentFile] || '';
+                updateFileInfo();
+                drawWaveform();
+            }
+        }
+
+        // Browse button
+        document.getElementById('browseButton').addEventListener('click', () => {
+            log('Browse button clicked - folder selection');
+
+            // Mock folder load
+            if (!state.folderLoaded) {
+                state.folderLoaded = true;
+                state.totalFiles = mockFiles.length;
+                state.currentFile = 0;
+                state.fileName = mockFiles[0];
+                document.getElementById('waveformSection').classList.add('loaded');
+                updateFileInfo();
+                drawWaveform();
+                log(`Loaded folder with ${state.totalFiles} files`);
+            } else {
+                log('Folder already loaded - would open new folder picker');
+            }
+        });
+
+        function updateFileInfo() {
+            const fileInfo = document.getElementById('fileInfo');
+            fileInfo.textContent = `${state.currentFile + 1}/${state.totalFiles}: ${state.fileName}`;
+        }
+
+        // Waveform drawing
+        const canvas = document.getElementById('waveformCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 604;
+        canvas.height = 280;
+
+        function generateMockWaveform() {
+            const points = 800;  // More points for wider display
+            const waveform = [];
+            for (let i = 0; i < points; i++) {
+                const t = i / points;
+                const amplitude = Math.sin(t * Math.PI * 8 + state.currentFile) * 0.6 +
+                                  Math.sin(t * Math.PI * 3) * 0.3 +
+                                  (Math.random() - 0.5) * 0.1;
+                waveform.push(amplitude);
+            }
+            return waveform;
+        }
+
+        function drawWaveform() {
+            const waveform = generateMockWaveform();
+            const startPosition = state.start / 100;
+
+            // Fill background with dark grey
+            ctx.fillStyle = '#3a3a3a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerY = canvas.height / 2;
+            const scaleY = canvas.height * 0.4;
+            const stepX = canvas.width / waveform.length;
+
+            // Draw waveform
+            for (let i = 0; i < waveform.length; i++) {
+                const x = i * stepX;
+                const y = centerY + waveform[i] * scaleY;
+                const normalizedX = i / waveform.length;
+
+                // Use grey for inactive region, burnt orange for active
+                ctx.fillStyle = normalizedX < startPosition ? '#5a5a5a' : '#c96a3d';
+                ctx.fillRect(x, centerY, stepX, y - centerY);
+            }
+
+            // Draw playback cursor (cream colored)
+            const cursorX = (state.playbackPosition / 100) * canvas.width;
+            ctx.strokeStyle = '#e8dcc8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cursorX, 0);
+            ctx.lineTo(cursorX, canvas.height);
+            ctx.stroke();
+
+            // Animate playback cursor
+            state.playbackPosition = (state.playbackPosition + 0.5) % 100;
+            if (state.playbackPosition < (state.start / 100) * 100) {
+                state.playbackPosition = (state.start / 100) * 100;
+            }
+        }
+
+        // Animation loop for playback cursor
+        function animate() {
+            if (state.folderLoaded) {
+                drawWaveform();
+            }
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Initial log
+        log('RadioMusic UI v2 loaded');
+        log('Click folder button to load mock files');
+        log('Drag knobs up/down to adjust parameters');
+    </script>
+</body>
+</html>
