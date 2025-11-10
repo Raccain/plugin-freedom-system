@@ -27,28 +27,35 @@ taches-claude-juce-system/
 │   │   ├── modern-minimal.yaml
 │   │   ├── analog-modular.yaml
 │   │   └── [user-custom-templates].yaml
-│   ├── skills/                       # Workflow agents
+│   ├── skills/                       # Workflow agents (Anthropic pattern)
 │   │   ├── plugin-workflow/
-│   │   │   ├── SKILL.md
-│   │   │   └── stages/
-│   │   │       ├── stage-0-research.md
-│   │   │       ├── stage-1-planning.md
-│   │   │       └── ...
+│   │   │   ├── SKILL.md              # Orchestration logic (~400 lines)
+│   │   │   ├── references/           # Detailed documentation
+│   │   │   └── assets/               # Templates (plan.md, architecture.md)
 │   │   ├── plugin-improve/
 │   │   │   ├── SKILL.md
-│   │   │   └── reference/
+│   │   │   ├── references/
+│   │   │   └── assets/
 │   │   ├── plugin-ideation/
-│   │   │   └── SKILL.md
+│   │   │   ├── SKILL.md
+│   │   │   ├── references/
+│   │   │   └── assets/               # creative-brief.md template
 │   │   ├── ui-mockup/
-│   │   │   └── SKILL.md
-│   │   ├── build-automation/
+│   │   │   ├── SKILL.md
+│   │   │   ├── references/           # HTML generation, browser testing
+│   │   │   └── assets/               # YAML template, parameter-spec.md
 │   │   ├── plugin-lifecycle/
+│   │   │   ├── SKILL.md
+│   │   │   ├── references/
+│   │   │   └── assets/
 │   │   ├── plugin-testing/
-│   │   ├── context-resume/
-│   │   ├── design-sync/
-│   │   ├── deep-research/
-│   │   ├── juce-foundation/
-│   │   └── troubleshooting-docs/
+│   │   │   ├── SKILL.md
+│   │   │   ├── references/           # Test specs, pluginval, troubleshooting
+│   │   │   └── assets/               # Manual testing checklist
+│   │   └── context-resume/
+│   │       ├── SKILL.md
+│   │       ├── references/
+│   │       └── assets/
 │   └── hooks/                        # Quality gates
 │       ├── scripts/
 │       │   ├── juce-validator.py
