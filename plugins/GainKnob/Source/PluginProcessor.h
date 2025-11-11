@@ -39,5 +39,8 @@ private:
     // Filter state (per-channel)
     juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>> filterProcessor;
 
+    // Track previous filter type to detect transitions
+    bool previousWasLowPass = false;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GainKnobAudioProcessor)
 };

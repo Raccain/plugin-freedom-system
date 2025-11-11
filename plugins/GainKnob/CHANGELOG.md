@@ -5,6 +5,24 @@ All notable changes to GainKnob will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2025-11-10
+
+### Fixed
+- Filter state burst/peak when crossing from low-pass to high-pass eliminated
+- Added `filterProcessor.reset()` when switching filter types
+- Reset also applied when entering/exiting bypass zone
+
+### Technical Details
+- IIR filters maintain delay buffers with feedback (internal state)
+- Switching filter types without clearing state causes transient burst
+- Solution: Track previous filter type, reset state on transitions
+- Brief silence at crossover (acceptable for DJ-style filter sweep)
+
+**Research sources:**
+- JUCE forum: "What causes IIRFilter to pop when frequency changed"
+- JUCE docs: dsp::IIR::Filter and StateVariableFilter
+- Root cause: Residual low-frequency energy in delay buffers amplified by high-pass
+
 ## [1.2.2] - 2025-11-10
 
 ### Fixed

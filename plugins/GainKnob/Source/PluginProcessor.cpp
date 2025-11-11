@@ -85,8 +85,16 @@ void GainKnobAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // Apply DJ-style filter (if not at center position)
     if (std::abs(filterPercent) > 0.5f) {
         float sampleRate = static_cast<float>(getSampleRate());
+        bool isLowPass = (filterPercent < 0.0f);
 
-        if (filterPercent < 0.0f) {
+        // Reset filter state when switching between low-pass and high-pass
+        // Prevents burst caused by residual energy in delay buffers
+        if (isLowPass != previousWasLowPass) {
+            filterProcessor.reset();
+        }
+        previousWasLowPass = isLowPass;
+
+        if (isLowPass) {
             // Low-pass filter (negative values)
             // Exponential mapping: -100% = 200Hz (heavy bass), 0% = 20kHz (bypass)
             // Formula inverted: Start high at center, go low at extreme
@@ -112,6 +120,13 @@ void GainKnobAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         juce::dsp::AudioBlock<float> block(buffer);
         juce::dsp::ProcessContextReplacing<float> context(block);
         filterProcessor.process(context);
+    } else {
+        // Reset filter state when entering bypass zone
+        // Prevents residual energy when re-entering filter range
+        if (previousWasLowPass) {
+            filterProcessor.reset();
+            previousWasLowPass = false;
+        }
     }
 
     // Convert dB to linear gain multiplier
