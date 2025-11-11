@@ -5,6 +5,7 @@
 **Previous Phase(s) Required:** Phase 0, Phase 1
 
 **Deliverables Check:**
+
 - ✅ `.claude/commands/` - 9 slash commands exist (dream.md, implement.md, improve.md, continue.md, test.md, install-plugin.md, show-standalone.md, troubleshoot-juce.md, doc-fix.md)
 - ✅ `.claude/skills/` - 7 skills with modular structure (SKILL.md + references/ + assets/ subdirectories)
   - plugin-workflow, plugin-ideation, plugin-improve, context-resume, ui-mockup (two-phase workflow), plugin-testing, plugin-lifecycle
@@ -26,6 +27,7 @@
 Phase 2 implements the core workflow engine by building out plugin-workflow skill to handle Stages 0, 1, and 6 (main context stages) with full checkpoint system, state management, validator integration, and hook-based validation. This establishes the complete workflow orchestration pattern before adding implementation subagents in Phase 3.
 
 **Why this phase is critical:**
+
 - Establishes checkpoint-based workflow architecture enabling session continuity
 - Implements contract enforcement system (prevents "code first, design later")
 - Creates complete state management infrastructure (PLUGINS.md, handoff files, git workflow)
@@ -41,6 +43,7 @@ Phase 2 implements the core workflow engine by building out plugin-workflow skil
 This phase splits into 3 sub-phases based on architectural dependencies:
 
 **Phase 2a: Checkpoint & State Infrastructure**
+
 - Checkpoint system (.continue-here.md format and hard checkpoints)
 - PLUGINS.md state machine (💡 → 🚧 → ✅ → 📦)
 - Git commit workflow (atomic state transitions)
@@ -48,6 +51,7 @@ This phase splits into 3 sub-phases based on architectural dependencies:
 - Interactive decision menu system
 
 **Phase 2b: Workflow Stages 0 & 1**
+
 - Stage 0: Research (Context7 JUCE docs, professional research, feasibility)
 - Stage 1: Planning (complexity scoring, contract enforcement, phase breakdown)
 - Contract prerequisite enforcement (BLOCKS if parameter-spec.md or architecture.md missing)
@@ -55,6 +59,7 @@ This phase splits into 3 sub-phases based on architectural dependencies:
 - Validator integration for Stages 0 & 1
 
 **Phase 2c: Stage 6, Validator & Hooks**
+
 - Stage 6: Validation & Presets (pluginval, CHANGELOG, factory presets)
 - Validator subagent implementation
 - Hook system (UserPromptSubmit, Stop, PreCompact)
@@ -68,6 +73,7 @@ This phase splits into 3 sub-phases based on architectural dependencies:
 ### Architecture Files (MUST READ IN ENTIRETY)
 
 **CRITICAL (Phase 2 directly implements these):**
+
 - `architecture/00-PHILOSOPHY.md` (lines 108-275) - Interactive decision system philosophy
 - `architecture/02-core-abstractions.md` (all) - Workflows, Contracts, Hybrid Validation (lines 48-252)
 - `architecture/04-component-architecture.md` (lines 115-487) - Skill interface, Validator interface, Hybrid validation flow
@@ -78,12 +84,14 @@ This phase splits into 3 sub-phases based on architectural dependencies:
 - `architecture/16-implementation-roadmap.md` (lines 27-90) - Phase 2 specification
 
 **HIGH (Essential Phase 2 context):**
+
 - `architecture/01-executive-summary.md` (lines 22-54) - Core decisions and related procedures
 - `architecture/03-model-selection-extended-thinking-strategy.md` (lines 50-162) - Stage 0/1 extended thinking
 - `architecture/09-file-system-design.md` (lines 64-183) - File system structure, version control
 - `architecture/14-design-decisions.md` (lines 26-237) - Design rationale for contracts, validation, menus, state
 
 **MEDIUM (Phase 2 reference):**
+
 - `architecture/07-communication-architecture.md` (lines 1-242) - Subagent dispatch patterns (for Phase 3 prep)
 - `architecture/08-data-flow-diagrams.md` (lines 104-209) - State transitions and critical paths
 - `architecture/11-build-automation-architecture.md` (lines 1-83) - Build script spec for Stage 6
@@ -92,6 +100,7 @@ This phase splits into 3 sub-phases based on architectural dependencies:
 ### Procedure Files (MUST READ IN ENTIRETY)
 
 **CRITICAL (Phase 2 directly implements these):**
+
 - `procedures/core/checkpoint-system.md` (all 440 lines) - Checkpoint architecture, handoff format, resume workflows
 - `procedures/core/interactive-decision-system.md` (all 521 lines) - Decision menu format, context-aware generation, patterns
 - `procedures/skills/plugin-workflow.md` (all) - Complete 7-stage workflow spec, stage boundary protocol, complexity adaptation
@@ -102,6 +111,7 @@ This phase splits into 3 sub-phases based on architectural dependencies:
 - `procedures/commands/test.md` (lines 23-242) - Auto-invocation after Stage 4/5, testing methods
 
 **HIGH (Essential Phase 2 integration):**
+
 - `procedures/skills/deep-research.md` (lines 59-115) - Stage 0 research protocol, graduated depth
 - `procedures/skills/build-automation.md` (all) - Build process, failure protocol (4-option menu)
 - `procedures/skills/plugin-testing.md` (lines 23-134) - Auto-invocation specs, test suite
@@ -113,6 +123,7 @@ This phase splits into 3 sub-phases based on architectural dependencies:
 - `procedures/commands/show-standalone.md` (lines 78-88) - Stage 5 UI inspection
 
 **MEDIUM (Context/reference):**
+
 - `procedures/skills/plugin-ideation.md` (lines 25-147) - Pre-research brainstorming, creative brief
 - `procedures/skills/ui-mockup.md` (lines 79-120) - Stage 0 UI requirements reference
 - `procedures/skills/troubleshooting-docs.md` (lines 29-90) - Problem documentation format
@@ -131,6 +142,7 @@ This phase splits into 3 sub-phases based on architectural dependencies:
 **Description**: Create the checkpoint architecture that enables session continuity through handoff files.
 
 **Required Reading:**
+
 - `procedures/core/checkpoint-system.md` (all 440 lines) - Complete checkpoint specification
 - `architecture/06-state-architecture.md` (lines 156-315) - Session state and handoff files
 - `architecture/09-file-system-design.md` (lines 95-98) - Handoff file location
@@ -138,7 +150,9 @@ This phase splits into 3 sub-phases based on architectural dependencies:
 **Dependencies**: None (foundational task)
 
 **Implementation Steps:**
+
 1. Create handoff file template in `.claude/skills/plugin-workflow/assets/continue-here-template.md` with exact format from checkpoint-system.md lines 110-185:
+
    ```yaml
    ---
    plugin: PluginName
@@ -149,7 +163,6 @@ This phase splits into 3 sub-phases based on architectural dependencies:
    complexity_score: X.Y
    phased_implementation: true | false
    ---
-
    # Resume Point
    ## Current State: Stage N(.M) - Description
    ## Completed So Far: [Details with commit hashes]
@@ -157,6 +170,7 @@ This phase splits into 3 sub-phases based on architectural dependencies:
    ## Context to Preserve: [Key decisions, files, status]
    ## How to Resume: [Instructions]
    ```
+
 2. Implement handoff functions in plugin-workflow skill:
    - `createHandoff(pluginName, stage, context)` - Creates after Stage 0
    - `updateHandoff(pluginName, stage, completed, nextSteps, complexityScore, phased)` - Updates after each stage
@@ -171,12 +185,14 @@ This phase splits into 3 sub-phases based on architectural dependencies:
    - Test markdown section parsing (Resume Point, Completed, Next Steps, etc.)
 
 **Expected Output:**
+
 - `.claude/skills/plugin-workflow/assets/continue-here-template.md` created with exact spec format
 - Handoff functions implemented in plugin-workflow skill
 - Checkpoint type classification logic
 - Integration verified with context-resume
 
 **Verification:**
+
 - Automated: `scripts/test-handoff-format.sh` - Validates YAML frontmatter and markdown structure
 - Manual: STOP AND ASK LEX: "Please verify the handoff template matches the exact format in checkpoint-system.md lines 110-185, including all required YAML fields (plugin, stage, phase, status, last_updated, complexity_score, phased_implementation) and markdown sections"
 
@@ -187,6 +203,7 @@ This phase splits into 3 sub-phases based on architectural dependencies:
 **Description**: Create state machine that tracks all plugins through lifecycle stages.
 
 **Required Reading:**
+
 - `architecture/06-state-architecture.md` (lines 7-154) - Complete state machine spec
 - `architecture/08-data-flow-diagrams.md` (lines 104-186) - State transition diagram
 - `architecture/14-design-decisions.md` (lines 214-237) - State model rationale
@@ -194,6 +211,7 @@ This phase splits into 3 sub-phases based on architectural dependencies:
 **Dependencies**: None (parallel with Task 1)
 
 **Implementation Steps:**
+
 1. Define state machine transitions in plugin-workflow skill:
    ```
    💡 Ideated (creative-brief.md exists, no Source/)
@@ -220,16 +238,20 @@ This phase splits into 3 sub-phases based on architectural dependencies:
    - **Sequential stage enforcement:** Cannot skip from 🚧 Stage 0 to 🚧 Stage 6
    - **Contract-based transitions:** Stage 1 transition requires parameter-spec.md and architecture.md (generated via ui-mockup two-phase workflow)
 4. Create PLUGINS.md entry structure (from state-architecture.md lines 42-83):
+
    ```markdown
    ### [PluginName]
+
    **Status:** [emoji] [Status Text]
    **Created:** YYYY-MM-DD
    **Version:** X.Y.Z (after Stage 6)
 
    **Type:** [Audio Effect | MIDI Instrument | Synth]
+
    - [Brief description from creative-brief.md]
 
    **Lifecycle Timeline:**
+
    - **YYYY-MM-DD (Stage 0):** Research completed
    - **YYYY-MM-DD (Stage 1):** Planning - Complexity N
    - ...
@@ -238,12 +260,14 @@ This phase splits into 3 sub-phases based on architectural dependencies:
    ```
 
 **Expected Output:**
+
 - State machine functions implemented
 - Legal transition validation enforced
 - Single 🚧 constraint enforced
 - PLUGINS.md entry format standardized
 
 **Verification:**
+
 - Automated: `scripts/test-state-machine.sh` - Tests legal/illegal transitions, single 🚧 constraint
 - Manual: STOP AND ASK LEX: "Please verify the state machine prevents: (1) skipping from 💡 directly to ✅, (2) starting a second plugin when one is already 🚧, and (3) transitioning to Stage 1 without parameter-spec.md and architecture.md (which come from ui-mockup two-phase workflow)"
 
@@ -254,6 +278,7 @@ This phase splits into 3 sub-phases based on architectural dependencies:
 **Description**: Create standardized git commit integration with atomic state transitions.
 
 **Required Reading:**
+
 - `procedures/core/checkpoint-system.md` (lines 328-385) - Git commit integration
 - `architecture/06-state-architecture.md` (lines 456-470) - Atomic state transitions, consistency guarantees
 - `architecture/09-file-system-design.md` (lines 145-183) - Version control strategy
@@ -261,11 +286,13 @@ This phase splits into 3 sub-phases based on architectural dependencies:
 **Dependencies**: Task 1 (commits include handoff updates), Task 2 (commits include PLUGINS.md updates)
 
 **Implementation Steps:**
+
 1. Create commit helper function in plugin-workflow:
    ```typescript
    function commitStage(pluginName, stage, description) {
      // Standardized message format
      const message = `feat: ${pluginName} Stage ${stage} - ${description}
+   ```
 
 🤖 Generated with Claude Code
 
@@ -284,20 +311,22 @@ Co-Authored-By: Claude <noreply@anthropic.com>`
      // Verify commit succeeded
      const hash = git.log('-1', '--format=%h')
      return { success: true, hash, message }
-   }
-   ```
+
+}
+
+````
 2. Implement atomic commit protocol:
-   - Stage completes → Update PLUGINS.md → Update handoff → Single git commit
-   - If commit fails → Rollback PLUGINS.md and handoff changes
-   - Display commit hash to user for reference
+- Stage completes → Update PLUGINS.md → Update handoff → Single git commit
+- If commit fails → Rollback PLUGINS.md and handoff changes
+- Display commit hash to user for reference
 3. Add commit message variations:
-   - Simple stages: `feat: [Plugin] Stage N - description`
-   - Phased stages: `feat: [Plugin] Stage 4.1 - core processing`
-   - Stage 6: `feat: [Plugin] Stage 6 - validation complete`
+- Simple stages: `feat: [Plugin] Stage N - description`
+- Phased stages: `feat: [Plugin] Stage 4.1 - core processing`
+- Stage 6: `feat: [Plugin] Stage 6 - validation complete`
 4. Implement commit verification:
-   - Check git availability before workflow starts
-   - Verify commit succeeded with `git log -1`
-   - Handle commit failures gracefully (warn user, suggest manual commit)
+- Check git availability before workflow starts
+- Verify commit succeeded with `git log -1`
+- Handle commit failures gracefully (warn user, suggest manual commit)
 
 **Expected Output:**
 - Git commits created after each stage
@@ -324,13 +353,13 @@ Co-Authored-By: Claude <noreply@anthropic.com>`
 
 **Implementation Steps:**
 1. Create decision menu generator function in plugin-workflow:
-   ```typescript
-   function presentDecisionMenu(context: MenuContext) {
-     // Context includes: stage, status, errors, options
-     const options = generateContextualOptions(context)
+```typescript
+function presentDecisionMenu(context: MenuContext) {
+  // Context includes: stage, status, errors, options
+  const options = generateContextualOptions(context)
 
-     // Format: inline numbered list (NOT AskUserQuestion)
-     const menu = `
+  // Format: inline numbered list (NOT AskUserQuestion)
+  const menu = `
 ✓ ${context.completionStatement}
 
 What's next?
@@ -338,9 +367,10 @@ ${options.map((opt, i) => `${i+1}. ${opt.label}${opt.recommended ? ' (recommende
 
 Choose (1-${options.length}): _`
 
-     return displayAndAwaitChoice(menu, options)
-   }
-   ```
+  return displayAndAwaitChoice(menu, options)
+}
+````
+
 2. Implement context-aware option generation (interactive-decision-system.md lines 82-221):
    - **After Stage 0:** Continue to Stage 1 / Review research / Improve brief / Pause / Other
    - **After Stage 1:** Continue to Stage 2 / Review plan / Adjust complexity / Pause / Other
@@ -363,6 +393,7 @@ Choose (1-${options.length}): _`
    - Enable risk-free exploration via Claude Code checkpointing
 
 **Expected Output:**
+
 - Decision menus appear at all checkpoints
 - Inline numbered lists (not AskUserQuestion)
 - Context-aware option generation
@@ -370,6 +401,7 @@ Choose (1-${options.length}): _`
 - Progressive disclosure working
 
 **Verification:**
+
 - Automated: `scripts/test-decision-menus.sh` - Validates menu format and option generation
 - Manual: STOP AND ASK LEX: "Please verify that after Stage 0 completes, a decision menu with 5 numbered options appears (NOT AskUserQuestion dialog), option 1 is 'Continue to Stage 1 (recommended)', and typing 'pause' (keyword shortcut) creates a clean checkpoint"
 
@@ -380,6 +412,7 @@ Choose (1-${options.length}): _`
 **Description**: Implement handoff file parsing and workflow resumption.
 
 **Required Reading:**
+
 - `procedures/skills/context-resume.md` (all 327 lines) - Complete context-resume specification
 - `procedures/commands/continue.md` (all 250 lines) - /continue command integration
 - `procedures/core/checkpoint-system.md` (lines 197-327) - Resume workflows
@@ -387,6 +420,7 @@ Choose (1-${options.length}): _`
 **Dependencies**: Task 1 (handoff format must match), Task 4 (presents resumption menu)
 
 **Implementation Steps:**
+
 1. Implement handoff file search in context-resume skill (context-resume.md lines 23-41):
    ```typescript
    function findHandoffFile(pluginName?: string) {
@@ -394,11 +428,11 @@ Choose (1-${options.length}): _`
        // Search specific plugin
        return checkPaths([
          `plugins/${pluginName}/.continue-here.md`,
-         `plugins/${pluginName}/.ideas/.continue-here.md`
-       ])
+         `plugins/${pluginName}/.ideas/.continue-here.md`,
+       ]);
      } else {
        // Search all plugins for most recent handoff
-       return findMostRecentHandoff('plugins/**/.continue-here.md')
+       return findMostRecentHandoff("plugins/**/.continue-here.md");
      }
    }
    ```
@@ -417,6 +451,7 @@ Choose (1-${options.length}): _`
    - Load handoff-specified files for review
    - Reconstruct plugin state from PLUGINS.md
 5. Present resumption options menu:
+
    ```
    Resuming: [PluginName] (Stage N.M)
    Last worked on: [timestamp]
@@ -428,15 +463,18 @@ Choose (1-${options.length}): _`
    4. Start Stage N.M over
    5. Other
    ```
+
 6. Route to plugin-workflow at correct stage
 
 **Expected Output:**
+
 - Handoff files parsed correctly
 - Context loaded (contracts, commits, files)
 - Resumption menu presented
 - Workflow resumes at exact checkpoint
 
 **Verification:**
+
 - Automated: `scripts/test-context-resume.sh` - Parses test handoff, validates context loading
 - Manual: STOP AND ASK LEX: "Please verify that after pausing at Stage 1, exiting, and running /continue [Plugin], the context-resume skill successfully loads the handoff file, presents a resumption menu with the current stage (Stage 1), and continuing resumes plugin-workflow at the exact checkpoint with all contracts loaded"
 
@@ -449,6 +487,7 @@ Choose (1-${options.length}): _`
 **Description**: Build research stage with Context7 JUCE docs lookup, professional plugin research, and DSP architecture specification generation.
 
 **Required Reading:**
+
 - `procedures/skills/plugin-workflow.md` (lines 25-38) - Stage 0 specification
 - `procedures/skills/deep-research.md` (lines 59-115) - Graduated depth research protocol
 - `architecture/03-model-selection-extended-thinking-strategy.md` (lines 50-93) - Stage 0 extended thinking
@@ -457,40 +496,40 @@ Choose (1-${options.length}): _`
 **Dependencies**: Task 1-5 (checkpoint system, state machine, menus)
 
 **Implementation Steps:**
+
 1. Implement Stage 0 entry point in plugin-workflow skill:
    - Check preconditions: Plugin exists with creative-brief.md (💡 status in PLUGINS.md)
    - If creative-brief.md missing: Offer `/dream` to create one
    - Update PLUGINS.md status: 💡 → 🚧 Stage 0
    - Create handoff file (first checkpoint)
 2. Configure Stage 0 research model (model-selection.md lines 50-68):
-   - Model: Opus (complex reasoning for algorithm comparison)
    - Extended thinking: ENABLED
    - Budget: 10000 tokens
 3. Make preliminary complexity estimate from creative-brief.md:
    - Count parameters mentioned (simple estimate)
    - Identify algorithm types
    - Estimate complexity (1-5 scale) to determine research depth:
-     * Simple (1-2): Basic Context7 lookup
-     * Moderate (3): Enhanced research with web search
-     * Complex (4-5): Deep research with papers and comparisons
+     - Simple (1-2): Basic Context7 lookup
+     - Moderate (3): Enhanced research with web search
+     - Complex (4-5): Deep research with papers and comparisons
 4. Implement graduated research workflow based on complexity:
    a. Read creative-brief.md for plugin concept
    b. Identify plugin type (Audio Effect / MIDI Instrument / Synth)
    c. **Context7 JUCE documentation lookup:**
-      - Resolve library ID: `mcp__context7__resolve-library-id("JUCE")`
-      - Get docs: `mcp__context7__get-library-docs("/juce-framework/JUCE", topic="dsp modules")`
-      - Extract relevant JUCE DSP modules for plugin type
-   d. Research professional plugin examples (depth scaled by complexity):
-      - Identify industry leaders (FabFilter, Waves, etc.)
-      - Document sonic characteristics
-      - Note parameter ranges used
-   e. Check design-sync (if mockup exists):
-      - Invoke design-sync skill to validate brief ↔ mockup consistency
-      - Document any conflicts found
-   f. Assess technical feasibility:
-      - Verify JUCE modules support requirements
-      - Note complexity factors
-      - Identify potential challenges
+   - Resolve library ID: `mcp__context7__resolve-library-id("JUCE")`
+   - Get docs: `mcp__context7__get-library-docs("/juce-framework/JUCE", topic="dsp modules")`
+   - Extract relevant JUCE DSP modules for plugin type
+     d. Research professional plugin examples (depth scaled by complexity):
+   - Identify industry leaders (FabFilter, Waves, etc.)
+   - Document sonic characteristics
+   - Note parameter ranges used
+     e. Check design-sync (if mockup exists):
+   - Invoke design-sync skill to validate brief ↔ mockup consistency
+   - Document any conflicts found
+     f. Assess technical feasibility:
+   - Verify JUCE modules support requirements
+   - Note complexity factors
+   - Identify potential challenges
 5. Generate `plugins/[Name]/.ideas/architecture.md` (DSP specification) with sections:
    - Core Components (JUCE modules and classes)
    - Processing Chain (signal flow diagram)
@@ -503,6 +542,7 @@ Choose (1-${options.length}): _`
    - Add timeline entry to PLUGINS.md: "Stage 0: Architecture specified"
    - Git commit: `feat: [Plugin] Stage 0 - architecture specified`
 7. Present decision menu (hard checkpoint):
+
    ```
    ✓ Stage 0 complete: DSP architecture specified
 
@@ -518,6 +558,7 @@ Choose (1-${options.length}): _`
    ```
 
 **Expected Output:**
+
 - `plugins/[Name]/.ideas/architecture.md` created with DSP specification
 - Context7 JUCE references and professional examples embedded in Research References section
 - Processing chain and component specifications documented
@@ -528,6 +569,7 @@ Choose (1-${options.length}): _`
 - Decision menu presented
 
 **Verification:**
+
 - Automated: `scripts/test-stage0.sh` - Validates architecture.md structure, DSP components, Context7 references, git commit
 - Manual: STOP AND ASK LEX: "Please verify Stage 0 architecture.md contains: (1) Core Components section with JUCE module specifications, (2) Processing Chain diagram, (3) Research References with Context7 library IDs and professional plugin examples, (4) preliminary complexity estimate shown in decision menu, and (5) decision menu appears with 6 options after completion"
 
@@ -538,6 +580,7 @@ Choose (1-${options.length}): _`
 **Description**: Build planning stage with complexity scoring, contract enforcement blocking, and phase breakdown.
 
 **Required Reading:**
+
 - `procedures/skills/plugin-workflow.md` (lines 40-52, 157-180) - Stage 1 spec and complexity scoring
 - `architecture/02-core-abstractions.md` (lines 110-183) - Contract definitions and enforcement
 - `architecture/05-routing-architecture.md` (lines 513-578) - Precondition verification
@@ -546,18 +589,24 @@ Choose (1-${options.length}): _`
 **Dependencies**: Task 6 (Stage 0 must complete first)
 
 **Implementation Steps:**
+
 1. Implement Stage 1 precondition enforcement (CRITICAL):
+
    ```typescript
    function checkStage1Preconditions(pluginName) {
-     const paramSpecExists = fileExists(`plugins/${pluginName}/.ideas/parameter-spec.md`)
-     const archSpecExists = fileExists(`plugins/${pluginName}/.ideas/architecture.md`)
+     const paramSpecExists = fileExists(
+       `plugins/${pluginName}/.ideas/parameter-spec.md`
+     );
+     const archSpecExists = fileExists(
+       `plugins/${pluginName}/.ideas/architecture.md`
+     );
 
      if (!archSpecExists) {
        return {
          allowed: false,
          reason: "Stage 0 architecture must complete before Stage 1",
-         action: "Complete Stage 0 first"
-       }
+         action: "Complete Stage 0 first",
+       };
      }
 
      if (!paramSpecExists || !archSpecExists) {
@@ -565,29 +614,36 @@ Choose (1-${options.length}): _`
          allowed: false,
          reason: "Cannot proceed to Stage 1 - missing implementation contracts",
          requiredContracts: {
-           "parameter-spec.md": paramSpecExists ? "✓ exists" : "✗ MISSING (required)",
-           "architecture.md": archSpecExists ? "✓ exists" : "✗ MISSING (required)"
+           "parameter-spec.md": paramSpecExists
+             ? "✓ exists"
+             : "✗ MISSING (required)",
+           "architecture.md": archSpecExists
+             ? "✓ exists"
+             : "✗ MISSING (required)",
          },
-         action: "Complete ui-mockup two-phase workflow (design approval generates parameter-spec.md), then create architecture.md"
-       }
+         action:
+           "Complete ui-mockup two-phase workflow (design approval generates parameter-spec.md), then create architecture.md",
+       };
      }
 
-     return { allowed: true }
+     return { allowed: true };
    }
    ```
+
 2. **BLOCK execution if contracts missing** (non-negotiable per ROADMAP.md line 252):
    - Display clear error message explaining WHY blocked
    - Show which contracts exist vs missing
    - Suggest: "Complete ui-mockup two-phase workflow (Phase 4.5 design approval generates parameter-spec.md)"
    - Do NOT proceed to planning without contracts
 3. Implement complexity scoring algorithm (plugin-workflow.md lines 170-180):
+
    ```typescript
    function calculateComplexity(paramSpec, archSpec) {
      // Parse parameter-spec.md
-     const paramCount = extractParameterCount(paramSpec)
+     const paramCount = extractParameterCount(paramSpec);
 
      // Parse architecture.md
-     const algorithms = extractAlgorithms(archSpec) // DSP components
+     const algorithms = extractAlgorithms(archSpec); // DSP components
 
      // Identify special features
      const features = {
@@ -595,23 +651,24 @@ Choose (1-${options.length}): _`
        fftProcessing: containsFFT(archSpec),
        multibandProcessing: containsMultiband(archSpec),
        modulationSystems: containsModulation(archSpec),
-       externalMIDI: containsMIDI(archSpec)
-     }
+       externalMIDI: containsMIDI(archSpec),
+     };
 
      // Calculate score
-     const paramScore = Math.min(paramCount / 5, 2)
-     const algoScore = algorithms.length
-     const featureScore = Object.values(features).filter(Boolean).length
+     const paramScore = Math.min(paramCount / 5, 2);
+     const algoScore = algorithms.length;
+     const featureScore = Object.values(features).filter(Boolean).length;
 
-     const totalScore = Math.min(paramScore + algoScore + featureScore, 5)
+     const totalScore = Math.min(paramScore + algoScore + featureScore, 5);
 
      return {
        score: totalScore,
        breakdown: { paramScore, algoScore, featureScore },
-       phased: totalScore >= 3
-     }
+       phased: totalScore >= 3,
+     };
    }
    ```
+
 4. Implement planning logic:
    - Read contracts: parameter-spec.md (from ui-mockup Phase 4.5), architecture.md
    - Calculate actual complexity score from both contracts (refines preliminary estimate)
@@ -636,6 +693,7 @@ Choose (1-${options.length}): _`
    - Update handoff: stage=1, complexity_score=X.Y, phased_implementation=true/false
    - Git commit: `feat: [Plugin] Stage 1 - planning complete`
 7. Present decision menu (hard checkpoint):
+
    ```
    ✓ Stage 1 complete: plan created (Complexity X.Y, [single-pass/phased])
 
@@ -649,6 +707,7 @@ Choose (1-${options.length}): _`
    ```
 
 **Expected Output:**
+
 - **Contract enforcement BLOCKS** if parameter-spec.md (from ui-mockup) or architecture.md missing
 - Complexity score calculated correctly
 - `plan.md` generated with phase breakdown if complexity ≥3
@@ -657,6 +716,7 @@ Choose (1-${options.length}): _`
 - Decision menu presented
 
 **Verification:**
+
 - Automated: `scripts/test-stage1-contracts.sh` - Validates contract enforcement blocks without specs
 - Automated: `scripts/test-complexity-scoring.sh` - Tests complexity calculation with various inputs
 - Manual: STOP AND ASK LEX: "Please create a test plugin without parameter-spec.md and verify Stage 1 BLOCKS with error message listing missing contracts and suggesting ui-mockup workflow. Then add both contracts (parameter-spec.md from ui-mockup two-phase workflow, architecture.md manually) and verify Stage 1 proceeds, calculates complexity score correctly (show breakdown), and generates plan.md with appropriate phasing for score ≥3"
@@ -668,67 +728,73 @@ Choose (1-${options.length}): _`
 **Description**: Create stage dispatcher that routes to correct stage implementation or stub.
 
 **Required Reading:**
+
 - `procedures/skills/plugin-workflow.md` (lines 140-154) - Stage boundary protocol
 - `architecture/04-component-architecture.md` (lines 420-487) - Lifecycle management and stage execution
 
 **Dependencies**: Task 6, 7 (Stages 0-1 must exist)
 
 **Implementation Steps:**
+
 1. Create stage dispatcher function in plugin-workflow skill:
+
    ```typescript
    function dispatchStage(pluginName, stageNumber) {
      // Verify preconditions before dispatch
-     const preconditionCheck = checkStagePreconditions(pluginName, stageNumber)
+     const preconditionCheck = checkStagePreconditions(pluginName, stageNumber);
      if (!preconditionCheck.allowed) {
-       displayError(preconditionCheck.reason, preconditionCheck.action)
-       return { status: 'blocked', reason: preconditionCheck.reason }
+       displayError(preconditionCheck.reason, preconditionCheck.action);
+       return { status: "blocked", reason: preconditionCheck.reason };
      }
 
      // Route to stage implementation
-     switch(stageNumber) {
+     switch (stageNumber) {
        case 0:
-         return executeStage0Research(pluginName)
+         return executeStage0Research(pluginName);
        case 1:
-         return executeStage1Planning(pluginName)
+         return executeStage1Planning(pluginName);
        case 2:
-         return executeStage2FoundationStub(pluginName) // Phase 3
+         return executeStage2FoundationStub(pluginName); // Phase 3
        case 3:
-         return executeStage3ShellStub(pluginName) // Phase 3
+         return executeStage3ShellStub(pluginName); // Phase 3
        case 4:
-         return executeStage4DSPStub(pluginName) // Phase 3
+         return executeStage4DSPStub(pluginName); // Phase 3
        case 5:
-         return executeStage5GUIStub(pluginName) // Phase 3
+         return executeStage5GUIStub(pluginName); // Phase 3
        case 6:
-         return executeStage6Validation(pluginName) // Task 11
+         return executeStage6Validation(pluginName); // Task 11
        default:
-         throw new Error(`Invalid stage: ${stageNumber}`)
+         throw new Error(`Invalid stage: ${stageNumber}`);
      }
    }
    ```
+
 2. Implement stage precondition checker:
+
    ```typescript
    function checkStagePreconditions(pluginName, stage) {
      // Stage 1: Requires architecture.md + parameter-spec.md contracts
      if (stage === 1) {
-       return checkStage1Preconditions(pluginName) // From Task 7
+       return checkStage1Preconditions(pluginName); // From Task 7
      }
 
      // Stage 2-6: Requires previous stage complete
      if (stage >= 2) {
-       const status = getPluginStatus(pluginName)
-       const expectedPrevious = `🚧 Stage ${stage - 1}`
-       if (!status.includes(expectedPrevious) && !status.includes('complete')) {
+       const status = getPluginStatus(pluginName);
+       const expectedPrevious = `🚧 Stage ${stage - 1}`;
+       if (!status.includes(expectedPrevious) && !status.includes("complete")) {
          return {
            allowed: false,
            reason: `Stage ${stage - 1} must complete before Stage ${stage}`,
-           action: `Complete Stage ${stage - 1} first or use /continue`
-         }
+           action: `Complete Stage ${stage - 1} first or use /continue`,
+         };
        }
      }
 
-     return { allowed: true }
+     return { allowed: true };
    }
    ```
+
 3. Implement stage execution flow:
    - Check preconditions
    - Execute stage logic
@@ -738,44 +804,47 @@ Choose (1-${options.length}): _`
    - Handle user choice
    - Route to next stage or pause
 4. Add stage loop for continuous execution:
+
    ```typescript
    function runWorkflow(pluginName, startStage = 0) {
-     let currentStage = startStage
-     let shouldContinue = true
+     let currentStage = startStage;
+     let shouldContinue = true;
 
      while (shouldContinue && currentStage <= 6) {
-       const result = dispatchStage(pluginName, currentStage)
+       const result = dispatchStage(pluginName, currentStage);
 
-       if (result.status === 'blocked') {
-         return result // Stop workflow
+       if (result.status === "blocked") {
+         return result; // Stop workflow
        }
 
        // Present decision menu
        const choice = presentDecisionMenu({
          stage: currentStage,
          completionStatement: result.completionStatement,
-         pluginName: pluginName
-       })
+         pluginName: pluginName,
+       });
 
-       if (choice === 'continue') {
-         currentStage++
-       } else if (choice === 'pause') {
-         shouldContinue = false
+       if (choice === "continue") {
+         currentStage++;
+       } else if (choice === "pause") {
+         shouldContinue = false;
        } else {
          // Handle other choices (review, test, etc.)
-         handleMenuChoice(choice, pluginName, currentStage)
+         handleMenuChoice(choice, pluginName, currentStage);
        }
      }
    }
    ```
 
 **Expected Output:**
+
 - Stage dispatcher routes correctly
 - Preconditions checked before each stage
 - Stage loop allows continuous execution or pausing
 - Blocked stages display clear error messages
 
 **Verification:**
+
 - Automated: `scripts/test-stage-dispatcher.sh` - Tests routing to all stages, precondition enforcement
 - Manual: STOP AND ASK LEX: "Please verify the stage dispatcher: (1) routes to Stage 0 when starting workflow, (2) blocks Stage 1 if contracts missing, (3) presents decision menu after each stage, and (4) continues to next stage when choosing option 1 'Continue'"
 
@@ -788,6 +857,7 @@ Choose (1-${options.length}): _`
 **Description**: Create validator subagent for semantic quality validation at Stages 0, 1, 6.
 
 **Required Reading:**
+
 - `architecture/02-core-abstractions.md` (lines 184-252) - Hybrid validation strategy
 - `architecture/04-component-architecture.md` (lines 164-409) - Validator interface and flow
 - `architecture/17-testing-strategy.md` (lines 58-86) - Validator logic tests
@@ -795,13 +865,13 @@ Choose (1-${options.length}): _`
 **Dependencies**: None (parallel with other tasks, called by Stages 0, 1, 6)
 
 **Implementation Steps:**
+
 1. Create validator subagent file: `.claude/agents/validator.md`
 2. Define validator frontmatter:
    ```yaml
    ---
    name: validator
-   model: sonnet  # Quality over speed
-   extended_thinking: false  # Deterministic validation
+   extended_thinking: false # Deterministic validation
    tools: [Read, Grep, Bash]
    preconditions:
      - stage_complete: true
@@ -857,11 +927,13 @@ Choose (1-${options.length}): _`
        subagent_type: "validator",
        description: `Validate ${pluginName} Stage ${stage}`,
        prompt: `
-Validate Stage ${stage} completion for ${pluginName}.
+   Validate Stage ${stage} completion for ${pluginName}.
+   ```
 
 **Stage:** ${stage}
 **Plugin:** ${pluginName}
 **Contracts:**
+
 - parameter-spec.md: [paste content]
 - architecture.md: [paste content]
 - plan.md: [paste content]
@@ -870,8 +942,8 @@ Validate Stage ${stage} completion for ${pluginName}.
 [stage-specific outputs]
 
 Return JSON validation report with status, checks, and recommendation.
-       `
-     })
+`
+})
 
      const report = JSON.parse(result)
 
@@ -881,8 +953,10 @@ Return JSON validation report with status, checks, and recommendation.
      }
 
      return report
-   }
-   ```
+
+}
+
+```
 
 **Expected Output:**
 - `.claude/agents/validator.md` created
@@ -909,55 +983,59 @@ Return JSON validation report with status, checks, and recommendation.
 
 **Implementation Steps:**
 1. Create hook directory structure:
-   ```
-   .claude/hooks/
-   ├── UserPromptSubmit.sh
-   ├── Stop.sh
-   ├── PreCompact.sh
-   ├── PostToolUse.sh (future)
-   ├── SubagentStop.sh (future - Phase 3)
-   ├── SessionStart.sh (future)
-   └── validators/ (Python scripts for Phase 3)
-   ```
+```
+
+.claude/hooks/
+├── UserPromptSubmit.sh
+├── Stop.sh
+├── PreCompact.sh
+├── PostToolUse.sh (future)
+├── SubagentStop.sh (future - Phase 3)
+├── SessionStart.sh (future)
+└── validators/ (Python scripts for Phase 3)
+
+````
 2. Implement UserPromptSubmit hook (error-handling.md lines 187-220):
-   ```bash
-   #!/bin/bash
-   # UserPromptSubmit - Auto-inject context for /continue
+```bash
+#!/bin/bash
+# UserPromptSubmit - Auto-inject context for /continue
 
-   # Check relevance FIRST
-   if [[ ! "$USER_PROMPT" =~ ^/continue ]]; then
-     echo "Hook not relevant (not /continue command), skipping gracefully"
-     exit 0
-   fi
+# Check relevance FIRST
+if [[ ! "$USER_PROMPT" =~ ^/continue ]]; then
+  echo "Hook not relevant (not /continue command), skipping gracefully"
+  exit 0
+fi
 
-   # Extract plugin name
-   PLUGIN_NAME=$(echo "$USER_PROMPT" | awk '{print $2}')
+# Extract plugin name
+PLUGIN_NAME=$(echo "$USER_PROMPT" | awk '{print $2}')
 
-   # Find handoff file
-   if [ -n "$PLUGIN_NAME" ]; then
-     HANDOFF="plugins/$PLUGIN_NAME/.continue-here.md"
-   else
-     HANDOFF=$(find plugins -name ".continue-here.md" -type f -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2)
-   fi
+# Find handoff file
+if [ -n "$PLUGIN_NAME" ]; then
+  HANDOFF="plugins/$PLUGIN_NAME/.continue-here.md"
+else
+  HANDOFF=$(find plugins -name ".continue-here.md" -type f -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2)
+fi
 
-   if [ ! -f "$HANDOFF" ]; then
-     echo "No handoff file found"
-     exit 0
-   fi
+if [ ! -f "$HANDOFF" ]; then
+  echo "No handoff file found"
+  exit 0
+fi
 
-   # Inject handoff content into context
-   echo "Loading context from $HANDOFF..."
-   cat "$HANDOFF"
+# Inject handoff content into context
+echo "Loading context from $HANDOFF..."
+cat "$HANDOFF"
 
-   # Load referenced contracts
-   PLUGIN=$(dirname "$HANDOFF" | xargs basename)
-   echo "\n--- Contracts ---"
-   [ -f "plugins/$PLUGIN/.ideas/parameter-spec.md" ] && cat "plugins/$PLUGIN/.ideas/parameter-spec.md"
-   [ -f "plugins/$PLUGIN/.ideas/architecture.md" ] && cat "plugins/$PLUGIN/.ideas/architecture.md"
+# Load referenced contracts
+PLUGIN=$(dirname "$HANDOFF" | xargs basename)
+echo "\n--- Contracts ---"
+[ -f "plugins/$PLUGIN/.ideas/parameter-spec.md" ] && cat "plugins/$PLUGIN/.ideas/parameter-spec.md"
+[ -f "plugins/$PLUGIN/.ideas/architecture.md" ] && cat "plugins/$PLUGIN/.ideas/architecture.md"
 
-   exit 0
-   ```
+exit 0
+````
+
 3. Implement Stop hook (error-handling.md lines 224-257):
+
    ```bash
    #!/bin/bash
    # Stop - Stage completion enforcement
@@ -984,7 +1062,9 @@ Return JSON validation report with status, checks, and recommendation.
    echo "Stage $CURRENT_STAGE properly committed"
    exit 0
    ```
+
 4. Implement PreCompact hook (error-handling.md lines 310-337):
+
    ```bash
    #!/bin/bash
    # PreCompact - Preserve contracts before context compaction
@@ -1015,6 +1095,7 @@ Return JSON validation report with status, checks, and recommendation.
 
    exit 0
    ```
+
 5. Make hooks executable:
    ```bash
    chmod +x .claude/hooks/*.sh
@@ -1026,6 +1107,7 @@ Return JSON validation report with status, checks, and recommendation.
    - Graceful skipping prevents false failures
 
 **Expected Output:**
+
 - 3 hook scripts created (UserPromptSubmit, Stop, PreCompact)
 - All hooks executable
 - Conditional execution pattern implemented
@@ -1034,6 +1116,7 @@ Return JSON validation report with status, checks, and recommendation.
 - Contract preservation before compaction
 
 **Verification:**
+
 - Automated: `scripts/test-hooks.sh` - Tests all 3 hooks with relevant/irrelevant conditions
 - Manual: STOP AND ASK LEX: "Please verify: (1) /continue command auto-loads handoff file via UserPromptSubmit hook, (2) Stop hook blocks if stage not committed to git, (3) PreCompact hook preserves parameter-spec.md and architecture.md before context compaction, and (4) all hooks exit 0 (not 1) when conditions not relevant"
 
@@ -1044,6 +1127,7 @@ Return JSON validation report with status, checks, and recommendation.
 **Description**: Build validation stage with pluginval, factory presets, and CHANGELOG generation.
 
 **Required Reading:**
+
 - `procedures/skills/plugin-workflow.md` (lines 122-137) - Stage 6 specification
 - `procedures/skills/plugin-testing.md` (lines 23-134) - Testing and validation
 - `procedures/skills/plugin-lifecycle.md` (lines 23-113) - Installation process
@@ -1052,61 +1136,71 @@ Return JSON validation report with status, checks, and recommendation.
 **Dependencies**: Task 8 (stage dispatch), Task 9 (validator), Task 10 (hooks)
 
 **Implementation Steps:**
+
 1. Implement Stage 6 entry point:
    - Precondition: Stage 5 complete (or Stage 5 stub in Phase 2)
    - Update PLUGINS.md: 🚧 Stage 6
    - Update handoff: stage=6, status=in_progress
 2. Create factory presets (even for stubs):
+
    ```typescript
    function generateFactoryPresets(pluginName) {
-     const paramSpec = readFile(`plugins/${pluginName}/.ideas/parameter-spec.md`)
-     const parameters = parseParameters(paramSpec)
+     const paramSpec = readFile(
+       `plugins/${pluginName}/.ideas/parameter-spec.md`
+     );
+     const parameters = parseParameters(paramSpec);
 
      // Generate 3-5 musically useful presets
      const presets = [
        createPreset("Default", parameters, "default_values"),
        createPreset("Subtle", parameters, "conservative_values"),
-       createPreset("Extreme", parameters, "maximum_values")
-     ]
+       createPreset("Extreme", parameters, "maximum_values"),
+     ];
 
      // Create Presets/ directory
-     mkdir(`plugins/${pluginName}/Presets`)
+     mkdir(`plugins/${pluginName}/Presets`);
 
      // Write preset files (JUCE preset format)
-     presets.forEach(preset => {
+     presets.forEach((preset) => {
        writeFile(
          `plugins/${pluginName}/Presets/${preset.name}.preset`,
          formatJUCEPreset(preset)
-       )
-     })
+       );
+     });
 
-     return presets.map(p => p.name)
+     return presets.map((p) => p.name);
    }
    ```
+
 3. Invoke pluginval (if plugin built):
+
    ```typescript
    function runPluginval(pluginName) {
      // Check if build exists
-     const vst3Path = `plugins/${pluginName}/build/${pluginName}_artefacts/VST3/${pluginName}.vst3`
+     const vst3Path = `plugins/${pluginName}/build/${pluginName}_artefacts/VST3/${pluginName}.vst3`;
 
      if (!fileExists(vst3Path)) {
        return {
          skipped: true,
-         reason: "No build found (Stages 2-5 are stubs in Phase 2)"
-       }
+         reason: "No build found (Stages 2-5 are stubs in Phase 2)",
+       };
      }
 
      // Run pluginval with strictness level 5
-     const result = bash(`pluginval --validate --strictness-level 5 "${vst3Path}" > logs/${pluginName}/pluginval_$(date +%Y%m%d_%H%M%S).log 2>&1`)
+     const result = bash(
+       `pluginval --validate --strictness-level 5 "${vst3Path}" > logs/${pluginName}/pluginval_$(date +%Y%m%d_%H%M%S).log 2>&1`
+     );
 
      // Parse results
-     const log = readFile(`logs/${pluginName}/pluginval_latest.log`)
-     const passed = log.includes("All tests passed")
+     const log = readFile(`logs/${pluginName}/pluginval_latest.log`);
+     const passed = log.includes("All tests passed");
 
-     return { passed, log }
+     return { passed, log };
    }
    ```
+
 4. Generate CHANGELOG.md (Keep a Changelog format):
+
    ```typescript
    function generateChangelog(pluginName) {
      const brief = readFile(`plugins/${pluginName}/.ideas/creative-brief.md`)
@@ -1114,6 +1208,7 @@ Return JSON validation report with status, checks, and recommendation.
      const parameters = parseParameters(paramSpec)
 
      const changelog = `# Changelog
+   ```
 
 All notable changes to ${pluginName} will be documented in this file.
 
@@ -1123,65 +1218,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - ${getCurrentDate()}
 
 ### Added
+
 - Initial release
 - ${extractFeatures(brief).join('\n- ')}
 - ${parameters.length} parameters: ${parameters.map(p => p.name).join(', ')}
 - Factory presets: Default, Subtle, Extreme
 
 [1.0.0]: https://github.com/yourrepo/${pluginName}/releases/tag/v1.0.0
+
 `
 
      writeFile(`plugins/${pluginName}/CHANGELOG.md`, changelog)
-   }
-   ```
+
+}
+
+````
 5. Update PLUGINS.md to ✅ Working:
-   ```typescript
-   function finalizePlugin(pluginName) {
-     // Update status
-     updatePluginStatus(pluginName, "✅ Working")
+```typescript
+function finalizePlugin(pluginName) {
+  // Update status
+  updatePluginStatus(pluginName, "✅ Working")
 
-     // Add validation results to entry
-     const entry = getPluginEntry(pluginName)
-     entry.addSection("Validation", [
-       "✓ Factory presets created (3)",
-       pluginvalPassed ? "✓ pluginval tests passed" : "⚠️ pluginval skipped (no build)",
-       "✓ CHANGELOG.md generated"
-     ])
-     entry.setVersion("1.0.0")
+  // Add validation results to entry
+  const entry = getPluginEntry(pluginName)
+  entry.addSection("Validation", [
+    "✓ Factory presets created (3)",
+    pluginvalPassed ? "✓ pluginval tests passed" : "⚠️ pluginval skipped (no build)",
+    "✓ CHANGELOG.md generated"
+  ])
+  entry.setVersion("1.0.0")
 
-     // Delete handoff file (plugin complete)
-     deleteFile(`plugins/${pluginName}/.continue-here.md`)
-   }
-   ```
+  // Delete handoff file (plugin complete)
+  deleteFile(`plugins/${pluginName}/.continue-here.md`)
+}
+````
+
 6. Invoke validator for Stage 6:
+
    ```typescript
-   const validation = validateStage(pluginName, 6)
+   const validation = validateStage(pluginName, 6);
 
    if (validation.status === "FAIL") {
-     presentValidationFailure(validation)
+     presentValidationFailure(validation);
      // Decision menu: Fix issues / Continue anyway / Pause
    }
    ```
+
 7. Git commit:
    ```bash
    git commit -m "feat: ${pluginName} Stage 6 - validation complete
+   ```
 
 🤖 Generated with Claude Code
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
-   ```
-8. Present final decision menu:
-   ```
-   ✓ Stage 6 complete: ${pluginName} ready for installation
 
-   What's next?
-   1. Install plugin to system folders (recommended)
-   2. Test in DAW first
-   3. Create another plugin
-   4. Review complete plugin code
-   5. Document this plugin
-   6. Other
-   ```
+```
+8. Present final decision menu:
+```
+
+✓ Stage 6 complete: ${pluginName} ready for installation
+
+What's next?
+
+1.  Install plugin to system folders (recommended)
+2.  Test in DAW first
+3.  Create another plugin
+4.  Review complete plugin code
+5.  Document this plugin
+6.  Other
+
+````
 
 **Expected Output:**
 - Presets/ directory with 3+ factory presets
@@ -1211,9 +1318,9 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 **Implementation Steps:**
 1. Create Stage 2 stub (Foundation):
-   ```typescript
-   function executeStage2FoundationStub(pluginName) {
-     displayMessage(`
+```typescript
+function executeStage2FoundationStub(pluginName) {
+  displayMessage(`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Stage 2: Foundation (Build System Setup)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1227,39 +1334,42 @@ Expected implementation:
 - Verify compilation with --no-install flag
 
 For now, marking stage as stub and continuing...
-     `)
+  `)
 
-     // Update state
-     updatePluginStatus(pluginName, "🚧 Stage 2 (stub)")
-     updateHandoff(pluginName, 2, ["Foundation stub executed"], [
-       "Complete Phase 3 to implement foundation-agent",
-       "foundation-agent will create build system and empty plugin files"
-     ])
+  // Update state
+  updatePluginStatus(pluginName, "🚧 Stage 2 (stub)")
+  updateHandoff(pluginName, 2, ["Foundation stub executed"], [
+    "Complete Phase 3 to implement foundation-agent",
+    "foundation-agent will create build system and empty plugin files"
+  ])
 
-     // No git commit for stub (not real implementation)
+  // No git commit for stub (not real implementation)
 
-     // Present stub menu
-     return presentStubDecisionMenu(pluginName, 2, "Continue to Stage 3 (stub)")
-   }
-   ```
+  // Present stub menu
+  return presentStubDecisionMenu(pluginName, 2, "Continue to Stage 3 (stub)")
+}
+````
+
 2. Create Stage 3 stub (Shell):
    ```typescript
    function executeStage3ShellStub(pluginName) {
      displayMessage(`
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Stage 3: Shell (Parameter Setup)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Stage 3: Shell (Parameter Setup)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ```
 
 TODO (Phase 3): Dispatch shell-agent subagent
 
 Expected implementation:
+
 - Create APVTS with all parameters from parameter-spec.md
 - Implement basic processBlock stub
 - Empty editor with placeholder text
 - Verify plugin loads in DAW
 
 For now, marking stage as stub and continuing...
-     `)
+`)
 
      updatePluginStatus(pluginName, "🚧 Stage 3 (stub)")
      updateHandoff(pluginName, 3, ["Shell stub executed"], [
@@ -1268,15 +1378,17 @@ For now, marking stage as stub and continuing...
      ])
 
      return presentStubDecisionMenu(pluginName, 3, "Continue to Stage 4 (stub)")
-   }
-   ```
-3. Create Stage 4 stub (DSP):
-   ```typescript
-   function executeStage4DSPStub(pluginName) {
-     const plan = readFile(`plugins/${pluginName}/.ideas/plan.md`)
-     const phased = plan.includes("Stage 4.1") // Check if phased
 
-     displayMessage(`
+}
+
+````
+3. Create Stage 4 stub (DSP):
+```typescript
+function executeStage4DSPStub(pluginName) {
+  const plan = readFile(`plugins/${pluginName}/.ideas/plan.md`)
+  const phased = plan.includes("Stage 4.1") // Check if phased
+
+  displayMessage(`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Stage 4: DSP (Audio Processing)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1290,38 +1402,42 @@ Expected implementation:
 - Automated stability tests after completion
 
 For now, marking stage as stub and continuing...
-     `)
+  `)
 
-     updatePluginStatus(pluginName, "🚧 Stage 4 (stub)")
-     updateHandoff(pluginName, 4, ["DSP stub executed"], [
-       "Complete Phase 3 to implement dsp-agent",
-       "dsp-agent will implement audio processing from architecture.md"
-     ])
+  updatePluginStatus(pluginName, "🚧 Stage 4 (stub)")
+  updateHandoff(pluginName, 4, ["DSP stub executed"], [
+    "Complete Phase 3 to implement dsp-agent",
+    "dsp-agent will implement audio processing from architecture.md"
+  ])
 
-     return presentStubDecisionMenu(pluginName, 4, "Continue to Stage 5 (stub)")
-   }
-   ```
+  return presentStubDecisionMenu(pluginName, 4, "Continue to Stage 5 (stub)")
+}
+````
+
 4. Create Stage 5 stub (GUI):
+
    ```typescript
    function executeStage5GUIStub(pluginName) {
      const plan = readFile(`plugins/${pluginName}/.ideas/plan.md`)
      const phased = plan.includes("Stage 5.1") // Check if phased
 
      displayMessage(`
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Stage 5: GUI (User Interface)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Stage 5: GUI (User Interface)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ```
 
 TODO (Phase 3): Dispatch gui-agent subagent
 
 Expected implementation:
+
 - Create WebView UI with parameter bindings
 - ${phased ? 'Phased execution: Stage 5.1, 5.2 with test criteria' : 'Single-pass implementation'}
 - FlexBox/Grid layout (never manual setBounds)
 - Automated stability tests after completion
 
 For now, marking stage as stub and continuing...
-     `)
+`)
 
      updatePluginStatus(pluginName, "🚧 Stage 5 (stub)")
      updateHandoff(pluginName, 5, ["GUI stub executed"], [
@@ -1330,25 +1446,28 @@ For now, marking stage as stub and continuing...
      ])
 
      return presentStubDecisionMenu(pluginName, 5, "Continue to Stage 6 (real implementation)")
-   }
-   ```
+
+}
+
+````
 5. Create stub decision menu function:
-   ```typescript
-   function presentStubDecisionMenu(pluginName, stage, continueLabel) {
-     return presentDecisionMenu({
-       pluginName,
-       stage,
-       completionStatement: `Stage ${stage} stub executed (Phase 3 will implement)`,
-       options: [
-         { label: continueLabel, recommended: true },
-         { label: "Review handoff file", action: "review_handoff" },
-         { label: "Skip to Stage 6 (test stub workflow)", action: "skip_to_6" },
-         { label: "Pause here", action: "pause" },
-         { label: "Other", action: "other" }
-       ]
-     })
-   }
-   ```
+```typescript
+function presentStubDecisionMenu(pluginName, stage, continueLabel) {
+  return presentDecisionMenu({
+    pluginName,
+    stage,
+    completionStatement: `Stage ${stage} stub executed (Phase 3 will implement)`,
+    options: [
+      { label: continueLabel, recommended: true },
+      { label: "Review handoff file", action: "review_handoff" },
+      { label: "Skip to Stage 6 (test stub workflow)", action: "skip_to_6" },
+      { label: "Pause here", action: "pause" },
+      { label: "Other", action: "other" }
+    ]
+  })
+}
+````
+
 6. Add Phase 3 preparation documentation in stubs:
    - Document subagent interface expected
    - List Task tool parameters needed
@@ -1356,6 +1475,7 @@ For now, marking stage as stub and continuing...
    - Note JSON report format subagents must return
 
 **Expected Output:**
+
 - Stages 2-5 execute as clear stubs with TODO messages
 - Each stub updates PLUGINS.md status (🚧 Stage N stub)
 - Each stub updates handoff file with Phase 3 note
@@ -1364,6 +1484,7 @@ For now, marking stage as stub and continuing...
 - Clear indication Phase 3 will implement these stages
 
 **Verification:**
+
 - Automated: `scripts/test-stub-workflow.sh` - Runs Stage 0 → 1 → 2-5 (stubs) → 6, validates reaches Stage 6
 - Manual: STOP AND ASK LEX: "Please verify you can run a test plugin through the full workflow from Stage 0 to Stage 6, with Stages 2-5 showing clear 'TODO (Phase 3)' stub messages in formatted boxes, cleanly transitioning between stages without errors, and Stage 6 executing normally with real implementation (presets, CHANGELOG, etc.)"
 
@@ -1374,6 +1495,7 @@ For now, marking stage as stub and continuing...
 **Description**: Test complete workflow from /implement through Stage 6 with all Phase 2 components integrated.
 
 **Required Reading:**
+
 - `procedures/skills/plugin-workflow.md` (all) - Complete workflow specification
 - `procedures/commands/implement.md` (all) - Entry point
 - `procedures/commands/continue.md` (all) - Resumption
@@ -1381,28 +1503,37 @@ For now, marking stage as stub and continuing...
 **Dependencies**: All previous tasks (complete Phase 2 implementation)
 
 **Implementation Steps:**
+
 1. Create comprehensive test plugin specification:
+
    - Name: "TestWorkflowPhase2"
    - Create `plugins/TestWorkflowPhase2/.ideas/creative-brief.md`:
+
      ```markdown
      # TestWorkflowPhase2 - Simple Gain Plugin
 
      ## Type
+
      Audio Effect
 
      ## Concept
+
      Basic gain control plugin for testing Phase 2 workflow.
 
      ## Features
+
      - Single gain parameter
      - Simple audio processing
      - Minimal complexity for testing
      ```
+
    - Create `plugins/TestWorkflowPhase2/.ideas/parameter-spec.md`:
+
      ```markdown
      # Parameter Specification
 
      ## GAIN
+
      - Type: Float
      - Range: -60.0 to 12.0 dB
      - Default: 0.0 dB
@@ -1410,21 +1541,27 @@ For now, marking stage as stub and continuing...
      - UI Control: Rotary slider
      - DSP Usage: Applied to audio signal amplitude
      ```
+
    - Create `plugins/TestWorkflowPhase2/.ideas/architecture.md`:
+
      ```markdown
      # DSP Architecture
 
      ## Core Components
+
      - juce::dsp::Gain (amplitude control)
 
      ## Processing Chain
+
      Input → Gain → Output
 
      ## Parameter Mapping
-     | Parameter | DSP Component | Usage |
-     |-----------|---------------|-------|
-     | GAIN | juce::dsp::Gain | setGainDecibels(GAIN) |
+
+     | Parameter | DSP Component   | Usage                 |
+     | --------- | --------------- | --------------------- |
+     | GAIN      | juce::dsp::Gain | setGainDecibels(GAIN) |
      ```
+
 2. Execute full workflow test:
    - Run: `/implement TestWorkflowPhase2`
    - Verify Stage 0:
@@ -1482,12 +1619,14 @@ For now, marking stage as stub and continuing...
    - Verify workflow resumes at Stage 2 stub
    - Continue through Stage 6
 5. Test contract enforcement:
+
    - Create plugin without contracts: `TestContractEnforcement`
    - Create only creative-brief.md
    - Run: `/implement TestContractEnforcement`
    - Complete Stage 0 (research)
    - Attempt Stage 1
    - **Verify BLOCKS with error:**
+
      ```
      ✗ Cannot proceed to Stage 1 - missing implementation contracts
 
@@ -1497,9 +1636,11 @@ For now, marking stage as stub and continuing...
 
      Next step: Finalize UI mockup to generate parameter-spec.md
      ```
+
    - Add contracts
    - Retry Stage 1
    - Verify proceeds successfully
+
 6. Test decision menus:
    - Verify inline numbered lists appear (NOT AskUserQuestion)
    - Test keyword shortcuts: type "continue", "pause", "review"
@@ -1522,6 +1663,7 @@ For now, marking stage as stub and continuing...
    - .continue-here.md deleted (complete plugin)
 
 **Expected Output:**
+
 - Complete workflow executes from Stage 0 through Stage 6
 - All state files updated correctly
 - Contract enforcement blocks Stage 1 when specs missing
@@ -1532,6 +1674,7 @@ For now, marking stage as stub and continuing...
 - Test plugin reaches ✅ Working status
 
 **Verification:**
+
 - Automated: `scripts/test-workflow-e2e-phase2.sh` - Comprehensive end-to-end test
 - Manual: STOP AND ASK LEX: "Please verify the complete Phase 2 workflow: (1) TestWorkflowPhase2 completes Stages 0,1,2-5 (stubs),6 successfully, (2) contract enforcement blocks Stage 1 without specs, (3) pausing at Stage 2 and resuming with /continue works with context auto-loaded, (4) decision menus appear at all checkpoints with inline numbered lists, (5) validator validates Stages 0,1,6, (6) PLUGINS.md transitions correctly through all states ending at ✅ Working, (7) handoff file deleted after Stage 6, and (8) git log shows commits for Stages 0,1,6 only (not stubs)"
 
@@ -1602,6 +1745,7 @@ git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"
 ### Manual Verification Checklist
 
 **Checkpoint System:**
+
 - [ ] Handoff template matches checkpoint-system.md format exactly (YAML + markdown sections)
 - [ ] Handoff file created after Stage 0 with all required fields
 - [ ] Handoff file updated after each stage with correct data
@@ -1609,18 +1753,21 @@ git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"
 - [ ] Hard checkpoints (Stages 0,1,6) pause for user decision
 
 **State Management:**
+
 - [ ] PLUGINS.md state machine prevents illegal transitions
 - [ ] PLUGINS.md prevents starting second plugin when one is 🚧
 - [ ] PLUGINS.md entry includes all sections (status, timeline, etc.)
 - [ ] Single 🚧 constraint enforced across all plugins
 
 **Git Workflow:**
+
 - [ ] Git commits created after Stages 0, 1, 6 (not stub stages 2-5)
 - [ ] Commit format: `feat: [Plugin] Stage N - description`
 - [ ] Commits are atomic (include Source/, PLUGINS.md, handoff in single commit)
 - [ ] Commit hash displayed to user after each commit
 
 **Decision Menus:**
+
 - [ ] Inline numbered lists used (NOT AskUserQuestion tool)
 - [ ] Context-aware options generated based on stage/status
 - [ ] Keyword shortcuts work ("continue", "pause", "review")
@@ -1629,6 +1776,7 @@ git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"
 - [ ] Recommendation markers visible (`(recommended)`)
 
 **Stage 0 (Research):**
+
 - [ ] Context7 JUCE documentation lookup executes
 - [ ] architecture.md contains DSP specification with Context7 library references
 - [ ] Professional plugin examples documented
@@ -1637,6 +1785,7 @@ git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"
 - [ ] Extended thinking enabled (Opus model)
 
 **Stage 1 (Planning):**
+
 - [ ] **Contract enforcement BLOCKS without parameter-spec.md**
 - [ ] **Contract enforcement BLOCKS without architecture.md**
 - [ ] Error message explains WHY blocked and HOW to unblock
@@ -1647,6 +1796,7 @@ git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"
 - [ ] Decision menu appears with 6 options
 
 **Stage 6 (Validation):**
+
 - [ ] Presets/ directory created with 3+ factory preset files
 - [ ] pluginval executed (or skipped with clear message if no build)
 - [ ] CHANGELOG.md generated in Keep a Changelog format
@@ -1656,6 +1806,7 @@ git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"
 - [ ] Decision menu offers installation as option 1
 
 **Stages 2-5 (Stubs):**
+
 - [ ] Each stub displays TODO message in formatted box
 - [ ] Stub messages clearly state "Phase 3 will implement"
 - [ ] Stubs update PLUGINS.md: 🚧 Stage N (stub)
@@ -1664,6 +1815,7 @@ git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"
 - [ ] No git commits created for stubs
 
 **Validator Integration:**
+
 - [ ] Validator subagent file exists: `.claude/agents/validator.md`
 - [ ] Validator called after Stage 0 (validates architecture.md)
 - [ ] Validator called after Stage 1 (validates plan.md, contracts)
@@ -1672,6 +1824,7 @@ git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"
 - [ ] Validation failure presents 3-option menu (Fix/Re-run/Override)
 
 **Hook System:**
+
 - [ ] UserPromptSubmit hook auto-loads context on /continue
 - [ ] UserPromptSubmit hook loads handoff file and contracts
 - [ ] Stop hook verifies stage committed before session end
@@ -1681,6 +1834,7 @@ git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"
 - [ ] All hooks exit 0 when not relevant (graceful skip)
 
 **context-resume Integration:**
+
 - [ ] /continue command finds handoff file (with or without plugin name)
 - [ ] Handoff YAML parsed correctly
 - [ ] Handoff markdown sections parsed correctly
@@ -1690,6 +1844,7 @@ git log --grep="feat:.*Stage" --format="%s" | grep -E "feat: \w+ Stage [0-6]"
 - [ ] Workflow resumes at exact checkpoint
 
 **End-to-End Workflow:**
+
 - [ ] TestWorkflowPhase2 completes Stage 0 → 1 → 2-5 (stubs) → 6
 - [ ] Contract enforcement blocks Stage 1 without specs
 - [ ] Pausing at Stage 2 and resuming with /continue works
@@ -1741,6 +1896,7 @@ ls -la scripts/test-*.sh
 ### Integration Tests
 
 **Checkpoint System Integration:**
+
 1. Create plugin → Stage 0 → verify handoff created with YAML
 2. Continue Stage 1 → verify handoff updated with complexity_score
 3. Pause at Stage 2 stub → verify handoff preserved
@@ -1748,6 +1904,7 @@ ls -la scripts/test-*.sh
 5. Complete Stage 6 → verify handoff deleted
 
 **Contract Enforcement Integration:**
+
 1. Create plugin with only creative-brief.md
 2. Complete Stage 0 research
 3. Attempt Stage 1 → verify BLOCKED
@@ -1756,6 +1913,7 @@ ls -la scripts/test-*.sh
 6. Verify complexity scoring uses both contracts
 
 **Decision Menu Integration:**
+
 1. Complete Stage 0 → verify 6-option inline menu appears
 2. Type "pause" (keyword) → verify creates checkpoint
 3. Type "continue" (keyword) → verify proceeds to next stage
@@ -1763,6 +1921,7 @@ ls -la scripts/test-*.sh
 5. Choose "1. Continue" → verify proceeds automatically
 
 **Validator Integration:**
+
 1. Complete Stage 0 → verify validator validates architecture.md DSP specification
 2. Validator reports PASS → workflow continues
 3. Complete Stage 1 → verify validator validates plan.md and contracts
@@ -1770,6 +1929,7 @@ ls -la scripts/test-*.sh
 5. Validator reports FAIL → verify 3-option menu appears
 
 **Hook System Integration:**
+
 1. Complete Stage 0, pause
 2. Start new conversation, run /continue → verify UserPromptSubmit loads context
 3. Verify handoff content and contracts displayed
@@ -1808,46 +1968,57 @@ Phase 2 is COMPLETE when:
 ## Potential Issues & Mitigations
 
 **Issue: Handoff format drift between plugin-workflow and context-resume**
+
 - Mitigation: Use shared template file, validate YAML on write
 - Recovery: context-resume shows parse error, suggests handoff format fix
 
 **Issue: PLUGINS.md concurrent modification corruption**
+
 - Mitigation: State machine enforces single 🚧 plugin
 - Recovery: Manual PLUGINS.md edit, restore from git if corrupted
 
 **Issue: Git commit failures (no git, permissions, conflicts)**
+
 - Mitigation: Check git availability at workflow start
 - Recovery: Display error, suggest manual commit, workflow continues
 
 **Issue: Contract enforcement too strict (users want to "just try it")**
+
 - Mitigation: Clear error explains WHY blocked, suggests unblock path
 - User override: NOT PROVIDED - contract enforcement is non-negotiable per ROADMAP.md
 
 **Issue: Complexity scoring inaccurate for novel plugin types**
+
 - Mitigation: Display score breakdown, offer "Adjust complexity" in decision menu
 - Recovery: User adjusts, plan.md regenerated
 
 **Issue: Context7 lookup fails (network, service unavailable)**
+
 - Mitigation: Fallback to web search for JUCE documentation
 - Recovery: Display warning, continue with available information
 
 **Issue: Validator subagent returns malformed JSON**
+
 - Mitigation: Robust JSON parsing with fallback to text analysis
 - Recovery: Log error, skip validation with warning, continue workflow
 
 **Issue: Hook scripts fail (permissions, syntax errors)**
+
 - Mitigation: All hooks exit 0 when not relevant (graceful skip)
 - Recovery: Hook failure logs error but doesn't block workflow
 
 **Issue: Decision menus feel repetitive across stages**
+
 - Mitigation: Vary options based on context, discovery markers teach features
 - Enhancement: Learn user preferences over time (future)
 
 **Issue: Handoff file not found on /continue**
+
 - Mitigation: Search both .ideas/ and plugin root, find most recent
 - Recovery: context-resume shows "No handoff found", suggests create new plugin
 
 **Issue: Stage 6 pluginval not found**
+
 - Mitigation: Check pluginval availability before running
 - Recovery: Skip validation with clear message, add manual test checklist
 
@@ -1856,6 +2027,7 @@ Phase 2 is COMPLETE when:
 ## Notes for Next Phase
 
 **Phase 3 will implement:**
+
 - foundation-agent subagent (replaces Stage 2 stub)
 - shell-agent subagent (replaces Stage 3 stub)
 - dsp-agent subagent (replaces Stage 4 stub)
@@ -1867,6 +2039,7 @@ Phase 2 is COMPLETE when:
 - plugin-testing skill auto-invocation
 
 **Phase 3 prerequisites from Phase 2:**
+
 - Checkpoint system (handoff files) ✓
 - State management (PLUGINS.md, git commits) ✓
 - Stage dispatch pattern established ✓
@@ -1877,6 +2050,7 @@ Phase 2 is COMPLETE when:
 - Stage 6 validation complete ✓
 
 **Interface requirements for Phase 3 subagents:**
+
 - Input: pluginName, stage, contracts (parameter-spec, architecture, plan)
 - Output: JSON report with structure:
   ```json
@@ -1891,6 +2065,7 @@ Phase 2 is COMPLETE when:
 - Pattern documented in: architecture/07-communication-architecture.md lines 82-101
 
 **Testing approach for Phase 3:**
+
 - Replace stubs one at a time
 - Test integration with checkpoint system
 - Verify JSON report parsing
@@ -1899,6 +2074,7 @@ Phase 2 is COMPLETE when:
 - Test SubagentStop hook validation
 
 **Critical Phase 2 → Phase 3 handoff:**
+
 - Stage 2 stub expects: CMakeLists.txt, PluginProcessor.{h,cpp}, PluginEditor.{h,cpp}
 - Stage 3 stub expects: APVTS with parameters, basic processBlock
 - Stage 4 stub expects: DSP implementation, phased if complexity ≥3
@@ -1918,6 +2094,7 @@ Phase 2 is COMPLETE when:
 **Enables:** Phase 3 (Implementation Subagents)
 
 **Key Files Created:**
+
 - `.claude/skills/plugin-workflow/assets/continue-here-template.md` (handoff template)
 - `.claude/agents/validator.md` (validator subagent)
 - `.claude/hooks/UserPromptSubmit.sh` (context injection hook)
@@ -1930,6 +2107,7 @@ Phase 2 is COMPLETE when:
 - Test scripts: 14 scripts in `scripts/`
 
 **Key Files Modified:**
+
 - `.claude/skills/plugin-workflow/SKILL.md` (complete Stages 0,1,6 implementation)
 - `.claude/skills/context-resume/SKILL.md` (handoff parsing and resumption)
 - `PLUGINS.md` (state machine updates throughout workflow)

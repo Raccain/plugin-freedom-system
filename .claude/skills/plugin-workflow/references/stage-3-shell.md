@@ -11,6 +11,7 @@
 **Duration:** 5 minutes
 
 **Preconditions:**
+
 - Stage 2 complete (build system operational)
 - parameter-spec.md exists (from finalized UI mockup)
 
@@ -47,7 +48,6 @@ Call shell-agent subagent with complete specification:
 ```typescript
 const shellResult = Task({
   subagent_type: "shell-agent",
-  model: "sonnet",
   description: `Implement parameters for ${pluginName}`,
   prompt: `Implement parameter system for plugin at plugins/${pluginName}.
 
@@ -69,11 +69,12 @@ Tasks:
 CRITICAL: All parameter IDs must match parameter-spec.md exactly (case-sensitive).
 
 Build verification handled by workflow after agent completes.
-  `
-})
+  `,
+});
 ```
 
 **What shell-agent implements:**
+
 - APVTS with ALL parameters from parameter-spec.md
 - Parameter IDs matching spec exactly (zero-drift)
 - State management (save/load)
@@ -86,6 +87,7 @@ Use same `parseSubagentReport()` function with robust error handling.
 ### 5. Validate shell-agent Report
 
 Check that:
+
 - All parameters from parameter-spec.md were implemented
 - No parameters missing (zero-drift validation)
 - APVTS created successfully
@@ -94,11 +96,13 @@ Check that:
 ### 6. Handle Success/Failure
 
 **If success:**
+
 - Display parameters implemented (list with IDs, types, ranges)
 - Show APVTS status
 - Show parameter count
 
 **If failure:**
+
 - 4-option menu (investigate, show code, show spec, manual fix)
 - Special handling for parameter_mismatch error (contract violation)
 

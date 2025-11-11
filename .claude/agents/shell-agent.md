@@ -1,15 +1,14 @@
 ---
 name: shell-agent
 type: agent
-model: sonnet
 description: Implement plugin parameters and create APVTS shell (Stage 3)
 allowed-tools:
-  - Read      # Read contract files
-  - Edit      # Modify PluginProcessor files
-  - Write     # Create new files if needed
-  - Bash      # Verify build if needed
-  - mcp__context7__resolve-library-id  # Find JUCE library
-  - mcp__context7__get-library-docs  # JUCE documentation
+  - Read # Read contract files
+  - Edit # Modify PluginProcessor files
+  - Write # Create new files if needed
+  - Bash # Verify build if needed
+  - mcp__context7__resolve-library-id # Find JUCE library
+  - mcp__context7__get-library-docs # JUCE documentation
 preconditions:
   - parameter-spec.md exists (from finalized UI mockup)
   - Stage 2 complete (foundation files exist)
@@ -74,8 +73,10 @@ Read `plugins/[PluginName]/.ideas/parameter-spec.md` and extract for each parame
 - **Units** (e.g., "dB", "ms", "Hz")
 
 **Example parameter:**
+
 ```markdown
 ## gain
+
 - Type: Float
 - Range: -60.0 to 12.0 dB
 - Default: 0.0
@@ -130,15 +131,16 @@ juce::AudioProcessorValueTreeState::ParameterLayout [PluginName]AudioProcessor::
 
 **Parameter type mapping:**
 
-| Spec Type | JUCE Class | Range Format |
-|-----------|------------|--------------|
-| Float | `juce::AudioParameterFloat` | `juce::NormalisableRange<float>(min, max, step, skew)` |
-| Bool | `juce::AudioParameterBool` | `default` (true/false) |
-| Choice | `juce::AudioParameterChoice` | `juce::StringArray { "Option1", "Option2", ... }` |
+| Spec Type | JUCE Class                   | Range Format                                           |
+| --------- | ---------------------------- | ------------------------------------------------------ |
+| Float     | `juce::AudioParameterFloat`  | `juce::NormalisableRange<float>(min, max, step, skew)` |
+| Bool      | `juce::AudioParameterBool`   | `default` (true/false)                                 |
+| Choice    | `juce::AudioParameterChoice` | `juce::StringArray { "Option1", "Option2", ... }`      |
 
 **Example implementations:**
 
 **Float parameter (with skew):**
+
 ```cpp
 layout.add(std::make_unique<juce::AudioParameterFloat>(
     juce::ParameterID { "gain", 1 },
@@ -150,6 +152,7 @@ layout.add(std::make_unique<juce::AudioParameterFloat>(
 ```
 
 **Bool parameter:**
+
 ```cpp
 layout.add(std::make_unique<juce::AudioParameterBool>(
     juce::ParameterID { "bypass", 1 },
@@ -159,6 +162,7 @@ layout.add(std::make_unique<juce::AudioParameterBool>(
 ```
 
 **Choice parameter:**
+
 ```cpp
 layout.add(std::make_unique<juce::AudioParameterChoice>(
     juce::ParameterID { "filterType", 1 },
@@ -169,6 +173,7 @@ layout.add(std::make_unique<juce::AudioParameterChoice>(
 ```
 
 **CRITICAL: JUCE 8 ParameterID format**
+
 - Must use `juce::ParameterID { "id", 1 }` format (not bare string)
 - Version number (1) is required in JUCE 8+
 - Old format `"id"` will cause compilation errors
@@ -190,6 +195,7 @@ Replace existing constructor with:
 ```
 
 **Key points:**
+
 - APVTS initialization uses `createParameterLayout()`
 - "Parameters" is the state identifier for save/load
 - `nullptr` for undo manager (can be added later if needed)
@@ -224,6 +230,7 @@ void [PluginName]AudioProcessor::setStateInformation(const void* data, int sizeI
 ```
 
 **This implements:**
+
 - DAW preset saving/loading
 - Parameter automation recall
 - Session state persistence
@@ -250,6 +257,7 @@ void [PluginName]AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, 
 ```
 
 **Real-time safety:**
+
 - Use `getRawParameterValue()` returns `std::atomic<float>*`
 - Call `.load()` for atomic read (lock-free, real-time safe)
 - Never use `getParameter()` in processBlock() (not real-time safe)
@@ -281,6 +289,7 @@ void [PluginName]AudioProcessorEditor::paint(juce::Graphics& g)
 Verify implementation (code only, build handled by plugin-workflow):
 
 1. **Code verification:**
+
    - ✅ Read `Source/PluginProcessor.cpp`
    - ✅ Extract all `juce::ParameterID { "...", 1 }` declarations via regex
    - ✅ Compare extracted IDs with parameter-spec.md
@@ -293,11 +302,13 @@ Verify implementation (code only, build handled by plugin-workflow):
    - ✅ Parameter IDs match exactly (case-sensitive)
 
 **Regex pattern for extraction:**
+
 ```regex
 AudioParameter(?:Float|Bool|Choice)\s*\(\s*ParameterID\s*\{\s*"(\w+)"
 ```
 
 **If validation fails:**
+
 - List missing parameter IDs
 - List mismatched types
 - Set status="failure"
@@ -423,21 +434,25 @@ float value = param->getValue();  // Uses locks internally
 ## Parameter Type Reference
 
 **Float (continuous):**
+
 - Use `juce::NormalisableRange<float>(min, max, step, skew)`
 - Step: 0.01f for smooth values, 1.0f for integers
 - Skew: 1.0f (linear), 2.0f-3.0f (logarithmic), 0.3f-0.5f (exponential)
 
 **Bool (toggle):**
+
 - Default value only (true/false)
 - No range needed
 
 **Choice (discrete):**
+
 - Use `juce::StringArray { "Option1", "Option2", ... }`
 - Default is index (0-based)
 
 ## Success Criteria
 
 **Stage 3 succeeds when:**
+
 1. All parameters from parameter-spec.md implemented
 2. APVTS created with correct JUCE 8 format
 3. State management (save/load) implemented
@@ -447,6 +462,7 @@ float value = param->getValue();  // Uses locks internally
 7. Zero drift: spec IDs exactly match code IDs
 
 **Stage 3 fails when:**
+
 - parameter-spec.md missing (blocking error)
 - Any parameter from spec not implemented
 - Wrong JUCE API format used
@@ -456,12 +472,14 @@ float value = param->getValue();  // Uses locks internally
 ## Real-Time Safety Notes
 
 **Stage 3 creates the parameter SHELL but does NOT use parameters yet:**
+
 - Parameters are declared and available
 - No DSP implementation yet (Stage 4)
 - processBlock() remains pass-through
 - Parameter access example shown but commented out
 
 **Stage 4 (DSP) will:**
+
 - Read parameter values in processBlock()
 - Use atomic reads (real-time safe)
 - Apply parameters to DSP components
@@ -471,6 +489,7 @@ float value = param->getValue();  // Uses locks internally
 After Stage 3 succeeds, plugin-workflow will invoke dsp-agent for Stage 4 (audio processing implementation).
 
 The plugin now has:
+
 - ✅ Build system (Stage 2)
 - ✅ Parameter system (Stage 3)
 - ⏳ Audio processing (Stage 4 - next)

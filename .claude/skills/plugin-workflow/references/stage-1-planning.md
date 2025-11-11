@@ -11,7 +11,7 @@
 **Duration:** 2-5 minutes
 
 **Model Configuration:**
-- Model: Sonnet (deterministic planning)
+
 - Extended thinking: DISABLED
 
 ## Preconditions
@@ -83,6 +83,7 @@ cat plugins/[PluginName]/.ideas/architecture.md
 2. Calculate complexity score:
 
 **Formula:**
+
 ```
 score = min(param_count / 5, 2.0) + algorithm_count + feature_count
 Cap at 5.0
@@ -91,14 +92,17 @@ Cap at 5.0
 **Extract metrics:**
 
 From parameter-spec.md:
+
 - Count parameters (each parameter definition = 1)
 - param_score = min(param_count / 5, 2.0)
 
 From architecture.md:
+
 - Count distinct DSP algorithms/components
 - algorithm_count = number of juce::dsp classes or custom algorithms
 
 From architecture.md (identify features):
+
 - Feedback loops present? (+1)
 - FFT/frequency domain processing? (+1)
 - Multiband processing? (+1)
@@ -107,12 +111,14 @@ From architecture.md (identify features):
 - feature_count = sum of above
 
 **Calculate:**
+
 ```
 total_score = param_score + algorithm_count + feature_count
 final_score = min(total_score, 5.0)
 ```
 
 **Show breakdown:**
+
 ```
 Complexity Calculation:
 - Parameters: [N] parameters ([N/5] points, capped at 2.0) = [X.X]
@@ -271,6 +277,7 @@ phased_implementation: [true/false]
 ```
 
 Update markdown sections:
+
 - Current State: "Stage 1 - Planning complete"
 - Completed So Far: Add Stage 1 details
 - Next Steps: List Stage 2 actions
@@ -281,6 +288,7 @@ Update markdown sections:
 1. Update status:
 
 Use Edit tool to change:
+
 ```markdown
 **Status:** 🚧 Stage 0 → **Status:** 🚧 Stage 1
 ```
@@ -288,6 +296,7 @@ Use Edit tool to change:
 2. Add timeline entry:
 
 Use Edit tool to append to Lifecycle Timeline:
+
 ```markdown
 - **[YYYY-MM-DD] (Stage 1):** Planning - Complexity [X.X]
 ```
@@ -312,6 +321,7 @@ EOF
 ```
 
 Display commit hash:
+
 ```bash
 git log -1 --format='✓ Committed: %h - Stage 1 complete'
 ```
@@ -335,6 +345,7 @@ Choose (1-6): _
 ```
 
 Wait for user response. Handle:
+
 - Number (1-6): Execute corresponding option
 - "continue" keyword: Execute option 1
 - "pause" keyword: Execute option 5

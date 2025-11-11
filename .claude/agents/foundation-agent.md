@@ -1,14 +1,13 @@
 ---
 name: foundation-agent
 type: agent
-model: sonnet
 description: Create JUCE plugin project structure and verify compilation (Stage 2)
 allowed-tools:
-  - Read      # Read contract files
-  - Write     # Create CMakeLists.txt and skeleton files
-  - Bash      # Verify build if needed
-  - mcp__context7__resolve-library-id  # Find JUCE library
-  - mcp__context7__get-library-docs  # JUCE documentation
+  - Read # Read contract files
+  - Write # Create CMakeLists.txt and skeleton files
+  - Bash # Verify build if needed
+  - mcp__context7__resolve-library-id # Find JUCE library
+  - mcp__context7__get-library-docs # JUCE documentation
 preconditions:
   - creative-brief.md exists
   - architecture.md exists (from Stage 0)
@@ -124,6 +123,7 @@ target_compile_definitions([PluginName]
 ```
 
 **Key points:**
+
 - Use JUCE 8 compatible configuration
 - Include all standard audio modules including juce_gui_extra (required for WebBrowserComponent)
 - WebView configuration commented out (gui-agent will uncomment if WebView UI is used)
@@ -171,6 +171,7 @@ private:
 ```
 
 **Adjust based on architecture.md:**
+
 - If instrument: `acceptsMidi() = true`
 - If MIDI effect: `isMidiEffect() = true`
 
@@ -238,6 +239,7 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 ```
 
 **Key points:**
+
 - Use `juce::ScopedNoDenormals` in processBlock (real-time safety)
 - Pass-through audio (no processing yet)
 - Empty state management (parameters added in Stage 3)
@@ -299,6 +301,7 @@ void [PluginName]AudioProcessorEditor::resized()
 ```
 
 **Key points:**
+
 - 600x400 default size (will be adjusted in Stage 5 based on UI mockup)
 - Placeholder text for Stage 2
 - Empty layout (WebView added in Stage 5)
@@ -350,10 +353,7 @@ Generate JSON report in this exact format:
     "error_type": "file_creation_error",
     "error_message": "[Specific error message]"
   },
-  "issues": [
-    "Failed to create: [specific file]",
-    "Reason: [specific reason]"
-  ],
+  "issues": ["Failed to create: [specific file]", "Reason: [specific reason]"],
   "ready_for_next_stage": false
 }
 ```
@@ -363,11 +363,13 @@ Generate JSON report in this exact format:
 ## Contract Enforcement
 
 **BLOCK if missing:**
+
 - creative-brief.md (cannot extract PRODUCT_NAME)
 - architecture.md (cannot determine plugin type)
 - plan.md (cannot assess complexity)
 
 **Error message format:**
+
 ```json
 {
   "agent": "foundation-agent",
@@ -385,18 +387,21 @@ Generate JSON report in this exact format:
 ## Success Criteria
 
 **foundation-agent succeeds when:**
+
 1. All source files created and properly formatted
 2. CMakeLists.txt configured for JUCE 8
 3. File validation passes (all files exist)
 4. JSON report generated with correct format
 
 **foundation-agent fails when:**
+
 - Any contract missing (creative-brief.md, architecture.md, plan.md)
 - Cannot extract PRODUCT_NAME from creative-brief.md
 - File creation errors (permissions, disk space, etc.)
 - Invalid plugin type specified in architecture.md
 
 **Build verification (Stage 2 completion) handled by:**
+
 - plugin-workflow invokes build-automation skill after foundation-agent completes
 - build-automation runs build script and handles any build failures
 
@@ -411,6 +416,7 @@ Generate JSON report in this exact format:
 ## Real-Time Safety
 
 Even in Stage 2, enforce real-time rules:
+
 - Use `juce::ScopedNoDenormals` in processBlock()
 - No allocations in audio thread
 - Use `juce::ignoreUnused()` for unused parameters (avoids warnings)
@@ -418,6 +424,7 @@ Even in Stage 2, enforce real-time rules:
 ## JUCE API Verification
 
 All JUCE classes used in Stage 2 are verified for JUCE 8.0.9+:
+
 - ✅ `juce::AudioProcessor` - Core audio processor
 - ✅ `juce::AudioProcessorEditor` - Base editor class
 - ✅ `juce::AudioBuffer<float>` - Audio buffer

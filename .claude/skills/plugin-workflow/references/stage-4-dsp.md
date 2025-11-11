@@ -11,6 +11,7 @@
 **Duration:** 15-45 minutes (depending on complexity)
 
 **Preconditions:**
+
 - Stage 3 complete (parameters implemented)
 - architecture.md exists (DSP component specifications)
 - plan.md exists (complexity score, phase breakdown)
@@ -22,16 +23,20 @@
 Determine if phased implementation is required:
 
 ```typescript
-const planContent = readFile(`plugins/${pluginName}/.ideas/plan.md`)
+const planContent = readFile(`plugins/${pluginName}/.ideas/plan.md`);
 
 // Extract complexity score
-const complexityMatch = planContent.match(/Complexity Score:\*\*\s*([\d.]+)/)
-const complexityScore = complexityMatch ? parseFloat(complexityMatch[1]) : 0
+const complexityMatch = planContent.match(/Complexity Score:\*\*\s*([\d.]+)/);
+const complexityScore = complexityMatch ? parseFloat(complexityMatch[1]) : 0;
 
 // Check if plan specifies phases
-const hasPhases = planContent.includes("### Phase 4.1") || planContent.includes("## Stage 4: DSP Phases")
+const hasPhases =
+  planContent.includes("### Phase 4.1") ||
+  planContent.includes("## Stage 4: DSP Phases");
 
-console.log(`Complexity: ${complexityScore} (${hasPhases ? 'phased' : 'single-pass'})`)
+console.log(
+  `Complexity: ${complexityScore} (${hasPhases ? "phased" : "single-pass"})`
+);
 ```
 
 ### 2a. Single-Pass Implementation (Complexity ≤2)
@@ -43,7 +48,6 @@ Invoke dsp-agent once for complete DSP implementation:
 ```typescript
 const dspResult = Task({
   subagent_type: "dsp-agent",
-  model: "sonnet",  // Sonnet for simple DSP
   description: `Implement DSP for ${pluginName}`,
   prompt: `Implement audio processing for plugin at plugins/${pluginName}.
 
@@ -66,17 +70,23 @@ Tasks:
 9. Return JSON report with components list and real-time safety status
 
 Build verification handled by workflow after agent completes.
-  `
-})
+  `,
+});
 
 // Parse and validate report (same as Stage 2/3)
-const report = parseSubagentReport(dspResult)
+const report = parseSubagentReport(dspResult);
 
 if (report.status === "success") {
-  console.log(`✓ Stage 4 complete: DSP implemented`)
-  console.log(`  - Components: ${report.outputs.dsp_components_implemented.length}`)
-  console.log(`  - Parameters connected: ${report.outputs.parameters_connected.length}`)
-  console.log(`  - Real-time safe: ${report.outputs.real_time_safe ? 'Yes' : 'No'}`)
+  console.log(`✓ Stage 4 complete: DSP implemented`);
+  console.log(
+    `  - Components: ${report.outputs.dsp_components_implemented.length}`
+  );
+  console.log(
+    `  - Parameters connected: ${report.outputs.parameters_connected.length}`
+  );
+  console.log(
+    `  - Real-time safe: ${report.outputs.real_time_safe ? "Yes" : "No"}`
+  );
 
   // Continue to auto-test (Step 5)
 }
@@ -90,37 +100,36 @@ Parse phase breakdown from plan.md:
 
 ```typescript
 // Extract phases from plan.md
-const phasePattern = /### Phase (4\.\d+):\s*(.+?)\n/g
-const phases = []
-let match
+const phasePattern = /### Phase (4\.\d+):\s*(.+?)\n/g;
+const phases = [];
+let match;
 
 while ((match = phasePattern.exec(planContent)) !== null) {
   phases.push({
-    number: match[1],  // e.g., "4.1"
-    description: match[2]  // e.g., "Core Processing"
-  })
+    number: match[1], // e.g., "4.1"
+    description: match[2], // e.g., "Core Processing"
+  });
 }
 
-console.log(`Stage 4 will execute in ${phases.length} phases:`)
-phases.forEach(phase => {
-  console.log(`  - Phase ${phase.number}: ${phase.description}`)
-})
+console.log(`Stage 4 will execute in ${phases.length} phases:`);
+phases.forEach((phase) => {
+  console.log(`  - Phase ${phase.number}: ${phase.description}`);
+});
 ```
 
 **Execute each phase sequentially:**
 
 ```typescript
 for (let i = 0; i < phases.length; i++) {
-  const phase = phases[i]
+  const phase = phases[i];
 
-  console.log(`\n━━━ Stage ${phase.number} - ${phase.description} ━━━\n`)
+  console.log(`\n━━━ Stage ${phase.number} - ${phase.description} ━━━\n`);
 
   // Determine model based on complexity
-  const model = complexityScore >= 4 ? "opus" : "sonnet"
+  const model = complexityScore >= 4 ? "opus" : "sonnet";
 
   const phaseResult = Task({
     subagent_type: "dsp-agent",
-    model: model,  // Opus for complexity ≥4
     description: `Implement DSP Phase ${phase.number} for ${pluginName}`,
     prompt: `Implement Phase ${phase.number} of DSP for plugin at plugins/${pluginName}.
 
@@ -147,10 +156,10 @@ Tasks:
 CRITICAL: Implement ONLY Phase ${phase.number} components, preserve all previous phase code.
 
 Build verification handled by workflow after agent completes.
-    `
-  })
+    `,
+  });
 
-  const phaseReport = parseSubagentReport(phaseResult)
+  const phaseReport = parseSubagentReport(phaseResult);
 
   if (!phaseReport || phaseReport.status === "failure") {
     console.log(`
@@ -169,15 +178,19 @@ What would you like to do?
 4. I'll fix it manually (say "resume automation" when ready)
 
 Choose (1-4): _
-    `)
+    `);
 
     // Handle failure (same 4-option menu as Stage 2/3)
-    return  // Stop phased execution on failure
+    return; // Stop phased execution on failure
   }
 
   // Phase succeeded
-  console.log(`✓ Phase ${phase.number} complete: ${phase.description}`)
-  console.log(`  - Components: ${phaseReport.outputs.components_this_phase?.join(', ') || 'N/A'}`)
+  console.log(`✓ Phase ${phase.number} complete: ${phase.description}`);
+  console.log(
+    `  - Components: ${
+      phaseReport.outputs.components_this_phase?.join(", ") || "N/A"
+    }`
+  );
 
   // Git commit for this phase
   await bash(`
@@ -196,25 +209,30 @@ Components implemented this phase
 Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
-  `)
+  `);
 
-  console.log(`✓ Committed: ${await bash('git log -1 --format="%h"')}`)
+  console.log(`✓ Committed: ${await bash('git log -1 --format="%h"')}`);
 
   // Update plan.md with phase timestamp
-  const timestamp = new Date().toISOString()
-  updatePlanMd(pluginName, phase.number, timestamp)
+  const timestamp = new Date().toISOString();
+  updatePlanMd(pluginName, phase.number, timestamp);
 
   // Update handoff
   updateHandoff(
     pluginName,
-    phase.number,  // e.g., "4.1"
+    phase.number, // e.g., "4.1"
     `Phase ${phase.number} complete: ${phase.description}`,
     i < phases.length - 1
-      ? [`Phase ${phases[i+1].number}: ${phases[i+1].description}`, "Review current phase", "Test", "Pause"]
+      ? [
+          `Phase ${phases[i + 1].number}: ${phases[i + 1].description}`,
+          "Review current phase",
+          "Test",
+          "Pause",
+        ]
       : ["Auto-test Stage 4 output", "Review complete DSP", "Pause"],
     complexityScore,
-    true  // phased
-  )
+    true // phased
+  );
 
   // Decision menu after each phase
   if (i < phases.length - 1) {
@@ -225,19 +243,23 @@ EOF
 Progress: ${i + 1} of ${phases.length} phases complete
 
 What's next?
-1. Continue to Phase ${phases[i+1].number} (${phases[i+1].description}) (recommended)
+1. Continue to Phase ${phases[i + 1].number} (${
+      phases[i + 1].description
+    }) (recommended)
 2. Review Phase ${phase.number} code
 3. Test current state in DAW
 4. Pause here
 5. Other
 
 Choose (1-5): _
-    `)
+    `);
 
-    const choice = getUserInput()
+    const choice = getUserInput();
     if (choice === "4" || choice === "pause") {
-      console.log("\n⏸ Paused between phases. Resume with /continue to continue Phase ${phases[i+1].number}.")
-      return
+      console.log(
+        "\n⏸ Paused between phases. Resume with /continue to continue Phase ${phases[i+1].number}."
+      );
+      return;
     }
     // Other choices: review, test, etc., then re-present menu
   }
@@ -245,7 +267,7 @@ Choose (1-5): _
   // Last phase - continue to auto-test
 }
 
-console.log(`\n✓ All ${phases.length} phases complete!`)
+console.log(`\n✓ All ${phases.length} phases complete!`);
 ```
 
 ### 3. Handle Non-Phased Success
@@ -261,10 +283,14 @@ updateHandoff(
   ["Auto-test Stage 4", "Review DSP code", "Test audio manually"],
   complexityScore,
   false
-)
+);
 
-updatePluginStatus(pluginName, "🚧 Stage 4")
-updatePluginTimeline(pluginName, 4, `DSP complete - ${report.outputs.dsp_components_implemented.length} components`)
+updatePluginStatus(pluginName, "🚧 Stage 4");
+updatePluginTimeline(
+  pluginName,
+  4,
+  `DSP complete - ${report.outputs.dsp_components_implemented.length} components`
+);
 
 // Git commit
 bash(`
@@ -285,7 +311,7 @@ Real-time safe implementation
 Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
-`)
+`);
 ```
 
 ### 4. Handle Failure (Single-Pass or Any Phase)
@@ -303,7 +329,7 @@ Error: ${report.outputs.error_message}
 Type: ${report.outputs.error_type}
 
 Issues:
-${report.issues.map(i => `  - ${i}`).join('\n')}
+${report.issues.map((i) => `  - ${i}`).join("\n")}
 
 What would you like to do?
 1. Investigate (invoke troubleshooter)
@@ -312,7 +338,7 @@ What would you like to do?
 4. I'll fix it manually (say "resume automation" when ready)
 
 Choose (1-4): _
-  `)
+  `);
 
   // Handle choice (same as Stage 2/3)
 }
@@ -323,10 +349,10 @@ Choose (1-4): _
 **After Stage 4 succeeds (all phases if phased):**
 
 ```typescript
-console.log("\n━━━ Running automated tests ━━━\n")
+console.log("\n━━━ Running automated tests ━━━\n");
 
 const testResult = Task({
-  subagent_type: "general-purpose",  // Or invoke plugin-testing skill directly
+  subagent_type: "general-purpose", // Or invoke plugin-testing skill directly
   description: `Test ${pluginName} after Stage 4`,
   prompt: `
 Run automated tests for ${pluginName} after Stage 4 DSP implementation.
@@ -339,13 +365,14 @@ Use the plugin-testing skill to run the 5 automated tests:
 5. State test (save/load works)
 
 Report results.
-  `
-})
+  `,
+});
 
-console.log(testResult)
+console.log(testResult);
 
 // Parse test results
-const testsPassed = testResult.includes("✓ All tests passed") || testResult.includes("PASS")
+const testsPassed =
+  testResult.includes("✓ All tests passed") || testResult.includes("PASS");
 
 if (!testsPassed) {
   console.log(`
@@ -367,27 +394,31 @@ What would you like to do?
 4. I'll fix it manually (say "resume automation" when ready)
 
 Choose (1-4): _
-  `)
+  `);
 
   // STOP - Do not proceed to Stage 5 with failing tests
-  return
+  return;
 }
 
-console.log("✓ All Stage 4 tests passed")
+console.log("✓ All Stage 4 tests passed");
 ```
 
 ### 6. Invoke validator for Complexity ≥4 Plugins
 
 **For complexity ≥4 plugins, run semantic validation:**
 
-```typescript
+````typescript
 if (complexityScore >= 4) {
-  console.log("\n━━━ Running semantic validation (complexity ≥4) ━━━\n")
+  console.log("\n━━━ Running semantic validation (complexity ≥4) ━━━\n");
 
   // Read contracts
-  const paramSpecContent = readFile(`plugins/${pluginName}/.ideas/parameter-spec.md`)
-  const architectureContent = readFile(`plugins/${pluginName}/.ideas/architecture.md`)
-  const planContent = readFile(`plugins/${pluginName}/.ideas/plan.md`)
+  const paramSpecContent = readFile(
+    `plugins/${pluginName}/.ideas/parameter-spec.md`
+  );
+  const architectureContent = readFile(
+    `plugins/${pluginName}/.ideas/architecture.md`
+  );
+  const planContent = readFile(`plugins/${pluginName}/.ideas/plan.md`);
 
   const validationResult = Task({
     subagent_type: "validator",
@@ -412,21 +443,22 @@ Validate Stage 4 completion for ${pluginName}.
 - Edge cases handled (zero-length buffers)
 
 Return JSON validation report with status, checks, and recommendation.
-    `
-  })
+    `,
+  });
 
   // Parse JSON report (robust handling)
-  let validationReport
+  let validationReport;
   try {
     // Try extracting JSON from markdown code blocks first
-    const jsonMatch = validationResult.match(/```json\n([\s\S]*?)\n```/) ||
-                      validationResult.match(/```\n([\s\S]*?)\n```/)
+    const jsonMatch =
+      validationResult.match(/```json\n([\s\S]*?)\n```/) ||
+      validationResult.match(/```\n([\s\S]*?)\n```/);
 
     if (jsonMatch) {
-      validationReport = JSON.parse(jsonMatch[1])
+      validationReport = JSON.parse(jsonMatch[1]);
     } else {
       // Try parsing entire response as JSON
-      validationReport = JSON.parse(validationResult)
+      validationReport = JSON.parse(validationResult);
     }
   } catch (error) {
     console.log(`
@@ -436,47 +468,50 @@ Raw validator output:
 ${validationResult}
 
 Continuing workflow (validation is advisory, not blocking).
-    `)
-    validationReport = null
+    `);
+    validationReport = null;
   }
 
   // Present findings if report parsed successfully
   if (validationReport) {
-    const { status, checks, recommendation, continue_to_next_stage } = validationReport
+    const { status, checks, recommendation, continue_to_next_stage } =
+      validationReport;
 
     console.log(`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${status === "PASS" ? "✓" : "✗"} Validator ${status}: Stage 4 Review
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    `)
+    `);
 
     // Group checks by severity
-    const errors = checks.filter(c => c.severity === "error")
-    const warnings = checks.filter(c => c.severity === "warning")
-    const info = checks.filter(c => c.severity === "info")
+    const errors = checks.filter((c) => c.severity === "error");
+    const warnings = checks.filter((c) => c.severity === "warning");
+    const info = checks.filter((c) => c.severity === "info");
 
     if (errors.length > 0) {
-      console.log("\n❌ Errors:")
-      errors.forEach(e => console.log(`  - ${e.message}`))
+      console.log("\n❌ Errors:");
+      errors.forEach((e) => console.log(`  - ${e.message}`));
     }
 
     if (warnings.length > 0) {
-      console.log("\n⚠️  Warnings:")
-      warnings.forEach(w => console.log(`  - ${w.message}`))
+      console.log("\n⚠️  Warnings:");
+      warnings.forEach((w) => console.log(`  - ${w.message}`));
     }
 
     if (info.length > 0 && info.length <= 5) {
-      console.log("\nℹ️  Info:")
-      info.forEach(i => console.log(`  - ${i.message}`))
+      console.log("\nℹ️  Info:");
+      info.forEach((i) => console.log(`  - ${i.message}`));
     }
 
-    console.log(`\nRecommendation: ${recommendation}`)
+    console.log(`\nRecommendation: ${recommendation}`);
 
     // Present decision menu with validation findings
     console.log(`
 
 What's next?
-1. Continue to Stage 5 (implement UI) ${continue_to_next_stage ? "(recommended by validator)" : ""}
+1. Continue to Stage 5 (implement UI) ${
+      continue_to_next_stage ? "(recommended by validator)" : ""
+    }
 2. Address validator ${errors.length > 0 ? "errors" : "warnings"} first
 3. Review validator report details
 4. Test audio manually in DAW
@@ -484,13 +519,13 @@ What's next?
 6. Other
 
 Choose (1-6): _
-    `)
+    `);
 
     // User decides next action based on findings
     // (Advisory layer - user makes final call)
   }
 }
-```
+````
 
 ### 7. Decision Menu (After Tests Pass)
 

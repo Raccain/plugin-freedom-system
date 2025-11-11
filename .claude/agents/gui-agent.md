@@ -1,15 +1,14 @@
 ---
 name: gui-agent
 type: agent
-model: sonnet
 description: Integrate WebView UI and bind parameters (Stage 5)
 allowed-tools:
-  - Read      # Read contract files and mockup
-  - Edit      # Modify PluginEditor files
-  - Write     # Create UI files
-  - Bash      # Download JUCE frontend library, verify build
-  - mcp__context7__resolve-library-id  # Find JUCE library
-  - mcp__context7__get-library-docs  # JUCE WebView documentation
+  - Read # Read contract files and mockup
+  - Edit # Modify PluginEditor files
+  - Write # Create UI files
+  - Bash # Download JUCE frontend library, verify build
+  - mcp__context7__resolve-library-id # Find JUCE library
+  - mcp__context7__get-library-docs # JUCE WebView documentation
 preconditions:
   - Finalized UI mockup exists (v[N]-ui.html)
   - parameter-spec.md exists (from mockup finalization)
@@ -92,6 +91,7 @@ fi
 ```
 
 **Decision:**
+
 - If `UI_TYPE="webview"`: Use finalized WebView mockup files (Workflow A)
 - If `UI_TYPE="native-juce"`: Generate native JUCE components (Workflow B)
 
@@ -106,6 +106,7 @@ Follow steps 1-12 below for WebView integration.
 ### Workflow B: Native JUCE Implementation (fallback)
 
 **[TO BE IMPLEMENTED]** Generate basic native JUCE UI:
+
 - Create PluginEditor with juce::Slider/ToggleButton/ComboBox components
 - Layout components vertically with labels
 - Use juce::AudioProcessorValueTreeState::SliderAttachment for bindings
@@ -120,11 +121,13 @@ Follow steps 1-12 below for WebView integration.
 ### 1. Identify Finalized Mockup
 
 **Scan `.ideas/mockups/` directory for finalized version:**
+
 - Look for `v[N]-ui.html` files (v1-ui.html, v2-ui.html, etc.)
 - Higher version number = more recent
 - Use highest version number found
 
 **Extract from finalized mockup:**
+
 - Parameter IDs from HTML (data attributes, IDs, classes)
 - UI dimensions (width, height)
 - JavaScript dependencies
@@ -187,6 +190,7 @@ cp .ideas/mockups/v[N]-ui.html Source/ui/public/index.html
 ```
 
 **If mockup includes separate CSS/JS files, copy those too:**
+
 - `v[N]-styles.css` → `Source/ui/public/css/styles.css`
 - `v[N]-app.js` → `Source/ui/public/js/app.js`
 
@@ -211,18 +215,18 @@ Verify JUCE import is in `<head>` section (should already be present from mockup
 
 ```html
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>[Plugin Name]</title>
-    <link rel="stylesheet" href="css/styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>[Plugin Name]</title>
+  <link rel="stylesheet" href="css/styles.css" />
 
-    <!-- JUCE WebView Bridge -->
-    <script type="module">
-        import * as Juce from "./js/juce/index.js";
-        window.Juce = Juce;  // Make available globally
-    </script>
+  <!-- JUCE WebView Bridge -->
+  <script type="module">
+    import * as Juce from "./js/juce/index.js";
+    window.Juce = Juce; // Make available globally
+  </script>
 
-    <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js"></script>
 </head>
 ```
 
@@ -237,66 +241,66 @@ Verify JUCE import is in `<head>` section (should already be present from mockup
 import * as Juce from "./juce.js";
 
 // Wait for DOM to load
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('JUCE backend:', window.__JUCE__?.backend);
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("JUCE backend:", window.__JUCE__?.backend);
 
-    // Bind each parameter
-    bindParameter('gain', 'range');      // Float parameter (slider)
-    bindParameter('bypass', 'checkbox'); // Bool parameter (toggle)
-    bindParameter('filterType', 'select'); // Choice parameter (dropdown)
+  // Bind each parameter
+  bindParameter("gain", "range"); // Float parameter (slider)
+  bindParameter("bypass", "checkbox"); // Bool parameter (toggle)
+  bindParameter("filterType", "select"); // Choice parameter (dropdown)
 });
 
 // Float parameter binding (slider)
 function bindParameter(paramId, type) {
-    const element = document.getElementById(paramId);
-    if (!element) {
-        console.error(`Element not found: ${paramId}`);
-        return;
-    }
+  const element = document.getElementById(paramId);
+  if (!element) {
+    console.error(`Element not found: ${paramId}`);
+    return;
+  }
 
-    if (type === 'range') {
-        // Get slider state from JUCE
-        const state = Juce.getSliderState(paramId);
+  if (type === "range") {
+    // Get slider state from JUCE
+    const state = Juce.getSliderState(paramId);
 
-        // Initialize element with current value
-        element.value = state.normalisedValue;
+    // Initialize element with current value
+    element.value = state.normalisedValue;
 
-        // Update JUCE when element changes
-        element.addEventListener('input', (e) => {
-            state.normalisedValue = parseFloat(e.target.value);
-        });
+    // Update JUCE when element changes
+    element.addEventListener("input", (e) => {
+      state.normalisedValue = parseFloat(e.target.value);
+    });
 
-        // Update element when JUCE changes (automation, preset load)
-        state.valueChangedEvent.addListener((newValue) => {
-            element.value = newValue;
-        });
-    }
+    // Update element when JUCE changes (automation, preset load)
+    state.valueChangedEvent.addListener((newValue) => {
+      element.value = newValue;
+    });
+  }
 
-    if (type === 'checkbox') {
-        const state = Juce.getToggleState(paramId);
-        element.checked = state.value;
+  if (type === "checkbox") {
+    const state = Juce.getToggleState(paramId);
+    element.checked = state.value;
 
-        element.addEventListener('change', (e) => {
-            state.value = e.target.checked;
-        });
+    element.addEventListener("change", (e) => {
+      state.value = e.target.checked;
+    });
 
-        state.valueChangedEvent.addListener((newValue) => {
-            element.checked = newValue;
-        });
-    }
+    state.valueChangedEvent.addListener((newValue) => {
+      element.checked = newValue;
+    });
+  }
 
-    if (type === 'select') {
-        const state = Juce.getComboBoxState(paramId);
-        element.selectedIndex = state.selectedId;
+  if (type === "select") {
+    const state = Juce.getComboBoxState(paramId);
+    element.selectedIndex = state.selectedId;
 
-        element.addEventListener('change', (e) => {
-            state.selectedId = e.target.selectedIndex;
-        });
+    element.addEventListener("change", (e) => {
+      state.selectedId = e.target.selectedIndex;
+    });
 
-        state.valueChangedEvent.addListener((newId) => {
-            element.selectedIndex = newId;
-        });
-    }
+    state.valueChangedEvent.addListener((newId) => {
+      element.selectedIndex = newId;
+    });
+  }
 }
 ```
 
@@ -382,6 +386,7 @@ private:
 **Why this order matters:**
 
 When plugin reloads (DAW closes editor):
+
 1. **Attachments destroyed first** → stop using relays/webView
 2. **WebView destroyed second** → safe (attachments no longer referencing it)
 3. **Relays destroyed last** → safe (nothing using them)
@@ -466,6 +471,7 @@ for param in parameters:
 ```
 
 **Key points:**
+
 - Initialize members in SAME order as declaration
 - Register ALL relays with `.withOptionsFrom(relay)`
 - Use exact parameter IDs from APVTS
@@ -523,6 +529,7 @@ std::optional<juce::WebBrowserComponent::Resource>
 ```
 
 **This function:**
+
 - Serves files embedded in plugin binary
 - Maps URLs to BinaryData resources
 - Sets correct MIME types (critical for .js files)
@@ -555,6 +562,7 @@ target_compile_definitions(${PRODUCT_NAME}
 ```
 
 **Key points:**
+
 - Use `${PRODUCT_NAME}_UIResources` naming convention
 - File paths start with `Source/ui/public/`
 - Include `juce::juce_gui_extra` module (contains WebBrowserComponent)
@@ -723,13 +731,14 @@ assert "user-select: none" in html_content
 
 **Three relay types for three parameter types:**
 
-| Parameter Type | JUCE Class | Relay Class | JavaScript Function |
-|----------------|------------|-------------|---------------------|
-| Float (continuous) | `juce::AudioParameterFloat` | `juce::WebSliderRelay` | `Juce.getSliderState(id)` |
-| Bool (toggle) | `juce::AudioParameterBool` | `juce::WebToggleButtonRelay` | `Juce.getToggleState(id)` |
-| Choice (discrete) | `juce::AudioParameterChoice` | `juce::WebComboBoxRelay` | `Juce.getComboBoxState(id)` |
+| Parameter Type     | JUCE Class                   | Relay Class                  | JavaScript Function         |
+| ------------------ | ---------------------------- | ---------------------------- | --------------------------- |
+| Float (continuous) | `juce::AudioParameterFloat`  | `juce::WebSliderRelay`       | `Juce.getSliderState(id)`   |
+| Bool (toggle)      | `juce::AudioParameterBool`   | `juce::WebToggleButtonRelay` | `Juce.getToggleState(id)`   |
+| Choice (discrete)  | `juce::AudioParameterChoice` | `juce::WebComboBoxRelay`     | `Juce.getComboBoxState(id)` |
 
 **Each parameter requires:**
+
 1. Relay member (e.g., `juce::WebSliderRelay gainRelay`)
 2. Attachment member (e.g., `juce::WebSliderParameterAttachment gainAttachment`)
 3. Registration in WebView options (`.withOptionsFrom(gainRelay)`)
@@ -738,51 +747,61 @@ assert "user-select: none" in html_content
 ## Common Issues and Resolutions
 
 **Issue 1: Parameter ID mismatch**
+
 - Symptom: HTML references parameter IDs not in spec
 - Resolution: Regenerate mockup with correct IDs, or update spec to match mockup
 - Detection: Step 1.5 validation should catch this
 
 **Issue 2: Wrong member order**
+
 - Symptom: Generated PluginEditor.h has attachments before relays
 - Resolution: Enforce order: relays → webView → attachments
 - Impact: Causes crashes in release builds on plugin reload
 
 **Issue 3: CSS viewport units**
+
 - Symptom: HTML uses `100vh` or `100vw`
 - Resolution: Replace with `100%`, add `html, body { height: 100%; }`
 - Impact: WebView may not render correctly
 
 **Issue 4: Missing resource mappings**
+
 - Symptom: WebView blank on load
 - Resolution: Verify all files in `Source/ui/public/` are mapped in `getResource()`
 - Check: Ensure `juce_add_binary_data` includes all UI files
 
 **Issue 5: Relay not registered in WebView options**
+
 - Symptom: Parameter doesn't respond to UI interaction
 - Resolution: Add `.withOptionsFrom(*relay)` for missing relay
 - Verification: Count `.withOptionsFrom()` calls matches relay count
 
 **Blank WebView:**
+
 - Missing `.withNativeIntegrationEnabled()`
 - Resource provider returns `std::nullopt` for all files
 - Wrong MIME type for .js files (must be `application/javascript`)
 
 **Parameters don't sync:**
+
 - Parameter IDs don't match (C++ vs JavaScript)
 - Relay not registered with `.withOptionsFrom()`
 - Wrong relay type for parameter type
 
 **Crashes on reload:**
+
 - Wrong member declaration order (attachments before webView)
 - Destructor tries to use already-destroyed webView
 
 **UI doesn't update from automation:**
+
 - Missing `valueChangedEvent.addListener()` in JavaScript
 - Event listener not updating HTML element
 
 ## Success Criteria
 
 **Stage 5 succeeds when:**
+
 1. Finalized UI mockup integrated (HTML/CSS/JS in ui/public/)
 2. All parameters from parameter-spec.md have relay + attachment
 3. Member declaration order correct (Relays → WebView → Attachments)
@@ -795,6 +814,7 @@ assert "user-select: none" in html_content
 10. Plugin doesn't crash on reload
 
 **Stage 5 fails when:**
+
 - No finalized UI mockup found (blocking error)
 - Missing bindings (parameters without relay/attachment)
 - Wrong member order (causes release build crashes)
@@ -805,11 +825,13 @@ assert "user-select: none" in html_content
 ## Next Stage
 
 After Stage 5 succeeds:
+
 1. **Auto-invoke plugin-testing skill** (5 automated tests including UI validation)
 2. **If tests FAIL:** STOP, show results, wait for fixes
 3. **If tests PASS:** Continue to Stage 6 (final validation and release)
 
 The plugin is now COMPLETE:
+
 - ✅ Build system (Stage 2)
 - ✅ Parameter system (Stage 3)
 - ✅ Audio processing (Stage 4)

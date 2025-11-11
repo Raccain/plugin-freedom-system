@@ -11,6 +11,7 @@
 **Duration:** 20-60 minutes (depending on complexity)
 
 **Preconditions:**
+
 - Stage 4 complete and tests passed (DSP operational)
 - Finalized UI mockup exists (v[N]-ui.html)
 - parameter-spec.md exists
@@ -68,11 +69,15 @@ echo "✓ Found finalized mockup: $LATEST_MOCKUP"
 Same as Stage 4 - check if phased implementation needed:
 
 ```typescript
-const planContent = readFile(`plugins/${pluginName}/.ideas/plan.md`)
-const complexityScore = extractComplexityScore(planContent)
-const hasPhases = planContent.includes("### Phase 5.1") || planContent.includes("## Stage 5: GUI Phases")
+const planContent = readFile(`plugins/${pluginName}/.ideas/plan.md`);
+const complexityScore = extractComplexityScore(planContent);
+const hasPhases =
+  planContent.includes("### Phase 5.1") ||
+  planContent.includes("## Stage 5: GUI Phases");
 
-console.log(`Complexity: ${complexityScore} (${hasPhases ? 'phased' : 'single-pass'})`)
+console.log(
+  `Complexity: ${complexityScore} (${hasPhases ? "phased" : "single-pass"})`
+);
 ```
 
 ### 3a. Single-Pass Implementation (Complexity ≤2)
@@ -82,11 +87,10 @@ console.log(`Complexity: ${complexityScore} (${hasPhases ? 'phased' : 'single-pa
 Invoke gui-agent once for complete UI integration:
 
 ```typescript
-const mockupPath = findLatestMockup(pluginName)
+const mockupPath = findLatestMockup(pluginName);
 
 const guiResult = Task({
   subagent_type: "gui-agent",
-  model: "sonnet",
   description: `Integrate WebView UI for ${pluginName}`,
   prompt: `Integrate WebView UI for plugin at plugins/${pluginName}.
 
@@ -112,18 +116,26 @@ Tasks:
 ⚠️ CRITICAL: Member declaration order (Relays → WebView → Attachments) prevents 90% of release build crashes.
 
 Build verification handled by workflow after agent completes.
-  `
-})
+  `,
+});
 
 // Parse and validate report
-const report = parseSubagentReport(guiResult)
+const report = parseSubagentReport(guiResult);
 
 if (report.status === "success") {
-  console.log(`✓ Stage 5 complete: UI integrated`)
-  console.log(`  - Mockup version: ${report.outputs.ui_mockup_version}`)
-  console.log(`  - Bindings: ${report.outputs.binding_count}`)
-  console.log(`  - All parameters bound: ${report.outputs.all_parameters_bound ? 'Yes' : 'No'}`)
-  console.log(`  - Member order correct: ${report.outputs.member_order_correct ? 'Yes' : 'No'}`)
+  console.log(`✓ Stage 5 complete: UI integrated`);
+  console.log(`  - Mockup version: ${report.outputs.ui_mockup_version}`);
+  console.log(`  - Bindings: ${report.outputs.binding_count}`);
+  console.log(
+    `  - All parameters bound: ${
+      report.outputs.all_parameters_bound ? "Yes" : "No"
+    }`
+  );
+  console.log(
+    `  - Member order correct: ${
+      report.outputs.member_order_correct ? "Yes" : "No"
+    }`
+  );
 
   // Continue to auto-test (Step 5)
 }
@@ -137,31 +149,30 @@ Parse phase breakdown (similar to Stage 4):
 
 ```typescript
 // Extract Phase 5.1, 5.2, etc. from plan.md
-const phasePattern = /### Phase (5\.\d+):\s*(.+?)\n/g
-const phases = []
-let match
+const phasePattern = /### Phase (5\.\d+):\s*(.+?)\n/g;
+const phases = [];
+let match;
 
 while ((match = phasePattern.exec(planContent)) !== null) {
   phases.push({
-    number: match[1],  // e.g., "5.1"
-    description: match[2]  // e.g., "Layout and Basic Controls"
-  })
+    number: match[1], // e.g., "5.1"
+    description: match[2], // e.g., "Layout and Basic Controls"
+  });
 }
 
-console.log(`Stage 5 will execute in ${phases.length} phases:`)
-phases.forEach(phase => {
-  console.log(`  - Phase ${phase.number}: ${phase.description}`)
-})
+console.log(`Stage 5 will execute in ${phases.length} phases:`);
+phases.forEach((phase) => {
+  console.log(`  - Phase ${phase.number}: ${phase.description}`);
+});
 
 // Execute each phase sequentially (same pattern as Stage 4)
 for (let i = 0; i < phases.length; i++) {
-  const phase = phases[i]
+  const phase = phases[i];
 
-  console.log(`\n━━━ Stage ${phase.number} - ${phase.description} ━━━\n`)
+  console.log(`\n━━━ Stage ${phase.number} - ${phase.description} ━━━\n`);
 
   const phaseResult = Task({
     subagent_type: "gui-agent",
-    model: "sonnet",
     description: `Implement UI Phase ${phase.number} for ${pluginName}`,
     prompt: `
 You are gui-agent. Your task is to implement Phase ${phase.number} of UI for ${pluginName}.
@@ -172,19 +183,19 @@ You are gui-agent. Your task is to implement Phase ${phase.number} of UI for ${p
 [Include mockup, contracts, phase-specific instructions]
 
 Return JSON report with phase_completed: "${phase.number}".
-    `
-  })
+    `,
+  });
 
-  const phaseReport = parseSubagentReport(phaseResult)
+  const phaseReport = parseSubagentReport(phaseResult);
 
   if (!phaseReport || phaseReport.status === "failure") {
-    console.log(`✗ Phase ${phase.number} failed`)
+    console.log(`✗ Phase ${phase.number} failed`);
     // 4-option menu, stop on failure
-    return
+    return;
   }
 
   // Phase succeeded - git commit, update plan, handoff, decision menu
-  console.log(`✓ Phase ${phase.number} complete`)
+  console.log(`✓ Phase ${phase.number} complete`);
 
   // Git commit for this phase
   bash(`
@@ -195,7 +206,7 @@ git add plugins/${pluginName}/.ideas/plan.md
 git add plugins/${pluginName}/.continue-here.md
 
 git commit -m "feat: ${pluginName} Stage ${phase.number} - ${phase.description}"
-  `)
+  `);
 
   // Decision menu between phases
   if (i < phases.length - 1) {
@@ -205,24 +216,24 @@ git commit -m "feat: ${pluginName} Stage ${phase.number} - ${phase.description}"
 Progress: ${i + 1} of ${phases.length} phases complete
 
 What's next?
-1. Continue to Phase ${phases[i+1].number} (recommended)
+1. Continue to Phase ${phases[i + 1].number} (recommended)
 2. Review Phase ${phase.number} code
 3. Test UI in DAW
 4. Pause here
 5. Other
 
 Choose (1-5): _
-    `)
+    `);
 
-    const choice = getUserInput()
+    const choice = getUserInput();
     if (choice === "4" || choice === "pause") {
-      console.log(`\n⏸ Paused between UI phases. Resume with /continue.`)
-      return
+      console.log(`\n⏸ Paused between UI phases. Resume with /continue.`);
+      return;
     }
   }
 }
 
-console.log(`\n✓ All ${phases.length} UI phases complete!`)
+console.log(`\n✓ All ${phases.length} UI phases complete!`);
 ```
 
 ### 4. Handle Non-Phased Success
@@ -238,10 +249,14 @@ updateHandoff(
   ["Auto-test Stage 5", "Test UI in DAW", "Review bindings"],
   complexityScore,
   false
-)
+);
 
-updatePluginStatus(pluginName, "🚧 Stage 5")
-updatePluginTimeline(pluginName, 5, `GUI complete - ${report.outputs.binding_count} parameter bindings`)
+updatePluginStatus(pluginName, "🚧 Stage 5");
+updatePluginTimeline(
+  pluginName,
+  5,
+  `GUI complete - ${report.outputs.binding_count} parameter bindings`
+);
 
 // Git commit
 bash(`
@@ -264,7 +279,7 @@ CMakeLists.txt updated for WebView support
 Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
-`)
+`);
 ```
 
 ### 5. Handle Failure
@@ -284,7 +299,7 @@ Error: Not all parameters from parameter-spec.md have UI bindings
 
 Expected: ${report.outputs.expected_count} parameters
 Implemented: ${report.outputs.actual_count} relay/attachment pairs
-Missing: ${report.outputs.missing_bindings.join(', ')}
+Missing: ${report.outputs.missing_bindings.join(", ")}
 
 This is a ZERO-DRIFT violation. All parameters must be bound to UI.
 
@@ -295,7 +310,7 @@ What would you like to do?
 4. I'll fix it manually (say "resume automation" when ready)
 
 Choose (1-4): _
-    `)
+    `);
   } else {
     // Other errors (build failure, member order wrong, etc.)
     console.log(`
@@ -307,7 +322,7 @@ Error: ${report.outputs.error_message}
 Type: ${report.outputs.error_type}
 
 Issues:
-${report.issues.map(i => `  - ${i}`).join('\n')}
+${report.issues.map((i) => `  - ${i}`).join("\n")}
 
 What would you like to do?
 1. Investigate
@@ -316,7 +331,7 @@ What would you like to do?
 4. I'll fix it manually (say "resume automation" when ready)
 
 Choose (1-4): _
-    `)
+    `);
   }
 
   // Handle choice (same pattern as Stages 2-4)
@@ -328,7 +343,7 @@ Choose (1-4): _
 **After Stage 5 succeeds (all phases if phased):**
 
 ```typescript
-console.log("\n━━━ Running automated tests (including UI validation) ━━━\n")
+console.log("\n━━━ Running automated tests (including UI validation) ━━━\n");
 
 const testResult = Task({
   subagent_type: "general-purpose",
@@ -345,13 +360,14 @@ Use the plugin-testing skill to run all 5 tests plus UI-specific checks:
 6. UI test (WebView renders, parameters sync)
 
 Report results.
-  `
-})
+  `,
+});
 
-console.log(testResult)
+console.log(testResult);
 
 // Parse test results
-const testsPassed = testResult.includes("✓ All tests passed") || testResult.includes("PASS")
+const testsPassed =
+  testResult.includes("✓ All tests passed") || testResult.includes("PASS");
 
 if (!testsPassed) {
   console.log(`
@@ -373,27 +389,31 @@ What would you like to do?
 4. I'll fix it manually (say "resume automation" when ready)
 
 Choose (1-4): _
-  `)
+  `);
 
   // STOP - Do not proceed to Stage 6 with failing tests
-  return
+  return;
 }
 
-console.log("✓ All Stage 5 tests passed (including UI validation)")
+console.log("✓ All Stage 5 tests passed (including UI validation)");
 ```
 
 ### 7. Invoke validator for Complexity ≥4 Plugins
 
 **For complexity ≥4 plugins, run semantic validation:**
 
-```typescript
+````typescript
 if (complexityScore >= 4) {
-  console.log("\n━━━ Running semantic validation (complexity ≥4) ━━━\n")
+  console.log("\n━━━ Running semantic validation (complexity ≥4) ━━━\n");
 
   // Read contracts
-  const paramSpecContent = readFile(`plugins/${pluginName}/.ideas/parameter-spec.md`)
-  const architectureContent = readFile(`plugins/${pluginName}/.ideas/architecture.md`)
-  const planContent = readFile(`plugins/${pluginName}/.ideas/plan.md`)
+  const paramSpecContent = readFile(
+    `plugins/${pluginName}/.ideas/parameter-spec.md`
+  );
+  const architectureContent = readFile(
+    `plugins/${pluginName}/.ideas/architecture.md`
+  );
+  const planContent = readFile(`plugins/${pluginName}/.ideas/plan.md`);
 
   const validationResult = Task({
     subagent_type: "validator",
@@ -418,21 +438,22 @@ Validate Stage 5 completion for ${pluginName}.
 - Binary data embedded correctly
 
 Return JSON validation report with status, checks, and recommendation.
-    `
-  })
+    `,
+  });
 
   // Parse JSON report (robust handling)
-  let validationReport
+  let validationReport;
   try {
     // Try extracting JSON from markdown code blocks first
-    const jsonMatch = validationResult.match(/```json\n([\s\S]*?)\n```/) ||
-                      validationResult.match(/```\n([\s\S]*?)\n```/)
+    const jsonMatch =
+      validationResult.match(/```json\n([\s\S]*?)\n```/) ||
+      validationResult.match(/```\n([\s\S]*?)\n```/);
 
     if (jsonMatch) {
-      validationReport = JSON.parse(jsonMatch[1])
+      validationReport = JSON.parse(jsonMatch[1]);
     } else {
       // Try parsing entire response as JSON
-      validationReport = JSON.parse(validationResult)
+      validationReport = JSON.parse(validationResult);
     }
   } catch (error) {
     console.log(`
@@ -442,47 +463,50 @@ Raw validator output:
 ${validationResult}
 
 Continuing workflow (validation is advisory, not blocking).
-    `)
-    validationReport = null
+    `);
+    validationReport = null;
   }
 
   // Present findings if report parsed successfully
   if (validationReport) {
-    const { status, checks, recommendation, continue_to_next_stage } = validationReport
+    const { status, checks, recommendation, continue_to_next_stage } =
+      validationReport;
 
     console.log(`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${status === "PASS" ? "✓" : "✗"} Validator ${status}: Stage 5 Review
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    `)
+    `);
 
     // Group checks by severity
-    const errors = checks.filter(c => c.severity === "error")
-    const warnings = checks.filter(c => c.severity === "warning")
-    const info = checks.filter(c => c.severity === "info")
+    const errors = checks.filter((c) => c.severity === "error");
+    const warnings = checks.filter((c) => c.severity === "warning");
+    const info = checks.filter((c) => c.severity === "info");
 
     if (errors.length > 0) {
-      console.log("\n❌ Errors:")
-      errors.forEach(e => console.log(`  - ${e.message}`))
+      console.log("\n❌ Errors:");
+      errors.forEach((e) => console.log(`  - ${e.message}`));
     }
 
     if (warnings.length > 0) {
-      console.log("\n⚠️  Warnings:")
-      warnings.forEach(w => console.log(`  - ${w.message}`))
+      console.log("\n⚠️  Warnings:");
+      warnings.forEach((w) => console.log(`  - ${w.message}`));
     }
 
     if (info.length > 0 && info.length <= 5) {
-      console.log("\nℹ️  Info:")
-      info.forEach(i => console.log(`  - ${i.message}`))
+      console.log("\nℹ️  Info:");
+      info.forEach((i) => console.log(`  - ${i.message}`));
     }
 
-    console.log(`\nRecommendation: ${recommendation}`)
+    console.log(`\nRecommendation: ${recommendation}`);
 
     // Present decision menu with validation findings
     console.log(`
 
 What's next?
-1. Continue to Stage 6 (final validation) ${continue_to_next_stage ? "(recommended by validator)" : ""}
+1. Continue to Stage 6 (final validation) ${
+      continue_to_next_stage ? "(recommended by validator)" : ""
+    }
 2. Address validator ${errors.length > 0 ? "errors" : "warnings"} first
 3. Review validator report details
 4. Test UI manually in DAW
@@ -490,13 +514,13 @@ What's next?
 6. Other
 
 Choose (1-6): _
-    `)
+    `);
 
     // User decides next action based on findings
     // (Advisory layer - user makes final call)
   }
 }
-```
+````
 
 ### 8. Decision Menu (After Tests Pass)
 

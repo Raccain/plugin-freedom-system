@@ -11,7 +11,7 @@
 **Duration:** 5-10 minutes
 
 **Model Configuration:**
-- Model: Opus (complex reasoning for algorithm comparison)
+
 - Extended thinking: ENABLED
 - Budget: 10000 tokens
 
@@ -32,18 +32,21 @@ cat plugins/[PluginName]/.ideas/creative-brief.md
 3. **Context7 JUCE Documentation Lookup** (CRITICAL):
 
    a. Resolve JUCE library ID:
+
    ```
    Use: mcp__context7__resolve-library-id("JUCE")
    Returns: Context7-compatible library ID (e.g., "/juce-framework/JUCE")
    ```
 
    b. Get JUCE DSP documentation:
+
    ```
    Use: mcp__context7__get-library-docs(libraryID, topic="dsp modules", tokens=5000)
    Extract: Relevant juce::dsp classes for identified plugin type
    ```
 
    c. Document JUCE modules found:
+
    - List specific juce::dsp classes (e.g., juce::dsp::Gain, juce::dsp::IIR::Filter)
    - Note Context7 library references
    - Identify any missing algorithms (need custom DSP)
@@ -74,6 +77,7 @@ Create `plugins/[PluginName]/.ideas/architecture.md` (DSP specification)
 **CRITICAL:** Use the DSP architecture contract template from `assets/architecture.md`.
 
 **Required sections:**
+
 1. Title: `# DSP Architecture: [PluginName]`
 2. Contract header: `**CRITICAL CONTRACT:** This specification is immutable...`
 3. `## Core Components` - List each DSP component with JUCE class, purpose, parameters affected, configuration
@@ -92,8 +96,10 @@ Create `plugins/[PluginName]/.ideas/architecture.md` (DSP specification)
 - **Technical feasibility** → `## Special Considerations`
 
 **Example Core Component entry:**
+
 ```markdown
 ### File Manager
+
 - **JUCE Class:** `juce::AudioFormatManager`
 - **Purpose:** Detect audio file formats and create readers
 - **Parameters Affected:** station
@@ -101,6 +107,7 @@ Create `plugins/[PluginName]/.ideas/architecture.md` (DSP specification)
 ```
 
 **Example Processing Chain:**
+
 ```
 MIDI In → Trigger Detection → Set Playback Position
                                         ↓
@@ -162,6 +169,7 @@ Research phase complete. Ready to proceed to planning.
 ## Update PLUGINS.md
 
 1. Check if entry exists:
+
 ```bash
 grep "^### ${PLUGIN_NAME}$" PLUGINS.md
 ```
@@ -169,8 +177,10 @@ grep "^### ${PLUGIN_NAME}$" PLUGINS.md
 2. If NOT found, create initial entry:
 
 Use Edit tool to add to PLUGINS.md:
+
 ```markdown
 ### [PluginName]
+
 **Status:** 💡 Ideated
 **Type:** [Audio Effect | MIDI Instrument | Synth]
 **Created:** [YYYY-MM-DD]
@@ -178,6 +188,7 @@ Use Edit tool to add to PLUGINS.md:
 [Brief description from creative-brief.md]
 
 **Lifecycle Timeline:**
+
 - **[YYYY-MM-DD]:** Creative brief created
 
 **Last Updated:** [YYYY-MM-DD]
@@ -186,6 +197,7 @@ Use Edit tool to add to PLUGINS.md:
 3. Update status to Stage 0:
 
 Use Edit tool to change:
+
 ```markdown
 **Status:** 💡 Ideated → **Status:** 🚧 Stage 0
 ```
@@ -193,6 +205,7 @@ Use Edit tool to change:
 4. Add timeline entry:
 
 Use Edit tool to append to Lifecycle Timeline:
+
 ```markdown
 - **[YYYY-MM-DD] (Stage 0):** Research completed
 ```
@@ -214,6 +227,7 @@ EOF
 ```
 
 Display commit hash:
+
 ```bash
 git log -1 --format='✓ Committed: %h - Stage 0 complete'
 ```
@@ -237,6 +251,7 @@ Choose (1-6): _
 ```
 
 Wait for user response. Handle:
+
 - Number (1-6): Execute corresponding option
 - "continue" keyword: Execute option 1
 - "pause" keyword: Execute option 5

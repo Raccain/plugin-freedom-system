@@ -11,6 +11,7 @@
 **Duration:** 5 minutes
 
 **Preconditions:**
+
 - Stage 1 complete (plan.md exists)
 - creative-brief.md exists
 - architecture.md exists
@@ -34,7 +35,6 @@ Call foundation-agent subagent with complete specification:
 ```typescript
 const foundationResult = Task({
   subagent_type: "foundation-agent",
-  model: "sonnet",
   description: `Create build system for ${pluginName}`,
   prompt: `Create foundation build for plugin at plugins/${pluginName}.
 
@@ -55,40 +55,40 @@ Tasks:
 8. Return JSON report with status and file list
 
 Build verification handled by workflow after agent completes.
-  `
-})
+  `,
+});
 ```
 
 ### 3. Parse JSON Report with Error Handling
 
 **Implement robust JSON parsing:**
 
-```typescript
+````typescript
 function parseSubagentReport(rawOutput: string): object | null {
   try {
     // Strategy 1: Extract from markdown code blocks
-    const codeBlockMatch = rawOutput.match(/```json\n([\s\S]*?)\n```/)
+    const codeBlockMatch = rawOutput.match(/```json\n([\s\S]*?)\n```/);
     if (codeBlockMatch) {
-      return JSON.parse(codeBlockMatch[1])
+      return JSON.parse(codeBlockMatch[1]);
     }
 
     // Strategy 2: Find JSON object via brace matching
-    const braceStart = rawOutput.indexOf('{')
-    const braceEnd = rawOutput.lastIndexOf('}')
+    const braceStart = rawOutput.indexOf("{");
+    const braceEnd = rawOutput.lastIndexOf("}");
     if (braceStart !== -1 && braceEnd !== -1 && braceEnd > braceStart) {
-      const jsonCandidate = rawOutput.substring(braceStart, braceEnd + 1)
-      return JSON.parse(jsonCandidate)
+      const jsonCandidate = rawOutput.substring(braceStart, braceEnd + 1);
+      return JSON.parse(jsonCandidate);
     }
 
     // Strategy 3: Try parsing entire output
-    return JSON.parse(rawOutput)
+    return JSON.parse(rawOutput);
   } catch (error) {
-    console.error("JSON parsing failed:", error)
-    return null
+    console.error("JSON parsing failed:", error);
+    return null;
   }
 }
 
-const report = parseSubagentReport(foundationResult)
+const report = parseSubagentReport(foundationResult);
 
 if (!report) {
   console.log(`
@@ -108,39 +108,42 @@ What would you like to do?
 4. Manual intervention (I'll fix and say "resume automation")
 
 Choose (1-4): _
-  `)
+  `);
 
   // Wait for user response, handle accordingly
-  return
+  return;
 }
-```
+````
 
 ### 4. Validate Required Fields
 
 **Check JSON structure:**
 
 ```typescript
-function validateFoundationReport(report: any): { valid: boolean; error?: string } {
+function validateFoundationReport(report: any): {
+  valid: boolean;
+  error?: string;
+} {
   if (!report.agent || report.agent !== "foundation-agent") {
-    return { valid: false, error: "Missing or wrong 'agent' field" }
+    return { valid: false, error: "Missing or wrong 'agent' field" };
   }
 
   if (!report.status || !["success", "failure"].includes(report.status)) {
-    return { valid: false, error: "Missing or invalid 'status' field" }
+    return { valid: false, error: "Missing or invalid 'status' field" };
   }
 
-  if (!report.outputs || typeof report.outputs !== 'object') {
-    return { valid: false, error: "Missing 'outputs' object" }
+  if (!report.outputs || typeof report.outputs !== "object") {
+    return { valid: false, error: "Missing 'outputs' object" };
   }
 
-  if (!report.hasOwnProperty('ready_for_next_stage')) {
-    return { valid: false, error: "Missing 'ready_for_next_stage' field" }
+  if (!report.hasOwnProperty("ready_for_next_stage")) {
+    return { valid: false, error: "Missing 'ready_for_next_stage' field" };
   }
 
-  return { valid: true }
+  return { valid: true };
 }
 
-const validation = validateFoundationReport(report)
+const validation = validateFoundationReport(report);
 if (!validation.valid) {
   console.log(`
 ✗ Invalid report format: ${validation.error}
@@ -154,8 +157,8 @@ What would you like to do?
 3. Manual intervention
 
 Choose (1-3): _
-  `)
-  return
+  `);
+  return;
 }
 ```
 
@@ -165,12 +168,12 @@ Choose (1-3): _
 
 ```typescript
 if (report.status === "success" && report.ready_for_next_stage) {
-  console.log(`✓ foundation-agent complete: Source files created`)
-  console.log(`  - Plugin: ${report.outputs.plugin_name}`)
-  console.log(`  - Files: ${report.outputs.source_files_created?.length || 0}`)
+  console.log(`✓ foundation-agent complete: Source files created`);
+  console.log(`  - Plugin: ${report.outputs.plugin_name}`);
+  console.log(`  - Files: ${report.outputs.source_files_created?.length || 0}`);
 
   // Now invoke build-automation to verify compilation
-  console.log(`\nInvoking build-automation to verify compilation...`)
+  console.log(`\nInvoking build-automation to verify compilation...`);
 
   // Proceed to section 5a (Build Verification)
 }
@@ -185,7 +188,7 @@ Present 4-option failure menu with investigation options.
 **After foundation-agent succeeds, invoke build-automation skill:**
 
 ```typescript
-console.log("Invoking build-automation skill with --no-install flag...")
+console.log("Invoking build-automation skill with --no-install flag...");
 
 Skill({
   skill: "build-automation",
@@ -194,12 +197,13 @@ Skill({
     stage: 2,
     flags: ["--no-install"],
     invoking_skill: "plugin-workflow",
-    purpose: "Verify Stage 2 foundation compiles successfully"
-  }
-})
+    purpose: "Verify Stage 2 foundation compiles successfully",
+  },
+});
 ```
 
 **build-automation will:**
+
 1. Run build script with --no-install flag
 2. If build succeeds: Display success message, return control to plugin-workflow
 3. If build fails: Present 4-option failure protocol
@@ -213,13 +217,21 @@ updateHandoff(
   pluginName,
   2,
   "Stage 2: Foundation - Build system created, compilation verified",
-  ["Stage 3: Implement parameters", "Review build artifacts", "Test compilation"],
+  [
+    "Stage 3: Implement parameters",
+    "Review build artifacts",
+    "Test compilation",
+  ],
   complexityScore,
   phased
-)
+);
 
-updatePluginStatus(pluginName, "🚧 Stage 2")
-updatePluginTimeline(pluginName, 2, "Foundation complete - build system operational")
+updatePluginStatus(pluginName, "🚧 Stage 2");
+updatePluginTimeline(
+  pluginName,
+  2,
+  "Foundation complete - build system operational"
+);
 ```
 
 ### 7. Git Commit
@@ -265,6 +277,7 @@ Choose (1-6): _
 ```
 
 **Handle responses:**
+
 - 1 or "continue": Proceed to Stage 3
 - 2: Show build artifacts list
 - 3: Provide manual test instructions

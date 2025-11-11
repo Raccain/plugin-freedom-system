@@ -7,6 +7,7 @@
 **Deliverables Check:**
 
 **Phase 0 (Foundation & Contracts):**
+
 - ✅ `.claude/` directory structure exists
 - ✅ `.claude/commands/` directory exists (11 commands)
 - ✅ `.claude/skills/` directory exists (7 skills)
@@ -17,12 +18,14 @@
 - ⚠️ Contract templates: Need verification in skill assets/
 
 **Phase 1 (Discovery System):**
+
 - ✅ All 9 slash commands present in `.claude/commands/`
 - ✅ Core skills exist (plugin-ideation, plugin-workflow, plugin-improve, context-resume, ui-mockup, plugin-testing, plugin-lifecycle)
 - ⚠️ Skills have SKILL.md with frontmatter: Need verification
 - ⚠️ Interactive decision system implementation: Need verification in skills
 
 **Phase 2 (Workflow Engine):**
+
 - ✅ plugin-workflow skill exists
 - ⚠️ Stage 0 implementation: Need verification
 - ⚠️ Stage 1 implementation: Need verification
@@ -40,6 +43,7 @@
 **Prerequisites PARTIAL. Phase 2 must be verified/completed first.**
 
 **Unclear/Missing:**
+
 - Contract templates in skill assets/ directories
 - Stage 0, 1, 6 implementation completeness in plugin-workflow
 - State management and handoff file system operational status
@@ -53,6 +57,7 @@
 Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-agent, dsp-agent, gui-agent) and integrates them with the dispatcher pattern in plugin-workflow. This enables autonomous code generation with fresh context per stage, eliminating context accumulation while maintaining contract enforcement and zero-drift validation.
 
 **Why Phase 3 is Critical:**
+
 - Transforms plugin-workflow from planning-only to full code generation
 - Enables single-session plugin creation (concept → installed plugin)
 - Provides fresh context per stage (prevents accumulation bugs)
@@ -80,19 +85,23 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 ### Procedure Files (MUST READ IN ENTIRETY)
 
 **Agents:**
+
 - **@procedures/agents/troubleshooter.md** - 4-level graduated research protocol, stop rules, integration with deep-research skill
 
 **Skills:**
+
 - **@procedures/skills/plugin-workflow.md** - Complete 7-stage workflow, complexity scoring, stage boundary protocol, handoff system, git workflow, calls to other skills
 - **@procedures/skills/juce-foundation.md** - API verification, real-time safety rules (processBlock constraints), parameter management, DSP constraints, WebView rules (JUCE 8.0.9+), platform considerations
 - **@procedures/skills/build-automation.md** - 4-option failure protocol (investigate, show code, show output, wait), build logging, error categories
 - **@procedures/skills/plugin-testing.md** - 5 automated tests, build+pluginval mode, manual testing checklist
 
 **Core:**
+
 - **@procedures/core/checkpoint-system.md** - Hard/soft/decision checkpoints, .continue-here.md format (YAML + markdown), exploration pattern (Esc+Esc rewind)
 - **@procedures/core/interactive-decision-system.md** - Inline numbered menus (no AskUserQuestion), progressive disclosure, context-aware generation, keyword shortcuts
 
 **WebView:**
+
 - **@procedures/webview/README.md** - ⚠️ START HERE for WebView integration
 - **@procedures/webview/best-practices.md** - ⚠️ CRITICAL: Member declaration order (Relays → WebView → Attachments prevents 90% crashes)
 - **@procedures/webview/04-parameter-binding.md** - Relay pattern (WebSliderRelay, WebToggleButtonRelay, WebComboBoxRelay)
@@ -109,6 +118,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Create the foundation-agent subagent definition with frontmatter and complete implementation instructions.
 
 **Required Reading:**
+
 - @architecture/02-core-abstractions.md (lines 74-109: Subagent abstraction, interfaces, JSON report format)
 - @architecture/03-model-selection-extended-thinking-strategy.md (lines 21-35: Sonnet for foundation-agent, no extended thinking)
 - @procedures/skills/juce-foundation.md (all: API verification, platform considerations, CMakeLists.txt patterns)
@@ -124,7 +134,6 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    ---
    name: foundation-agent
    type: agent
-   model: sonnet
    description: Create JUCE plugin project structure and verify compilation (Stage 2)
    tools:
      - Read
@@ -149,12 +158,14 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    - Return JSON report format (exactly as specified in architecture/02-core-abstractions.md lines 93-101)
 
 **Expected Output:**
+
 - `.claude/agents/foundation-agent.md` exists
 - Frontmatter specifies Sonnet model, correct tools
 - Implementation instructions reference all required contracts
 - JSON report format matches specification exactly
 
 **Verification:**
+
 - Automated: File exists at correct path
 - Automated: YAML frontmatter validates (name, type, model, tools, preconditions present)
 - Manual: STOP AND ASK LEX: "Please review `.claude/agents/foundation-agent.md` and confirm: (1) All required contracts are referenced in implementation instructions, (2) JSON report format matches architecture specification, (3) Self-validation steps are clear"
@@ -166,6 +177,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Create the shell-agent subagent definition for Stage 3 (parameter implementation).
 
 **Required Reading:**
+
 - @architecture/02-core-abstractions.md (lines 111-183: Contract enforcement, parameter-spec.md format)
 - @procedures/skills/juce-foundation.md (lines 82-108: Parameter management rules, APVTS creation)
 - @architecture/04-component-architecture.md (lines 206-252: Parameter validation pattern)
@@ -187,12 +199,14 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    - Return JSON with parameter list
 
 **Expected Output:**
+
 - `.claude/agents/shell-agent.md` exists with complete implementation instructions
 - Contract validation specified (parameter-spec.md must exist)
 - JUCE 8 ParameterID format enforced
 - JSON report includes parameters array
 
 **Verification:**
+
 - Automated: File exists, frontmatter validates
 - Manual: STOP AND ASK LEX: "Please review `.claude/agents/shell-agent.md` and confirm: (1) Parameter contract enforcement is explicit (blocks if parameter-spec.md missing), (2) JUCE 8 ParameterID format is specified, (3) Self-validation checks all parameter IDs from spec are present in code"
 
@@ -203,6 +217,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Create the dsp-agent subagent definition for Stage 4 (audio processing implementation).
 
 **Required Reading:**
+
 - @architecture/03-model-selection-extended-thinking-strategy.md (lines 9-20: Opus for complexity 4-5, Sonnet for simpler)
 - @procedures/skills/juce-foundation.md (lines 40-78: Real-time audio safety rules, DSP constraints)
 - @architecture/04-component-architecture.md (lines 254-296: DSP component validation pattern)
@@ -214,7 +229,6 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 
 1. Create file `.claude/agents/dsp-agent.md`
 2. Add YAML frontmatter:
-   - Conditional model: Opus if complexity ≥4, else Sonnet
    - Extended thinking: Conditional (complexity ≥4)
    - Tools: Read, Edit, Write, Bash, Context7
 3. Write implementation instructions:
@@ -234,12 +248,14 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    - Return JSON with phases_completed array
 
 **Expected Output:**
+
 - `.claude/agents/dsp-agent.md` exists with conditional model selection
 - Phased implementation logic specified
 - Real-time safety rules explicitly enforced
 - Extended thinking enabled for complex DSP
 
 **Verification:**
+
 - Automated: File exists, frontmatter validates, model selection conditional on complexity
 - Manual: STOP AND ASK LEX: "Please review `.claude/agents/dsp-agent.md` and confirm: (1) Conditional model selection (Opus for complexity ≥4) is specified, (2) Real-time safety rules are explicit (no allocations, ScopedNoDenormals, preallocate buffers), (3) Phased implementation logic for complexity ≥3 is clear with git commits per phase"
 
@@ -250,6 +266,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Create the gui-agent subagent definition for Stage 5 (WebView UI integration).
 
 **Required Reading:**
+
 - @procedures/webview/README.md (all: WebView integration overview)
 - @procedures/webview/best-practices.md (all: ⚠️ CRITICAL member declaration order)
 - @procedures/webview/04-parameter-binding.md (all: Relay pattern implementation)
@@ -281,12 +298,14 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    - Return JSON with bindings array
 
 **Expected Output:**
+
 - `.claude/agents/gui-agent.md` exists with WebView integration instructions
 - Member declaration order explicitly specified and marked CRITICAL
 - Relay pattern implementation detailed
 - CMake configuration updates specified
 
 **Verification:**
+
 - Automated: File exists, frontmatter validates
 - Manual: STOP AND ASK LEX: "Please review `.claude/agents/gui-agent.md` and confirm: (1) Member declaration order (Relays → WebView → Attachments) is explicitly specified and marked CRITICAL, (2) Relay pattern is correct (one relay + one attachment per parameter), (3) CMake updates for WebView are specified (NEEDS_WEB_BROWSER TRUE, juce_add_binary_data)"
 
@@ -299,6 +318,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Replace Stage 2 stub with foundation-agent dispatch logic in plugin-workflow skill.
 
 **Required Reading:**
+
 - @architecture/07-communication-architecture.md (lines 9-101: Dispatcher → subagent communication, JSON parsing with error handling)
 - @architecture/04-component-architecture.md (lines 409-487: Complete workflow lifecycle example)
 - @procedures/skills/plugin-workflow.md (lines 54-68: Stage 2 Foundation specification)
@@ -330,12 +350,14 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    - Present decision menu: Continue to Stage 3 | Review Stage 2 code | Test current state | Pause here | Other
 
 **Expected Output:**
+
 - Stage 2 dispatcher logic complete in plugin-workflow
 - JSON parsing includes error handling
 - 4-option failure menu implemented
 - Git workflow integration complete
 
 **Verification:**
+
 - Automated: Grep for "Task(" in Stage 2 section, verify foundation-agent invocation
 - Automated: Grep for JSON parsing error handling code
 - Manual: STOP AND ASK LEX: "Please review Stage 2 dispatcher implementation in `.claude/skills/plugin-workflow/SKILL.md` and confirm: (1) Task tool invocation with complete contracts, (2) Robust JSON parsing with error handling (markdown extraction, brace matching, validation), (3) 4-option failure menu (investigate, show code, show output, wait), (4) Git commit + state update + handoff update + decision menu"
@@ -347,6 +369,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Replace Stage 3 stub with shell-agent dispatch logic.
 
 **Required Reading:**
+
 - @architecture/02-core-abstractions.md (lines 111-154: Parameter contract validation)
 - @procedures/skills/plugin-workflow.md (lines 70-81: Stage 3 Shell specification)
 
@@ -368,10 +391,12 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    - Decision menu
 
 **Expected Output:**
+
 - Stage 3 dispatcher with parameter-spec.md precondition enforcement
 - Same error handling and workflow integration as Stage 2
 
 **Verification:**
+
 - Automated: Grep for parameter-spec.md existence check, verify blocks if missing
 - Manual: STOP AND ASK LEX: "Please review Stage 3 dispatcher in plugin-workflow and confirm: (1) Precondition check for parameter-spec.md with blocking error if missing, (2) Dispatcher pattern matches Stage 2 (Task invocation, JSON parsing, error handling), (3) Git + state + handoff + decision menu complete"
 
@@ -382,6 +407,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Replace Stage 4 stub with dsp-agent dispatch logic, including phased implementation support.
 
 **Required Reading:**
+
 - @procedures/skills/plugin-workflow.md (lines 82-99: Stage 4 DSP with complexity adaptation)
 - @architecture/03-model-selection-extended-thinking-strategy.md (lines 102-118: Conditional extended thinking for DSP)
 
@@ -409,12 +435,14 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    - If tests PASS: Update PLUGINS.md, update .continue-here.md, decision menu
 
 **Expected Output:**
+
 - Stage 4 dispatcher with complexity-aware phasing
 - Git commit per phase for complex plugins
 - Auto-test invocation after completion
 - Test failure blocks continuation to Stage 5
 
 **Verification:**
+
 - Automated: Grep for complexity check in Stage 4, verify phased vs single-pass branching
 - Automated: Grep for plugin-testing invocation, verify blocks on test failure
 - Manual: STOP AND ASK LEX: "Please review Stage 4 dispatcher and confirm: (1) Complexity-aware phasing (≥3 uses phases, ≤2 single-pass), (2) Git commit per phase for complex plugins with plan.md timestamp updates, (3) Auto-test invocation after completion with blocking on test failure before Stage 5"
@@ -426,6 +454,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Replace Stage 5 stub with gui-agent dispatch logic, including phased implementation support.
 
 **Required Reading:**
+
 - @procedures/skills/plugin-workflow.md (lines 101-121: Stage 5 GUI with complexity adaptation)
 - @procedures/webview/best-practices.md (all: Critical member order, validation steps)
 
@@ -443,10 +472,12 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    - If tests PASS: Update PLUGINS.md, update .continue-here.md, decision menu
 
 **Expected Output:**
+
 - Stage 5 dispatcher with phasing support
 - Auto-test invocation with blocking on failure
 
 **Verification:**
+
 - Automated: Grep for complexity check, verify phasing logic matches Stage 4 pattern
 - Automated: Grep for plugin-testing invocation
 - Manual: STOP AND ASK LEX: "Please review Stage 5 dispatcher and confirm: (1) Phasing pattern matches Stage 4 (complexity-aware, commits per phase), (2) Auto-test invocation after completion with blocking on failure, (3) All dispatcher patterns consistent across Stages 2-5"
@@ -460,6 +491,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Create the SubagentStop hook for deterministic validation after each subagent completes.
 
 **Required Reading:**
+
 - @architecture/10-extension-architecture.md (lines 96-165: Hook system, conditional execution pattern)
 - @architecture/13-error-handling-recovery.md (lines 182-461: Hook patterns, graceful skip logic)
 - @architecture/02-core-abstractions.md (lines 185-252: Layer 1 validation - deterministic, fast, blocking)
@@ -470,6 +502,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 
 1. Create file `.claude/hooks/validate-subagent-stop.sh`
 2. Implement conditional execution pattern:
+
    ```bash
    #!/bin/bash
    INPUT=$(cat)
@@ -503,6 +536,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 
    exit 0
    ```
+
 3. Make executable: `chmod +x .claude/hooks/validate-subagent-stop.sh`
 4. Register in `.claude/hooks/hooks.json`:
    ```json
@@ -525,6 +559,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    ```
 
 **Expected Output:**
+
 - `.claude/hooks/validate-subagent-stop.sh` exists and is executable
 - Conditional execution pattern: exits 0 if not relevant subagent
 - Calls Python validators for each stage
@@ -532,6 +567,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 - Registered in hooks.json
 
 **Verification:**
+
 - Automated: File exists at correct path
 - Automated: File is executable (`test -x`)
 - Automated: hooks.json contains SubagentStop registration
@@ -544,6 +580,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Create the three Python validator scripts called by SubagentStop hook.
 
 **Required Reading:**
+
 - @architecture/04-component-architecture.md (lines 206-252: Validation implementation details with regex patterns)
 
 **Dependencies**: Task 9 complete (SubagentStop hook exists)
@@ -551,6 +588,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Implementation Steps:**
 
 1. Create `.claude/hooks/validators/validate-parameters.py`:
+
    - Parse parameter-spec.md for parameter IDs, types, ranges
    - Extract APVTS declarations from PluginProcessor.cpp via regex:
      `AudioParameter(Float|Bool|Choice)\s*\(\s*ParameterID\s*\{\s*"(\w+)"`
@@ -560,6 +598,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    - Exit 0 if PASS, exit 1 if FAIL with specific error message
 
 2. Create `.claude/hooks/validators/validate-dsp-components.py`:
+
    - Parse architecture.md for DSP component list (e.g., "juce::dsp::StateVariableTPTFilter")
    - Check `#include <juce_dsp/juce_dsp.h>` present in PluginProcessor.cpp
    - Verify member variable declaration via regex: `juce::dsp::StateVariableTPTFilter<float> \w+;`
@@ -567,6 +606,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    - Exit 0 if PASS, exit 1 if FAIL
 
 3. Create `.claude/hooks/validators/validate-gui-bindings.py`:
+
    - Extract HTML parameter IDs from ui/public/index.html via regex: `getSliderState\(['"](\w+)['"]\)`
    - Extract C++ relays from PluginEditor.cpp: `WebSliderRelay\s+(\w+)Relay\s*\{\s*"(\w+)"\s*\}`
    - Check ID sets match (HTML IDs == relay IDs)
@@ -577,12 +617,14 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 4. Make all scripts executable
 
 **Expected Output:**
+
 - Three Python validation scripts exist in `.claude/hooks/validators/`
 - Each script parses contracts and implementation
 - Regex patterns match architecture specification
 - Exit codes: 0 (pass), 1 (fail with error message)
 
 **Verification:**
+
 - Automated: All three files exist and are executable
 - Automated: Each script contains required regex patterns
 - Manual: STOP AND ASK LEX: "Please review the three Python validators and confirm: (1) validate-parameters.py checks ID sets match and type mapping is correct, (2) validate-dsp-components.py verifies all components from architecture.md are declared and initialized, (3) validate-gui-bindings.py checks HTML IDs match relay IDs and attachments exist, (4) All scripts exit 0 on pass and 1 on fail with specific error messages"
@@ -594,6 +636,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Update the existing validator subagent for semantic validation (Layer 2).
 
 **Required Reading:**
+
 - @architecture/02-core-abstractions.md (lines 185-252: Layer 2 validation - semantic, 60s, advisory)
 - @architecture/04-component-architecture.md (lines 344-407: Validator implementation details, false positive overrides)
 
@@ -603,7 +646,6 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 
 1. Read `.claude/agents/validator.md`
 2. Verify/update frontmatter:
-   - Model: Sonnet (quality over speed for semantic analysis)
    - No extended thinking (semantic review, not research)
    - Tools: Read, Grep, Bash (research only, no code changes)
 3. Verify/update instructions:
@@ -637,12 +679,14 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    - Never blocks workflow (unlike hooks)
 
 **Expected Output:**
+
 - validator.md updated with Layer 2 responsibilities
 - Sonnet model specified
 - JSON report format includes severity levels
 - False positive override system documented
 
 **Verification:**
+
 - Automated: Frontmatter specifies Sonnet model
 - Automated: Tools list includes Read, Grep, Bash (not Write/Edit)
 - Manual: STOP AND ASK LEX: "Please review `.claude/agents/validator.md` and confirm: (1) Role clearly states 'semantic validation AFTER hooks pass', (2) Instructions specify to assume patterns are correct and focus on semantics/quality, (3) JSON report format includes severity levels (suggestion, warning, error), (4) False positive override system is documented with YAML format"
@@ -656,6 +700,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Ensure all failure points present 4-option recovery menus as specified in architecture.
 
 **Required Reading:**
+
 - @architecture/13-error-handling-recovery.md (lines 1-149: Complete error taxonomy and recovery procedures)
 - @procedures/skills/build-automation.md (all: 4-option failure protocol specification)
 
@@ -683,12 +728,14 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 5. Never auto-retry: Always wait for user decision
 
 **Expected Output:**
+
 - All dispatcher failure points present 4-option menu
 - Investigation option invokes troubleshooter
 - "Resume automation" trigger implemented
 - No auto-retry behavior anywhere in code
 
 **Verification:**
+
 - Automated: Grep for "Investigate" option in all dispatcher stages
 - Automated: Grep for "resume automation" phrase detection
 - Automated: Verify no auto-retry loops exist (search for "retry" in loops)
@@ -701,6 +748,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Ensure .continue-here.md handoff files are created and updated correctly at all checkpoints.
 
 **Required Reading:**
+
 - @architecture/06-state-architecture.md (lines 156-316: Complete handoff file specification)
 - @procedures/core/checkpoint-system.md (all: Checkpoint types and handoff format)
 
@@ -729,6 +777,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    - Test with error states
 
 **Expected Output:**
+
 - Handoff files created after Stage 0
 - Handoff files updated after every stage/phase
 - Handoff files deleted after Stage 6
@@ -736,6 +785,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 - context-resume skill can parse all handoff formats
 
 **Verification:**
+
 - Automated: Grep for ".continue-here.md" write operations in all stages
 - Automated: Verify deletion logic after Stage 6
 - Manual: STOP AND ASK LEX: "Please verify handoff file system by checking: (1) .continue-here.md is created after Stage 0 with correct format, (2) Handoff file is updated after every stage and phase completion, (3) Handoff file is deleted after Stage 6 when status changes to ✅, (4) Error states are documented in handoff file 'Known Issues' section, (5) context-resume skill can parse handoff files from any stage"
@@ -747,6 +797,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Ensure PLUGINS.md state machine is updated correctly at all stage boundaries.
 
 **Required Reading:**
+
 - @architecture/06-state-architecture.md (lines 1-155: Plugin lifecycle state machine, state transitions, ownership model)
 
 **Dependencies**: Tasks 5-8 complete (all stages need state updates)
@@ -775,12 +826,14 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    - Validation log path (Stage 6)
 
 **Expected Output:**
+
 - PLUGINS.md updates at every stage boundary
 - State machine protection enforced (🚧 blocks plugin-improve)
 - Lifecycle timeline entries added
 - Metadata kept current
 
 **Verification:**
+
 - Automated: Grep for PLUGINS.md write operations in all stages
 - Automated: Verify plugin-improve has 🚧 status check with blocking error
 - Manual: STOP AND ASK LEX: "Please verify state machine by checking: (1) PLUGINS.md is updated with correct status emoji at every stage boundary, (2) plugin-improve blocks if status is 🚧 with clear error message, (3) Lifecycle timeline entries are added for each stage completion, (4) Metadata (Last Updated, build logs, validation logs) is kept current"
@@ -792,6 +845,7 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
 **Description**: Ensure git commits happen at all stage boundaries with standardized messages.
 
 **Required Reading:**
+
 - @procedures/skills/plugin-workflow.md (lines 219-243: Git workflow specification)
 - @architecture/06-state-architecture.md (lines 456-470: Atomic state transitions)
 
@@ -819,12 +873,14 @@ Phase 3 implements the **4 implementation subagents** (foundation-agent, shell-a
    - If git commit fails: Present error, offer to resolve manually, retry after resolution
 
 **Expected Output:**
+
 - Git commits at every stage/phase boundary
 - Standardized commit messages
 - Atomic commits (source + state + handoff together)
 - Phased stages have separate commits per phase
 
 **Verification:**
+
 - Automated: Grep for git commit commands in all stages
 - Automated: Verify commit message format matches specification
 - Automated: Verify atomic commits (multiple files in single commit)
@@ -1006,41 +1062,49 @@ Phase 3 is COMPLETE when:
 ## Potential Issues & Mitigations
 
 **Issue 1: JSON parsing failures from subagents**
+
 - **Symptom:** Subagent returns malformed JSON or text outside JSON block
 - **Mitigation:** Robust parsing implemented (markdown extraction, brace matching, partial data extraction)
 - **Recovery:** Present parse error to user with retry option
 
 **Issue 2: Context limit exceeded during long stages**
+
 - **Symptom:** Task tool fails with "context limit exceeded"
 - **Mitigation:** PreCompact hook preserves contracts during compaction
 - **Recovery:** Truncate older messages, prioritize contracts, retry
 
 **Issue 3: Build failures with unclear errors**
+
 - **Symptom:** build-and-install.sh fails but error message unclear
 - **Mitigation:** 4-option menu with investigation via troubleshooter
 - **Recovery:** User selects "Investigate", troubleshooter researches error
 
 **Issue 4: Validation false positives**
+
 - **Symptom:** Validator flags correct code as problematic
 - **Mitigation:** False positive override system (.validator-overrides.yaml)
 - **Recovery:** User logs override with justification, validator suppresses error
 
 **Issue 5: Handoff file corruption**
+
 - **Symptom:** .continue-here.md malformed, context-resume fails to parse
 - **Mitigation:** Fallback to git commit history for state reconstruction
 - **Recovery:** context-resume uses commit messages to infer state
 
 **Issue 6: State machine race condition**
+
 - **Symptom:** Multiple workflows try to modify 🚧 plugin simultaneously
 - **Mitigation:** State machine protection (only plugin-workflow can modify 🚧)
 - **Recovery:** plugin-improve blocks with error, user completes workflow first
 
 **Issue 7: Hook execution timeout**
+
 - **Symptom:** Python validator takes >10s, hook times out
 - **Mitigation:** Increase timeout in hooks.json (currently 10s, can extend to 30s)
 - **Recovery:** Disable hook temporarily, test validator manually, fix performance, re-enable
 
 **Issue 8: Git commit failures**
+
 - **Symptom:** Git commit fails due to conflicts or uncommitted changes
 - **Mitigation:** Check git status before commit, resolve conflicts automatically if possible
 - **Recovery:** Present error to user, offer manual resolution, retry after fix
@@ -1048,23 +1112,27 @@ Phase 3 is COMPLETE when:
 ## Notes for Next Phase
 
 **Phase 4 (Build & Troubleshooting System) will require:**
+
 - build-and-install.sh script fully operational (started in Phase 3, completed in Phase 4)
 - troubleshooter agent fully configured (exists but needs deep-research skill integration)
 - 4-option failure protocol already implemented in Phase 3
 - Build logging system (logs/[Plugin]/ directory structure)
 
 **Phase 4 prerequisites from Phase 3:**
+
 - ✅ Dispatcher system operational (Stages 2-5 dispatch subagents)
 - ✅ Error recovery menus implemented (4 options at all failure points)
 - ✅ troubleshooter agent exists and is invoked via "Investigate" option
 
 **Phase 5 (Validation System) prerequisites from Phase 3:**
+
 - ✅ SubagentStop hook implemented (deterministic Layer 1)
 - ✅ Python validators implemented (pattern matching)
 - ✅ validator subagent enhanced (semantic Layer 2)
 - Need in Phase 5: Additional hooks (PostToolUse, Stop, UserPromptSubmit, PreCompact, SessionStart)
 
 **Phase 6 (WebView UI System) prerequisites from Phase 3:**
+
 - ✅ gui-agent subagent implemented with WebView integration
 - ✅ Member declaration order enforcement
 - Need in Phase 5: Complete ui-mockup two-phase workflow (design → decision → implementation)

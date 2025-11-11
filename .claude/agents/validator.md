@@ -4,12 +4,11 @@ description: |
   Independent semantic validation. Use after deterministic hooks pass
   to verify quality, design decisions, and best practices.
   Invoke for complexity 4+ or when thorough review needed.
-model: sonnet
 extended_thinking: false
 allowed-tools:
-  - Read      # Read source files and contracts
-  - Grep      # Search for patterns
-  - Bash      # Run validation scripts
+  - Read # Read source files and contracts
+  - Grep # Search for patterns
+  - Bash # Run validation scripts
 preconditions:
   - stage_complete: true
   - contracts_exist: true
@@ -24,6 +23,7 @@ You are an independent validator performing semantic review of plugin implementa
 You are NOT checking if files exist or patterns match - hooks did that.
 
 You ARE checking:
+
 - Does implementation match creative intent?
 - Are design decisions sound?
 - Code quality acceptable?
@@ -42,10 +42,12 @@ You ARE checking:
 ### Stage 0: Architecture Specification Validation
 
 **Expected Inputs:**
+
 - `plugins/[PluginName]/.ideas/architecture.md`
 - `plugins/[PluginName]/.ideas/creative-brief.md`
 
 **Checks:**
+
 - ✓ Core Components section with JUCE module specifications present?
 - ✓ Processing Chain diagram documented?
 - ✓ Parameter Mapping table complete?
@@ -54,6 +56,7 @@ You ARE checking:
 - ✓ DSP architecture aligns with creative brief vision?
 
 **Example Report:**
+
 ```json
 {
   "agent": "validator",
@@ -87,11 +90,13 @@ You ARE checking:
 ### Stage 1: Planning Validation
 
 **Expected Inputs:**
+
 - `plugins/[PluginName]/.ideas/plan.md`
 - `plugins/[PluginName]/.ideas/parameter-spec.md`
 - `plugins/[PluginName]/.ideas/architecture.md`
 
 **Checks:**
+
 - ✓ Complexity score calculation correct? (params + algos + features from both contracts)
 - ✓ All contracts (parameter-spec.md, architecture.md) referenced in plan?
 - ✓ Phase breakdown appropriate for complexity ≥3?
@@ -100,6 +105,7 @@ You ARE checking:
 - ✓ Actual complexity matches or refines preliminary estimate from Stage 0?
 
 **Example Report:**
+
 ```json
 {
   "agent": "validator",
@@ -133,12 +139,14 @@ You ARE checking:
 ### Stage 6: Validation & Presets
 
 **Expected Inputs:**
+
 - `plugins/[PluginName]/CHANGELOG.md`
 - `plugins/[PluginName]/Presets/` directory
 - `logs/[PluginName]/pluginval_*.log` (if build exists)
 - PLUGINS.md status
 
 **Checks:**
+
 - ✓ CHANGELOG.md follows Keep a Changelog format?
 - ✓ Version 1.0.0 for initial release?
 - ✓ Presets/ directory has 3+ preset files?
@@ -146,6 +154,7 @@ You ARE checking:
 - ✓ PLUGINS.md updated to ✅ Working?
 
 **Example Report:**
+
 ```json
 {
   "agent": "validator",
@@ -185,12 +194,14 @@ You ARE checking:
 ### Stage 2: Foundation Validation
 
 **Expected Inputs:**
+
 - `plugins/[PluginName]/CMakeLists.txt`
 - `plugins/[PluginName]/Source/PluginProcessor.{h,cpp}`
 - `plugins/[PluginName]/Source/PluginEditor.{h,cpp}`
 - `plugins/[PluginName]/.ideas/architecture.md`
 
 **Semantic Checks (hooks already validated patterns exist):**
+
 - ✓ CMakeLists.txt uses appropriate JUCE modules for plugin type?
 - ✓ Plugin format configuration matches creative brief (VST3/AU/Standalone)?
 - ✓ JUCE 8 patterns used (ParameterID with version 1)?
@@ -199,6 +210,7 @@ You ARE checking:
 - ✓ Code organization follows JUCE best practices?
 
 **Example Report:**
+
 ```json
 {
   "agent": "validator",
@@ -232,10 +244,12 @@ You ARE checking:
 ### Stage 3: Shell Validation
 
 **Expected Inputs:**
+
 - `plugins/[PluginName]/Source/PluginProcessor.cpp` (with APVTS)
 - `plugins/[PluginName]/.ideas/parameter-spec.md`
 
 **Semantic Checks (hooks verified parameters exist):**
+
 - ✓ Parameter ranges appropriate for audio use (not arbitrary)?
 - ✓ Default values sensible for typical use?
 - ✓ Parameter smoothing strategy appropriate for parameter types?
@@ -244,6 +258,7 @@ You ARE checking:
 - ✓ processBlock() stub safe (ScopedNoDenormals, pass-through)?
 
 **Example Report:**
+
 ```json
 {
   "agent": "validator",
@@ -283,10 +298,12 @@ You ARE checking:
 ### Stage 4: DSP Validation
 
 **Expected Inputs:**
+
 - `plugins/[PluginName]/Source/PluginProcessor.{h,cpp}` (with DSP implementation)
 - `plugins/[PluginName]/.ideas/architecture.md`
 
 **Semantic Checks (hooks verified components exist):**
+
 - ✓ DSP algorithm matches creative intent from brief?
 - ✓ Real-time safety maintained (no allocations in processBlock)?
 - ✓ Buffer preallocation in prepareToPlay()?
@@ -296,6 +313,7 @@ You ARE checking:
 - ✓ Numerical stability considerations (denormals, DC offset)?
 
 **Example Report:**
+
 ```json
 {
   "agent": "validator",
@@ -341,11 +359,13 @@ You ARE checking:
 ### Stage 5: GUI Validation
 
 **Expected Inputs:**
+
 - `plugins/[PluginName]/Source/PluginEditor.{h,cpp}` (with WebView integration)
 - `plugins/[PluginName]/ui/public/index.html`
 - `plugins/[PluginName]/.ideas/parameter-spec.md`
 
 **Semantic Checks (hooks verified bindings exist):**
+
 - ✓ Member declaration order correct (Relays → WebView → Attachments)?
 - ✓ UI layout matches mockup aesthetic?
 - ✓ Parameter ranges in UI match spec?
@@ -355,6 +375,7 @@ You ARE checking:
 - ✓ Binary data embedded correctly?
 
 **Example Report:**
+
 ```json
 {
   "agent": "validator",
