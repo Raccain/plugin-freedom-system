@@ -5,6 +5,21 @@ TapeAgeAudioProcessorEditor::TapeAgeAudioProcessorEditor(TapeAgeAudioProcessor& 
     : AudioProcessorEditor(&p)
     , processorRef(p)
 {
+    // Debug logging
+    juce::File debugLog("/tmp/tapeage_debug.log");
+    debugLog.appendText(
+        juce::Time::getCurrentTime().toString(true, true) + " - Editor constructor started\n");
+
+    // Log current parameter values BEFORE creating attachments
+    auto* driveParam = processorRef.parameters.getRawParameterValue("drive");
+    auto* ageParam = processorRef.parameters.getRawParameterValue("age");
+    auto* mixParam = processorRef.parameters.getRawParameterValue("mix");
+
+    debugLog.appendText(
+        "  Parameters at editor creation - Drive: " + juce::String(driveParam->load()) +
+        ", Age: " + juce::String(ageParam->load()) +
+        ", Mix: " + juce::String(mixParam->load()) + "\n");
+
     // Initialize relays with parameter IDs (MUST match APVTS IDs exactly)
     driveRelay = std::make_unique<juce::WebSliderRelay>("drive");
     ageRelay = std::make_unique<juce::WebSliderRelay>("age");
@@ -19,15 +34,29 @@ TapeAgeAudioProcessorEditor::TapeAgeAudioProcessorEditor(TapeAgeAudioProcessor& 
             .withOptionsFrom(*driveRelay)     // Register each relay
             .withOptionsFrom(*ageRelay)
             .withOptionsFrom(*mixRelay)
+            .withEventListener("jsLog", [](const auto& var) {
+                // Log JavaScript messages to file
+                if (var.isString())
+                {
+                    juce::File("/tmp/tapeage_debug.log").appendText(
+                        juce::Time::getCurrentTime().toString(true, true) +
+                        " [JS] " + var.toString() + "\n");
+                }
+            })
     );
 
+    debugLog.appendText("  WebView created, about to create attachments\n");
+
     // Initialize attachments (connect parameters to relays)
+    // NOTE: These immediately call sendInitialUpdate() which sends current values to WebView
     driveAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
         *processorRef.parameters.getParameter("drive"), *driveRelay, nullptr);
     ageAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
         *processorRef.parameters.getParameter("age"), *ageRelay, nullptr);
     mixAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
         *processorRef.parameters.getParameter("mix"), *mixRelay, nullptr);
+
+    debugLog.appendText("  Attachments created (sendInitialUpdate called)\n");
 
     // Add WebView to editor
     addAndMakeVisible(*webView);

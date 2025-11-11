@@ -478,13 +478,15 @@
             }
         });
 
-        // Bind C++ → HTML (automation, preset recall)
-        driveState.valueChangedEvent.addListener((newValue) => {
-            updateKnobVisual(driveRotatable, newValue);
-        });
+        // Log to C++ via JUCE backend
+        window.__JUCE__.backend.emitEvent("jsLog", "Drive listener registered");
 
-        // Initialize from current parameter value
-        updateKnobVisual(driveRotatable, driveState.getNormalisedValue());
+        // Bind C++ → HTML (automation, preset recall, AND initial value)
+        driveState.valueChangedEvent.addListener(() => {
+            const value = driveState.getNormalisedValue();
+            window.__JUCE__.backend.emitEvent("jsLog", `Drive valueChangedEvent fired, value from getNormalisedValue: ${value}`);
+            updateKnobVisual(driveRotatable, value);
+        });
 
         // ----------------------------------------------------------------
         // AGE PARAMETER BINDING
@@ -523,11 +525,13 @@
             }
         });
 
-        ageState.valueChangedEvent.addListener((newValue) => {
-            updateKnobVisual(ageRotatable, newValue);
-        });
+        window.__JUCE__.backend.emitEvent("jsLog", "Age listener registered");
 
-        updateKnobVisual(ageRotatable, ageState.getNormalisedValue());
+        ageState.valueChangedEvent.addListener(() => {
+            const value = ageState.getNormalisedValue();
+            window.__JUCE__.backend.emitEvent("jsLog", `Age valueChangedEvent fired, value: ${value}`);
+            updateKnobVisual(ageRotatable, value);
+        });
 
         // ----------------------------------------------------------------
         // MIX PARAMETER BINDING
@@ -566,11 +570,13 @@
             }
         });
 
-        mixState.valueChangedEvent.addListener((newValue) => {
-            updateKnobVisual(mixRotatable, newValue);
-        });
+        window.__JUCE__.backend.emitEvent("jsLog", "Mix listener registered");
 
-        updateKnobVisual(mixRotatable, mixState.getNormalisedValue());
+        mixState.valueChangedEvent.addListener(() => {
+            const value = mixState.getNormalisedValue();
+            window.__JUCE__.backend.emitEvent("jsLog", `Mix valueChangedEvent fired, value: ${value}`);
+            updateKnobVisual(mixRotatable, value);
+        });
 
         // ----------------------------------------------------------------
         // KNOB VISUAL UPDATE HELPER
@@ -580,6 +586,7 @@
             const minAngle = -135;
             const maxAngle = 135;
             const angle = minAngle + (value * (maxAngle - minAngle));
+            window.__JUCE__.backend.emitEvent("jsLog", `updateKnobVisual: value=${value}, angle=${angle}`);
             rotatable.style.transform = `rotate(${angle}deg)`;
         }
 

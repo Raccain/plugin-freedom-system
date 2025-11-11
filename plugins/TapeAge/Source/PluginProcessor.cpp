@@ -359,6 +359,10 @@ juce::AudioProcessorEditor* TapeAgeAudioProcessor::createEditor()
 
 void TapeAgeAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
+    // Debug logging
+    juce::File("/tmp/tapeage_debug.log").appendText(
+        juce::Time::getCurrentTime().toString(true, true) + " - getStateInformation called\n");
+
     auto state = parameters.copyState();
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
     copyXmlToBinary(*xml, destData);
@@ -366,10 +370,27 @@ void TapeAgeAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 
 void TapeAgeAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
+    // Debug logging
+    juce::File debugLog("/tmp/tapeage_debug.log");
+    debugLog.appendText(
+        juce::Time::getCurrentTime().toString(true, true) + " - setStateInformation called\n");
+
     std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
 
     if (xmlState != nullptr && xmlState->hasTagName(parameters.state.getType()))
+    {
         parameters.replaceState(juce::ValueTree::fromXml(*xmlState));
+
+        // Log parameter values after restoration
+        auto* driveParam = parameters.getRawParameterValue("drive");
+        auto* ageParam = parameters.getRawParameterValue("age");
+        auto* mixParam = parameters.getRawParameterValue("mix");
+
+        debugLog.appendText(
+            "  Parameters after restore - Drive: " + juce::String(driveParam->load()) +
+            ", Age: " + juce::String(ageParam->load()) +
+            ", Mix: " + juce::String(mixParam->load()) + "\n");
+    }
 }
 
 // Factory function
