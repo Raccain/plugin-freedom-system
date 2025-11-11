@@ -4,10 +4,11 @@
 - **Scripts**: `scripts/` - Build and installation automation
   - build-and-install.sh - Centralized build automation (7-phase pipeline: validate, build, install, verify)
 - **Skills**: `.claude/skills/` - Each skill follows Anthropic's pattern with `SKILL.md`, `references/`, and `assets/` subdirectories
-  - plugin-workflow, plugin-ideation, plugin-improve, ui-mockup, context-resume, plugin-testing, plugin-lifecycle, build-automation
+  - plugin-workflow, plugin-ideation, plugin-improve, ui-mockup, context-resume, plugin-testing, plugin-lifecycle, build-automation, troubleshooting-docs
 - **Subagents**: `.claude/agents/` - foundation-agent, shell-agent, dsp-agent, gui-agent, validator, troubleshooter
-- **Commands**: `.claude/commands/` - /dream, /implement, /improve, /continue, /test, /install-plugin, /show-standalone, /troubleshoot-juce, /doc-fix
+- **Commands**: `.claude/commands/` - /dream, /implement, /improve, /continue, /test, /install-plugin, /uninstall, /show-standalone, /troubleshoot-juce, /doc-fix
 - **Hooks**: `.claude/hooks/` - Validation gates (PostToolUse, SubagentStop, UserPromptSubmit, Stop, PreCompact, SessionStart)
+- **Knowledge Base**: `troubleshooting/` - Category-organized problem solutions (plugin name in filename + YAML)
 
 ## Contracts (Single Source of Truth)
 - `plugins/[Name]/.ideas/` - creative-brief.md (vision), parameter-spec.md (parameters), architecture.md (DSP design), plan.md (implementation strategy)
