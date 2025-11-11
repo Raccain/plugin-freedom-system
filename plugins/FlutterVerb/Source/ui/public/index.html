@@ -475,93 +475,389 @@
         </div>
     </div>
 
-    <script>
-        // Disable context menu
-        document.addEventListener('contextmenu', e => e.preventDefault());
+    <!-- JavaScript -->
+    <script type="module">
+        // ====================================================================
+        // JUCE FRONTEND LIBRARY IMPORT
+        // ====================================================================
 
-        // Mock parameter state
-        const paramState = {
-            SIZE: 50.0,
-            DECAY: 2.5,
-            MIX: 25.0,
-            AGE: 20.0,
-            DRIVE: 20.0,
-            TONE: 0.0,
-            MOD_MODE: 0  // 0 = Wet Only, 1 = Wet+Dry
-        };
+        import * as Juce from "./js/juce/index.js";
 
-        // Knob interaction
-        const knobs = document.querySelectorAll('.knob');
-        knobs.forEach(knob => {
-            const param = knob.dataset.param;
-            const min = parseFloat(knob.dataset.min);
-            const max = parseFloat(knob.dataset.max);
-            const defaultVal = parseFloat(knob.dataset.default);
-            const rotatable = knob.querySelector('.knob-rotatable');
+        // ====================================================================
+        // NATIVE APPLICATION FEEL (JavaScript)
+        // ====================================================================
 
-            let isDragging = false;
-            let startY = 0;
-            let startValue = defaultVal;
-
-            // Initialize
-            paramState[param] = defaultVal;
-            updateKnobRotation(rotatable, min, max, defaultVal);
-
-            knob.addEventListener('mousedown', e => {
-                isDragging = true;
-                startY = e.clientY;
-                startValue = paramState[param];
-            });
-
-            document.addEventListener('mousemove', e => {
-                if (!isDragging) return;
-
-                const deltaY = startY - e.clientY;
-                const range = max - min;
-                const sensitivity = range / 200;  // 200px for full range
-                let newValue = startValue + (deltaY * sensitivity);
-
-                // Clamp
-                newValue = Math.max(min, Math.min(max, newValue));
-
-                paramState[param] = newValue;
-                updateKnobRotation(rotatable, min, max, newValue);
-
-                console.log(`${param}: ${newValue.toFixed(2)}`);
-            });
-
-            document.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
-
-            // Double-click to reset
-            knob.addEventListener('dblclick', () => {
-                paramState[param] = defaultVal;
-                updateKnobRotation(rotatable, min, max, defaultVal);
-                console.log(`${param}: RESET to ${defaultVal}`);
-            });
+        // Disable right-click context menu
+        document.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            return false;
         });
 
-        function updateKnobRotation(rotatable, min, max, value) {
-            const range = max - min;
-            const normalized = (value - min) / range;
-            const angle = -135 + (normalized * 270);  // -135° to +135°
+        // Disable default drag behaviors
+        document.addEventListener("dragstart", (e) => {
+            e.preventDefault();
+        });
+
+        // ====================================================================
+        // ERROR HANDLING
+        // ====================================================================
+
+        // Global error handler
+        window.addEventListener("error", (e) => {
+            console.error("JavaScript error:", e.message, e.filename, e.lineno);
+        });
+
+        // Async error handler
+        window.addEventListener("unhandledrejection", (e) => {
+            console.error("Unhandled promise rejection:", e.reason);
+        });
+
+        // ====================================================================
+        // PARAMETER BINDING
+        // ====================================================================
+
+        // Verify JUCE backend is connected
+        if (!window.__JUCE__) {
+            console.error("JUCE backend not available");
+            document.body.innerHTML = "<h1>Error: JUCE backend not connected</h1>";
+            throw new Error("JUCE backend not connected");
+        }
+
+        console.log("JUCE backend connected:", window.__JUCE__.backend);
+
+        // ----------------------------------------------------------------
+        // SIZE PARAMETER BINDING
+        // ----------------------------------------------------------------
+
+        const sizeState = Juce.getSliderState("SIZE");
+        const sizeKnob = document.getElementById("sizeKnob");
+        const sizeRotatable = document.getElementById("sizeRotatable");
+
+        let isDraggingSize = false;
+        let sizeLastY = 0;
+
+        sizeKnob.addEventListener("mousedown", (e) => {
+            isDraggingSize = true;
+            sizeLastY = e.clientY;
+            e.preventDefault();
+        });
+
+        document.addEventListener("mousemove", (e) => {
+            if (!isDraggingSize) return;
+
+            const deltaY = sizeLastY - e.clientY;
+            sizeLastY = e.clientY;
+
+            const currentValue = sizeState.getNormalisedValue();
+            const sensitivity = 1.0 / 300.0;
+            let newValue = currentValue + (deltaY * sensitivity);
+            newValue = Math.max(0.0, Math.min(1.0, newValue));
+
+            sizeState.setNormalisedValue(newValue);
+            updateKnobVisual(sizeRotatable, newValue);
+        });
+
+        document.addEventListener("mouseup", () => {
+            if (isDraggingSize) {
+                isDraggingSize = false;
+            }
+        });
+
+        // Double-click to reset
+        sizeKnob.addEventListener("dblclick", () => {
+            sizeState.setNormalisedValue(0.5);  // 50% default
+            updateKnobVisual(sizeRotatable, 0.5);
+        });
+
+        // Pattern #15: valueChangedEvent with no parameters
+        sizeState.valueChangedEvent.addListener(() => {
+            const value = sizeState.getNormalisedValue();
+            updateKnobVisual(sizeRotatable, value);
+        });
+
+        // ----------------------------------------------------------------
+        // DECAY PARAMETER BINDING
+        // ----------------------------------------------------------------
+
+        const decayState = Juce.getSliderState("DECAY");
+        const decayKnob = document.getElementById("decayKnob");
+        const decayRotatable = document.getElementById("decayRotatable");
+
+        let isDraggingDecay = false;
+        let decayLastY = 0;
+
+        decayKnob.addEventListener("mousedown", (e) => {
+            isDraggingDecay = true;
+            decayLastY = e.clientY;
+            e.preventDefault();
+        });
+
+        document.addEventListener("mousemove", (e) => {
+            if (!isDraggingDecay) return;
+
+            const deltaY = decayLastY - e.clientY;
+            decayLastY = e.clientY;
+
+            const currentValue = decayState.getNormalisedValue();
+            const sensitivity = 1.0 / 300.0;
+            let newValue = currentValue + (deltaY * sensitivity);
+            newValue = Math.max(0.0, Math.min(1.0, newValue));
+
+            decayState.setNormalisedValue(newValue);
+            updateKnobVisual(decayRotatable, newValue);
+        });
+
+        document.addEventListener("mouseup", () => {
+            if (isDraggingDecay) {
+                isDraggingDecay = false;
+            }
+        });
+
+        decayKnob.addEventListener("dblclick", () => {
+            // Default 2.5s out of 10.0s range = (2.5-0.1)/(10.0-0.1) ≈ 0.242
+            decayState.setNormalisedValue(0.242);
+            updateKnobVisual(decayRotatable, 0.242);
+        });
+
+        decayState.valueChangedEvent.addListener(() => {
+            const value = decayState.getNormalisedValue();
+            updateKnobVisual(decayRotatable, value);
+        });
+
+        // ----------------------------------------------------------------
+        // MIX PARAMETER BINDING
+        // ----------------------------------------------------------------
+
+        const mixState = Juce.getSliderState("MIX");
+        const mixKnob = document.getElementById("mixKnob");
+        const mixRotatable = document.getElementById("mixRotatable");
+
+        let isDraggingMix = false;
+        let mixLastY = 0;
+
+        mixKnob.addEventListener("mousedown", (e) => {
+            isDraggingMix = true;
+            mixLastY = e.clientY;
+            e.preventDefault();
+        });
+
+        document.addEventListener("mousemove", (e) => {
+            if (!isDraggingMix) return;
+
+            const deltaY = mixLastY - e.clientY;
+            mixLastY = e.clientY;
+
+            const currentValue = mixState.getNormalisedValue();
+            const sensitivity = 1.0 / 300.0;
+            let newValue = currentValue + (deltaY * sensitivity);
+            newValue = Math.max(0.0, Math.min(1.0, newValue));
+
+            mixState.setNormalisedValue(newValue);
+            updateKnobVisual(mixRotatable, newValue);
+        });
+
+        document.addEventListener("mouseup", () => {
+            if (isDraggingMix) {
+                isDraggingMix = false;
+            }
+        });
+
+        mixKnob.addEventListener("dblclick", () => {
+            mixState.setNormalisedValue(0.25);  // 25% default
+            updateKnobVisual(mixRotatable, 0.25);
+        });
+
+        mixState.valueChangedEvent.addListener(() => {
+            const value = mixState.getNormalisedValue();
+            updateKnobVisual(mixRotatable, value);
+        });
+
+        // ----------------------------------------------------------------
+        // AGE PARAMETER BINDING
+        // ----------------------------------------------------------------
+
+        const ageState = Juce.getSliderState("AGE");
+        const ageKnob = document.getElementById("ageKnob");
+        const ageRotatable = document.getElementById("ageRotatable");
+
+        let isDraggingAge = false;
+        let ageLastY = 0;
+
+        ageKnob.addEventListener("mousedown", (e) => {
+            isDraggingAge = true;
+            ageLastY = e.clientY;
+            e.preventDefault();
+        });
+
+        document.addEventListener("mousemove", (e) => {
+            if (!isDraggingAge) return;
+
+            const deltaY = ageLastY - e.clientY;
+            ageLastY = e.clientY;
+
+            const currentValue = ageState.getNormalisedValue();
+            const sensitivity = 1.0 / 300.0;
+            let newValue = currentValue + (deltaY * sensitivity);
+            newValue = Math.max(0.0, Math.min(1.0, newValue));
+
+            ageState.setNormalisedValue(newValue);
+            updateKnobVisual(ageRotatable, newValue);
+        });
+
+        document.addEventListener("mouseup", () => {
+            if (isDraggingAge) {
+                isDraggingAge = false;
+            }
+        });
+
+        ageKnob.addEventListener("dblclick", () => {
+            ageState.setNormalisedValue(0.2);  // 20% default
+            updateKnobVisual(ageRotatable, 0.2);
+        });
+
+        ageState.valueChangedEvent.addListener(() => {
+            const value = ageState.getNormalisedValue();
+            updateKnobVisual(ageRotatable, value);
+        });
+
+        // ----------------------------------------------------------------
+        // DRIVE PARAMETER BINDING
+        // ----------------------------------------------------------------
+
+        const driveState = Juce.getSliderState("DRIVE");
+        const driveKnob = document.getElementById("driveKnob");
+        const driveRotatable = document.getElementById("driveRotatable");
+
+        let isDraggingDrive = false;
+        let driveLastY = 0;
+
+        driveKnob.addEventListener("mousedown", (e) => {
+            isDraggingDrive = true;
+            driveLastY = e.clientY;
+            e.preventDefault();
+        });
+
+        document.addEventListener("mousemove", (e) => {
+            if (!isDraggingDrive) return;
+
+            const deltaY = driveLastY - e.clientY;
+            driveLastY = e.clientY;
+
+            const currentValue = driveState.getNormalisedValue();
+            const sensitivity = 1.0 / 300.0;
+            let newValue = currentValue + (deltaY * sensitivity);
+            newValue = Math.max(0.0, Math.min(1.0, newValue));
+
+            driveState.setNormalisedValue(newValue);
+            updateKnobVisual(driveRotatable, newValue);
+        });
+
+        document.addEventListener("mouseup", () => {
+            if (isDraggingDrive) {
+                isDraggingDrive = false;
+            }
+        });
+
+        driveKnob.addEventListener("dblclick", () => {
+            driveState.setNormalisedValue(0.2);  // 20% default
+            updateKnobVisual(driveRotatable, 0.2);
+        });
+
+        driveState.valueChangedEvent.addListener(() => {
+            const value = driveState.getNormalisedValue();
+            updateKnobVisual(driveRotatable, value);
+        });
+
+        // ----------------------------------------------------------------
+        // TONE PARAMETER BINDING
+        // ----------------------------------------------------------------
+
+        const toneState = Juce.getSliderState("TONE");
+        const toneKnob = document.getElementById("toneKnob");
+        const toneRotatable = document.getElementById("toneRotatable");
+
+        let isDraggingTone = false;
+        let toneLastY = 0;
+
+        toneKnob.addEventListener("mousedown", (e) => {
+            isDraggingTone = true;
+            toneLastY = e.clientY;
+            e.preventDefault();
+        });
+
+        document.addEventListener("mousemove", (e) => {
+            if (!isDraggingTone) return;
+
+            const deltaY = toneLastY - e.clientY;
+            toneLastY = e.clientY;
+
+            const currentValue = toneState.getNormalisedValue();
+            const sensitivity = 1.0 / 300.0;
+            let newValue = currentValue + (deltaY * sensitivity);
+            newValue = Math.max(0.0, Math.min(1.0, newValue));
+
+            toneState.setNormalisedValue(newValue);
+            updateKnobVisual(toneRotatable, newValue);
+        });
+
+        document.addEventListener("mouseup", () => {
+            if (isDraggingTone) {
+                isDraggingTone = false;
+            }
+        });
+
+        toneKnob.addEventListener("dblclick", () => {
+            toneState.setNormalisedValue(0.5);  // 0 (center) default
+            updateKnobVisual(toneRotatable, 0.5);
+        });
+
+        toneState.valueChangedEvent.addListener(() => {
+            const value = toneState.getNormalisedValue();
+            updateKnobVisual(toneRotatable, value);
+        });
+
+        // ----------------------------------------------------------------
+        // MOD_MODE PARAMETER BINDING (Toggle)
+        // ----------------------------------------------------------------
+
+        const modModeState = Juce.getToggleButtonState("MOD_MODE");
+        const modModeToggle = document.getElementById("modModeToggle");
+        const modModeLabel = document.getElementById("modModeState");
+
+        modModeToggle.addEventListener("click", () => {
+            const currentValue = modModeState.getValue();
+            modModeState.setValue(currentValue === 0 ? 1 : 0);
+        });
+
+        modModeState.valueChangedEvent.addListener(() => {
+            const value = modModeState.getValue();
+            updateToggleVisual(value === 1);
+        });
+
+        // ----------------------------------------------------------------
+        // HELPER FUNCTIONS
+        // ----------------------------------------------------------------
+
+        function updateKnobVisual(rotatable, normalizedValue) {
+            const angle = -135 + (normalizedValue * 270);  // -135° to +135°
             rotatable.style.transform = `rotate(${angle}deg)`;
         }
 
-        // Toggle switch interaction
-        const toggle = document.getElementById('modModeToggle');
-        const toggleState = document.getElementById('modModeState');
-        const toggleStates = ['WET ONLY', 'WET+DRY'];
+        function updateToggleVisual(isActive) {
+            const toggleStates = ['WET ONLY', 'WET+DRY'];
+            if (isActive) {
+                modModeToggle.classList.add('active');
+                modModeLabel.textContent = toggleStates[1];
+            } else {
+                modModeToggle.classList.remove('active');
+                modModeLabel.textContent = toggleStates[0];
+            }
+        }
 
-        toggle.addEventListener('click', () => {
-            paramState.MOD_MODE = paramState.MOD_MODE === 0 ? 1 : 0;
-            toggle.classList.toggle('active');
-            toggleState.textContent = toggleStates[paramState.MOD_MODE];
-            console.log(`MOD_MODE: ${toggleStates[paramState.MOD_MODE]}`);
-        });
+        // ----------------------------------------------------------------
+        // VU METER ANIMATION (Simulated - for visual feedback only)
+        // ----------------------------------------------------------------
 
-        // VU meter animation (simulated)
         const vuNeedle = document.getElementById('vuNeedle');
         let vuLevel = -60;  // dB
 
@@ -580,11 +876,20 @@
 
         animateVU();
 
-        console.log('FlutterVerb v6 mockup loaded');
-        console.log('- Drag knobs to adjust parameters');
-        console.log('- Double-click knobs to reset');
-        console.log('- Click toggle to switch Mod Mode');
-        console.log('- VU meter animates automatically');
+        // ----------------------------------------------------------------
+        // INITIALIZE UI FROM CURRENT PARAMETER VALUES
+        // ----------------------------------------------------------------
+
+        // Initialize all UI elements with current parameter values
+        updateKnobVisual(sizeRotatable, sizeState.getNormalisedValue());
+        updateKnobVisual(decayRotatable, decayState.getNormalisedValue());
+        updateKnobVisual(mixRotatable, mixState.getNormalisedValue());
+        updateKnobVisual(ageRotatable, ageState.getNormalisedValue());
+        updateKnobVisual(driveRotatable, driveState.getNormalisedValue());
+        updateKnobVisual(toneRotatable, toneState.getNormalisedValue());
+        updateToggleVisual(modModeState.getValue() === 1);
+
+        console.log('FlutterVerb UI loaded - all parameters bound to JUCE');
     </script>
 </body>
 </html>
