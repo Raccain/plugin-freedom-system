@@ -112,8 +112,9 @@
 - Real-time safe: All calculations in processBlock, no allocations
 - Applied after modulation, before dry/wet mixer (final wet processing)
 
-### Phase 4.4: MOD_MODE Routing
+### Phase 4.4: MOD_MODE Routing ✓
 
+**Completed:** 2025-11-11
 **Goal:** Implement wet-only vs wet+dry modulation routing
 **Components:**
 - Signal path branching based on MOD_MODE toggle
@@ -122,12 +123,22 @@
 - Smooth transitions when toggling
 
 **Test Criteria:**
-- [ ] WET ONLY mode modulates only reverb tail
-- [ ] WET+DRY mode modulates entire signal
-- [ ] Toggle switching doesn't create discontinuities
-- [ ] Dry signal routing correct in both modes
+- [x] WET ONLY mode modulates only reverb tail
+- [x] WET+DRY mode modulates entire signal
+- [x] Toggle switching doesn't create discontinuities
+- [x] Dry signal routing correct in both modes
 
 **Duration:** 10 min
+
+**Implementation Notes:**
+- Refactored modulation logic into lambda function for code reuse
+- Added MOD_MODE parameter read (atomic getRawParameterValue()->load())
+- Conditional routing: wetDryMode=true applies modulation before pushDrySamples()
+- wetDryMode=false applies modulation after reverb (original behavior preserved)
+- No discontinuities - single delay line instance shared between modes
+- Lambda captures all necessary state by reference (ageValue, buffer, phases, etc.)
+- Real-time safe: No allocations, atomic parameter reads, bounded execution
+- **Stage 4 complete** - All DSP phases finished (4.1-4.4)
 
 ## Stage 5: GUI Phases
 
