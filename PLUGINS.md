@@ -29,7 +29,7 @@
 | ClapMachine | 💡 Ideated | - | 2025-11-10 |
 | DriveVerb | 📦 Installed | 1.0.2 | 2025-11-12 |
 | FlutterVerb | 📦 Installed | 1.0.3 | 2025-11-12 |
-| LushVerb | 🚧 Stage 1 | - | 2025-11-11 |
+| LushVerb | 📦 Installed | 1.0.0 | 2025-11-12 |
 | OrganicHats | 📦 Installed | 1.0.0 | 2025-11-12 |
 | DrumRoulette | 🚧 Stage 4.1 | - | 2025-11-12 |
 
