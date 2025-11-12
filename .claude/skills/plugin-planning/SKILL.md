@@ -386,7 +386,16 @@ Wait for user input. Handle:
 
 **When user chooses to proceed to Stage 2:**
 
-Create final handoff file that plugin-workflow skill expects:
+1. **Delete planning handoff** to prevent confusion (two `.continue-here.md` files):
+```bash
+rm plugins/${PLUGIN_NAME}/.ideas/.continue-here.md
+```
+
+2. **Create implementation handoff** at root that plugin-workflow skill expects:
+
+```bash
+# Create at plugins/[PluginName]/.continue-here.md (NOT in .ideas/)
+```
 
 ```yaml
 ---
