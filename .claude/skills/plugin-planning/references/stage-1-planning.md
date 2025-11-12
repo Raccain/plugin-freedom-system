@@ -390,20 +390,43 @@ Implementation plan created. Ready to proceed to foundation (Stage 2).
 - plugins/[PluginName]/.ideas/plan.md
 ```
 
-### 2. Update PLUGINS.md
+### 2. Update PLUGINS.md (ATOMIC - both locations)
 
-```bash
-# Update status
-# Old: **Status:** 🚧 Stage 0
-# New: **Status:** 🚧 Stage 1
+**CRITICAL:** Update BOTH registry table and full entry section to prevent drift.
 
-# Add timeline entry
-# - **[YYYY-MM-DD] (Stage 1):** Planning complete - Complexity [X.X]
+**Approach 1 (Using Edit tool - recommended):**
+```
+1. Update full entry section (canonical source):
+   Find: **Status:** 🚧 Stage 0
+   Replace: **Status:** 🚧 Stage 1
 
-# Update Last Updated field
+2. Update registry table (derived view):
+   Find: | [PluginName] | 🚧 Stage 0 | ...
+   Replace: | [PluginName] | 🚧 Stage 1 | ...
+
+3. Add timeline entry to full section:
+   - **[YYYY-MM-DD] (Stage 1):** Planning complete - Complexity [X.X]
+
+4. Update Last Updated field in full section
+
+5. Update Last Updated date in registry table
 ```
 
-Use Edit tool to make changes.
+**Approach 2 (Using helper function):**
+```
+Reference .claude/skills/plugin-workflow/references/state-management.md
+Call: updatePluginStatus([PluginName], "🚧 Stage 1")
+This ensures atomic updates with automatic validation.
+```
+
+**Verification:**
+After updates, verify consistency:
+```bash
+# Registry table should match full entry
+TABLE=$(grep "^| [PluginName] |" PLUGINS.md | awk -F'|' '{print $3}' | xargs)
+ENTRY=$(grep -A 10 "^### [PluginName]$" PLUGINS.md | grep "^\*\*Status:\*\*" | sed 's/\*\*//g' | xargs)
+# Both should show: 🚧 Stage 1
+```
 
 ### 3. Git Commit
 

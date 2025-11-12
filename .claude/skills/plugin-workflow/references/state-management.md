@@ -8,9 +8,62 @@
 
 ## State Machine Functions
 
+### validateRegistryConsistency(pluginName)
+
+**Purpose:** Detect registry table drift by comparing status between registry table and full entry.
+
+**Implementation:**
+```bash
+#!/bin/bash
+# Verify registry table matches full entry section
+
+PLUGIN_NAME=$1
+
+# Extract status from registry table (format: | PluginName | Status | Version | Date |)
+TABLE_STATUS=$(grep "^| ${PLUGIN_NAME} |" PLUGINS.md | awk -F'|' '{print $3}' | xargs)
+
+# Extract status from full entry (after ### PluginName header)
+ENTRY_STATUS=$(grep -A 10 "^### ${PLUGIN_NAME}$" PLUGINS.md | grep "^\*\*Status:\*\*" | sed 's/\*\*//g; s/Status://g' | xargs)
+
+# Normalize for comparison (remove emojis, trim whitespace)
+TABLE_NORMALIZED=$(echo "$TABLE_STATUS" | sed 's/[^a-zA-Z0-9 ]//g' | xargs)
+ENTRY_NORMALIZED=$(echo "$ENTRY_STATUS" | sed 's/[^a-zA-Z0-9 ]//g' | xargs)
+
+# Compare
+if [ "$TABLE_NORMALIZED" != "$ENTRY_NORMALIZED" ]; then
+  echo "ERROR: Registry drift detected for ${PLUGIN_NAME}"
+  echo "  Registry table: ${TABLE_STATUS}"
+  echo "  Full entry: ${ENTRY_STATUS}"
+  return 1
+fi
+
+return 0
+```
+
+**When to call:**
+- After every `updatePluginStatus()` call (validates atomic update succeeded)
+- At checkpoint verification (step 3.5 in checkpoint protocol)
+- Before reading status in `/implement` command
+
+**Returns:**
+- Exit 0: Both locations match (consistent)
+- Exit 1: Mismatch detected (drift)
+
+**Error handling:**
+If drift detected, present retry menu:
+```
+Registry drift detected - inconsistent status
+
+What would you like to do?
+1. Auto-fix (sync registry table to match full entry) - recommended
+2. Show both values (investigate mismatch)
+3. Manual fix (I'll fix it myself)
+4. Other
+```
+
 ### updatePluginStatus(pluginName, newStatus)
 
-**Purpose:** Update plugin status emoji in PLUGINS.md after each stage checkpoint.
+**Purpose:** Update plugin status emoji in PLUGINS.md in BOTH locations atomically.
 
 **Valid statuses for plugin-workflow (stages 2-6):**
 - `🚧 Stage 2` - Foundation in progress
@@ -24,19 +77,75 @@
 
 **Note:** Statuses `💡 Ideated` and `🚧 Stage 0-1` are managed by plugin-planning skill.
 
-**Implementation:**
-1. Read PLUGINS.md
-2. Find section: `### [pluginName]`
-3. Update `**Status:**` line with new emoji and text
-4. Validate transition is legal (see validateTransition below)
-5. Write back to PLUGINS.md
+**Implementation (ATOMIC - updates both locations):**
 
-**CRITICAL:** This must be called AFTER each subagent completes and before presenting decision menu.
+**APPROACH 1 (Using Edit tool - recommended):**
+```
+1. Read PLUGINS.md to get current state
+2. Use Edit tool to update full entry section:
+   - Find section: ### [pluginName]
+   - Update line: **Status:** [old] → **Status:** [new]
+3. Use Edit tool to update registry table:
+   - Find line: | [pluginName] | [old status] | ...
+   - Update to: | [pluginName] | [new status] | ...
+4. Call validateRegistryConsistency(pluginName)
+5. If validation fails: Rollback via git checkout PLUGINS.md
+6. Return success/failure
+```
+
+**APPROACH 2 (Using bash sed - for scripting contexts):**
+```bash
+#!/bin/bash
+# Atomic status update - updates both locations or neither
+
+PLUGIN_NAME=$1
+NEW_STATUS=$2
+
+# Backup current state
+cp PLUGINS.md PLUGINS.md.backup
+
+# Update full entry section (canonical source)
+sed -i '' "/^### ${PLUGIN_NAME}$/,/^###/ s/^\*\*Status:\*\* .*$/\*\*Status:\*\* ${NEW_STATUS}/" PLUGINS.md
+
+# Update registry table (derived view)
+# Extract current row and preserve other columns
+CURRENT_ROW=$(grep "^| ${PLUGIN_NAME} |" PLUGINS.md)
+NEW_ROW=$(echo "$CURRENT_ROW" | awk -F'|' -v status=" ${NEW_STATUS} " '{print $1 "|" $2 "|" status "|" $4 "|" $5}')
+sed -i '' "s/^| ${PLUGIN_NAME} | .*/$(echo "$NEW_ROW" | sed 's/[&/\]/\\&/g')/" PLUGINS.md
+
+# Validate both updates succeeded
+if validateRegistryConsistency "$PLUGIN_NAME"; then
+  rm PLUGINS.md.backup
+  echo "✓ Status updated atomically: ${NEW_STATUS}"
+  return 0
+else
+  echo "ERROR: Atomic update failed. Reverting..."
+  mv PLUGINS.md.backup PLUGINS.md
+  return 1
+fi
+```
+
+**CRITICAL:** This function ensures BOTH locations update together (atomic operation).
+
+**Validation:**
+- After update, `validateRegistryConsistency()` must return 0
+- If validation fails, rollback changes (all or nothing)
 
 **Example:**
 ```markdown
-### TapeDelay
-**Status:** 🚧 Stage 4 → **Status:** 🚧 Stage 5
+Before:
+  ### TapeDelay
+  **Status:** 🚧 Stage 4
+
+  Registry table:
+  | TapeDelay | 🚧 Stage 4 | 1.0.0 | 2025-11-12 |
+
+After:
+  ### TapeDelay
+  **Status:** 🚧 Stage 5
+
+  Registry table:
+  | TapeDelay | 🚧 Stage 5 | 1.0.0 | 2025-11-12 |
 ```
 
 ### createPluginEntry(pluginName, type, brief)
@@ -79,15 +188,60 @@
 
 ### getPluginStatus(pluginName)
 
-**Purpose:** Return current status emoji for routing logic.
+**Purpose:** Return current status emoji for routing logic. Reads from FULL ENTRY (canonical source).
 
-**Implementation:**
-1. Read PLUGINS.md
-2. Find `### [pluginName]` section
-3. Extract `**Status:**` line
-4. Parse emoji: 💡, 🚧, ✅, or 📦
-5. If 🚧, extract stage number (e.g., "🚧 Stage 4" → 4)
-6. Return object: `{ emoji: "🚧", stage: 4, text: "Stage 4" }`
+**Implementation (ROBUST - handles Markdown formatting):**
+```bash
+#!/bin/bash
+# Parse status from full entry section (canonical source)
+
+PLUGIN_NAME=$1
+
+# Extract status from full entry (handles **bold**, _italic_, etc.)
+STATUS_LINE=$(grep -A 10 "^### ${PLUGIN_NAME}$" PLUGINS.md | grep "^\*\*Status:\*\*" | head -1)
+
+# Strip all Markdown formatting
+STATUS_TEXT=$(echo "$STATUS_LINE" | sed 's/\*\*//g; s/__//g; s/_//g; s/Status://g' | xargs)
+
+# Parse emoji and stage
+EMOJI=$(echo "$STATUS_TEXT" | awk '{print $1}')
+STAGE_INFO=$(echo "$STATUS_TEXT" | sed 's/^[^ ]* //')
+
+# For 🚧 status, extract stage/phase numbers
+if echo "$EMOJI" | grep -q "🚧"; then
+  # Handle both "Stage 4" and "Stage 4.1" formats
+  STAGE_NUM=$(echo "$STAGE_INFO" | grep -o 'Stage [0-9.]*' | awk '{print $2}')
+  echo "{ \"emoji\": \"$EMOJI\", \"stage\": \"$STAGE_NUM\", \"text\": \"$STATUS_TEXT\" }"
+else
+  echo "{ \"emoji\": \"$EMOJI\", \"text\": \"$STATUS_TEXT\" }"
+fi
+```
+
+**Key improvements:**
+1. Reads from full entry section (canonical source, not registry table)
+2. Strips ALL Markdown formatting (`**bold**`, `__underline__`, `_italic_`)
+3. Handles phased stages (e.g., "Stage 4.1")
+4. Returns structured JSON for easy parsing
+
+**Example outputs:**
+```bash
+# Stage in progress
+{ "emoji": "🚧", "stage": "4", "text": "🚧 Stage 4" }
+
+# Phased stage
+{ "emoji": "🚧", "stage": "4.1", "text": "🚧 Stage 4.1" }
+
+# Completed
+{ "emoji": "✅", "text": "✅ Working" }
+
+# Installed
+{ "emoji": "📦", "text": "📦 Installed" }
+```
+
+**Why read from full entry:**
+- Full entry is canonical source (more detailed, always updated first)
+- Registry table is derived view (for quick scanning only)
+- Avoids false-negatives from registry drift
 
 ### validateTransition(currentStatus, newStatus)
 

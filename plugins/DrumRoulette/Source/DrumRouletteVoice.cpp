@@ -6,11 +6,14 @@ DrumRouletteVoice::DrumRouletteVoice(int slotNum)
 {
 }
 
-void DrumRouletteVoice::setParameterPointers(std::atomic<float>* attack, std::atomic<float>* decay, std::atomic<float>* pitch)
+void DrumRouletteVoice::setParameterPointers(std::atomic<float>* attack, std::atomic<float>* decay, std::atomic<float>* pitch,
+                                              std::atomic<float>* tilt, std::atomic<float>* volume)
 {
     attackParam = attack;
     decayParam = decay;
     pitchParam = pitch;
+    tiltFilterParam = tilt;
+    volumeParam = volume;
 }
 
 void DrumRouletteVoice::setCurrentPlaybackSampleRate(double newRate)

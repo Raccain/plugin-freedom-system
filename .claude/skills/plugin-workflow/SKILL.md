@@ -366,8 +366,15 @@ See `references/state-management.md` for `checkStagePreconditions()` function.
 
         <step order="3" required="true" function="updatePluginStatus">
           updatePluginStatus(pluginName, `🚧 Stage ${currentStage}`)
-          Update PLUGINS.md status emoji
-          VERIFY: PLUGINS.md contains new status
+          Update PLUGINS.md status emoji in BOTH locations atomically
+          VERIFY: PLUGINS.md contains new status in full entry section
+        </step>
+
+        <step order="3.5" required="true" function="validateRegistryConsistency">
+          validateRegistryConsistency(pluginName)
+          Verify registry table matches full entry after status update
+          VERIFY: Both locations show identical status
+          BLOCK: If mismatch detected, present drift resolution menu
         </step>
 
         <step order="4" required="true" function="updatePluginTimeline">

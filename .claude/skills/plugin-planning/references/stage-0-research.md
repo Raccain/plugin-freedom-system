@@ -377,7 +377,7 @@ DSP architecture documented. Ready to proceed to planning.
 - plugins/[PluginName]/.ideas/architecture.md
 ```
 
-### 2. Update PLUGINS.md
+### 2. Update PLUGINS.md (ATOMIC - both locations)
 
 **Check if entry exists:**
 ```bash
@@ -390,34 +390,44 @@ else
 fi
 ```
 
-**New entry format:**
+**New entry format (MUST include registry table entry):**
 ```markdown
-### [PluginName]
+1. Add to registry table (at line ~34, before first ### entry):
+   | [PluginName] | 🚧 Stage 0 | - | [YYYY-MM-DD] |
 
-**Status:** 🚧 Stage 0
-**Type:** [Audio Effect | MIDI Instrument | Synth | Utility]
-**Created:** [YYYY-MM-DD]
+2. Add full entry section:
+   ### [PluginName]
 
-[Brief description from creative-brief.md]
+   **Status:** 🚧 Stage 0
+   **Type:** [Audio Effect | MIDI Instrument | Synth | Utility]
+   **Created:** [YYYY-MM-DD]
 
-**Lifecycle Timeline:**
-- **[YYYY-MM-DD]:** Creative brief created
-- **[YYYY-MM-DD] (Stage 0):** Research completed - DSP architecture documented
+   [Brief description from creative-brief.md]
 
-**Last Updated:** [YYYY-MM-DD]
+   **Lifecycle Timeline:**
+   - **[YYYY-MM-DD]:** Creative brief created
+   - **[YYYY-MM-DD] (Stage 0):** Research completed - DSP architecture documented
+
+   **Last Updated:** [YYYY-MM-DD]
 ```
 
-**Update existing entry:**
+**Update existing entry (ATOMIC - both locations):**
 ```markdown
-# Change status
-**Status:** 💡 Ideated → **Status:** 🚧 Stage 0
+1. Update registry table:
+   Find: | [PluginName] | 💡 Ideated | ...
+   Replace: | [PluginName] | 🚧 Stage 0 | - | [YYYY-MM-DD] |
 
-# Add timeline entry
-- **[YYYY-MM-DD] (Stage 0):** Research completed - DSP architecture documented
+2. Update full entry section:
+   Find: **Status:** 💡 Ideated
+   Replace: **Status:** 🚧 Stage 0
 
-# Update last updated
-**Last Updated:** [YYYY-MM-DD]
+3. Add timeline entry to full section:
+   - **[YYYY-MM-DD] (Stage 0):** Research completed - DSP architecture documented
+
+4. Update last updated in both locations
 ```
+
+**CRITICAL:** Always update BOTH locations to prevent registry drift.
 
 ### 3. Git Commit
 

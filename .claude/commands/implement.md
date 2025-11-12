@@ -114,6 +114,31 @@ When user runs `/implement [PluginName?]`, invoke the plugin-workflow skill to b
 3. If preconditions pass: Invoke plugin-workflow skill via Skill tool
 4. If preconditions fail: Display blocking error and stop
 
+**Status parsing (ROBUST implementation):**
+```
+CRITICAL: Always parse status from FULL ENTRY section (canonical source), not registry table.
+
+Implementation:
+1. Find full entry: grep -A 10 "^### ${PLUGIN_NAME}$" PLUGINS.md
+2. Extract status line: grep "^\*\*Status:\*\*"
+3. Strip Markdown: sed 's/\*\*//g; s/__//g; s/_//g; s/Status://g'
+4. Parse stage: Extract "Stage N" or "Stage N.M" pattern
+
+Example:
+  Input: **Status:** 🚧 **Stage 4.1**
+  After strip: 🚧 Stage 4.1
+  Parsed stage: 4.1
+
+Why this approach:
+- Full entry is canonical source (always most accurate)
+- Registry table is derived view (can drift out of sync)
+- Handles all Markdown formatting variations (**bold**, _italic_, etc.)
+- Prevents false-negative blocks from registry drift
+```
+
+**Registry consistency:**
+If implementing status checks in bash/scripts, use the `getPluginStatus()` and `validateRegistryConsistency()` functions from `.claude/skills/plugin-workflow/references/state-management.md` to ensure accurate parsing and detect drift.
+
 **Skill invocation:**
 Invoke the plugin-workflow skill with the plugin name and starting stage. The skill handles stages 2-6 implementation using the subagent dispatcher pattern.
 

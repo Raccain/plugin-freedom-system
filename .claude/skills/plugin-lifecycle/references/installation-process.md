@@ -132,19 +132,38 @@ Next steps:
 4. Test audio processing and UI
 ```
 
-## Update PLUGINS.md
+## Step 8: Update PLUGINS.md (ATOMIC - both locations)
 
-Record installation:
+**CRITICAL:** Update BOTH registry table and full entry section.
 
-```markdown
-**Status:** 📦 Installed
-**Installed:** [YYYY-MM-DD]
+**Update sequence:**
+```
+1. Update registry table status:
+   Find: | [PluginName] | ✅ Working | [version] | [date] |
+   Replace: | [PluginName] | 📦 Installed | [version] | [YYYY-MM-DD] |
 
-**Formats:** VST3, AU
+2. Update full entry section status:
+   Find: **Status:** ✅ Working
+   Replace: **Status:** 📦 Installed
 
-**Locations:**
-- VST3: `~/Library/Audio/Plug-Ins/VST3/[ProductName].vst3`
-- AU: `~/Library/Audio/Plug-Ins/Components/[ProductName].component`
+3. Add installation details to full entry:
+   **Installed:** [YYYY-MM-DD]
+
+   **Formats:** VST3, AU
+
+   **Locations:**
+   - VST3: `~/Library/Audio/Plug-Ins/VST3/[ProductName].vst3`
+   - AU: `~/Library/Audio/Plug-Ins/Components/[ProductName].component`
+
+4. Update Last Updated in both locations
+```
+
+**Verification:**
+```bash
+# Verify both locations show 📦 Installed
+TABLE=$(grep "^| [PluginName] |" PLUGINS.md | awk -F'|' '{print $3}' | xargs)
+ENTRY=$(grep -A 10 "^### [PluginName]$" PLUGINS.md | grep "^\*\*Status:\*\*" | sed 's/\*\*//g' | xargs)
+# Both should show: 📦 Installed
 ```
 
 ---

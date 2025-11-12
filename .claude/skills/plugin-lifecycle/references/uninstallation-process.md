@@ -77,19 +77,37 @@ Same as installation Step 6. See `references/cache-management.md`.
 
 DAWs may still show removed plugin in list (from cache). Clearing forces rescan.
 
-## Step 5: Update PLUGINS.md
+## Step 5: Update PLUGINS.md (ATOMIC - both locations)
 
-Change status back to **✅ Working**:
+**CRITICAL:** Update BOTH registry table and full entry section.
 
-```markdown
-**Status:** ✅ Working (was 📦 Installed)
-**Installed:** [Original date] (uninstalled: [YYYY-MM-DD])
+**Update sequence:**
+```
+1. Update registry table status:
+   Find: | [PluginName] | 📦 Installed | [version] | [date] |
+   Replace: | [PluginName] | ✅ Working | [version] | [YYYY-MM-DD] |
+
+2. Update full entry section status:
+   Find: **Status:** 📦 Installed
+   Replace: **Status:** ✅ Working
+
+3. Update installation note in full entry:
+   **Installed:** [Original date] (uninstalled: [YYYY-MM-DD])
+
+4. Remove installation metadata from full entry:
+   - ~~**Formats:** VST3, AU~~
+   - ~~**Locations:** ...~~
+
+5. Update Last Updated in both locations
 ```
 
-Remove installation metadata:
-
-- ~~**Formats:** VST3, AU~~
-- ~~**Locations:** ...~~
+**Verification:**
+```bash
+# Verify both locations show ✅ Working
+TABLE=$(grep "^| [PluginName] |" PLUGINS.md | awk -F'|' '{print $3}' | xargs)
+ENTRY=$(grep -A 10 "^### [PluginName]$" PLUGINS.md | grep "^\*\*Status:\*\*" | sed 's/\*\*//g' | xargs)
+# Both should show: ✅ Working
+```
 
 ## Step 6: Confirmation
 

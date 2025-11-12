@@ -19,7 +19,8 @@ public:
     void loadSample(const juce::File& file);
     int getSlotNumber() const { return slotNumber; }
 
-    void setParameterPointers(std::atomic<float>* attack, std::atomic<float>* decay, std::atomic<float>* pitch);
+    void setParameterPointers(std::atomic<float>* attack, std::atomic<float>* decay, std::atomic<float>* pitch,
+                              std::atomic<float>* tilt, std::atomic<float>* volume);
 
 private:
     int slotNumber;
@@ -32,10 +33,22 @@ private:
     // ADSR envelope (Phase 4.2)
     juce::ADSR envelope;
 
+    // Tilt filter (Phase 4.3)
+    juce::dsp::IIR::Filter<float> lowShelfFilter;
+    juce::dsp::IIR::Filter<float> highShelfFilter;
+
+    // Volume control (Phase 4.3)
+    juce::dsp::Gain<float> volumeGain;
+
+    // DSP sample rate (Phase 4.3)
+    double voiceSampleRate = 44100.0;
+
     // Parameter pointers (set by processor)
     std::atomic<float>* attackParam = nullptr;
     std::atomic<float>* decayParam = nullptr;
     std::atomic<float>* pitchParam = nullptr;
+    std::atomic<float>* tiltFilterParam = nullptr;
+    std::atomic<float>* volumeParam = nullptr;
 
     JUCE_LEAK_DETECTOR(DrumRouletteVoice)
 };
