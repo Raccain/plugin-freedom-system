@@ -70,8 +70,19 @@ LushVerbAudioProcessor::~LushVerbAudioProcessor()
 
 void LushVerbAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
-    // Initialization will be added in Stage 4
-    juce::ignoreUnused(sampleRate, samplesPerBlock);
+    // Prepare DSP spec (Pattern #17: Modern juce::dsp API)
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
+    spec.numChannels = static_cast<juce::uint32>(getTotalNumOutputChannels());
+
+    // Prepare DSP components
+    reverb.prepare(spec);
+    dryWetMixer.prepare(spec);
+
+    // Reset components to initial state
+    reverb.reset();
+    dryWetMixer.reset();
 }
 
 void LushVerbAudioProcessor::releaseResources()
@@ -84,15 +95,52 @@ void LushVerbAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     juce::ScopedNoDenormals noDenormals;
     juce::ignoreUnused(midiMessages);
 
-    // Parameter access example (for Stage 4 DSP implementation):
-    // auto* sizeParam = parameters.getRawParameterValue("SIZE");
-    // auto* dampingParam = parameters.getRawParameterValue("DAMPING");
-    // auto* shimmerParam = parameters.getRawParameterValue("SHIMMER");
-    // auto* mixParam = parameters.getRawParameterValue("MIX");
-    // float sizeValue = sizeParam->load();  // Atomic read (real-time safe)
+    // Clear unused channels
+    for (int i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i)
+        buffer.clear(i, 0, buffer.getNumSamples());
 
-    // Pass-through for Stage 3 (DSP implementation happens in Stage 4)
-    // Audio routing is already handled by JUCE
+    // Read parameters (atomic, real-time safe)
+    auto* sizeParam = parameters.getRawParameterValue("SIZE");
+    auto* dampingParam = parameters.getRawParameterValue("DAMPING");
+    auto* mixParam = parameters.getRawParameterValue("MIX");
+
+    float sizeValue = sizeParam->load();       // 0.5-20.0s
+    float dampingValue = dampingParam->load(); // 0-100%
+    float mixValue = mixParam->load();         // 0-100%
+
+    // Map SIZE to reverb roomSize (0.3-1.0 range)
+    // SIZE parameter: 0.5s (small) → 20.0s (huge)
+    // Reverb roomSize: 0.3 (tight) → 1.0 (massive)
+    float roomSize = juce::jmap(sizeValue, 0.5f, 20.0f, 0.3f, 1.0f);
+
+    // Map DAMPING from percentage (0-100%) to normalized (0.0-1.0)
+    float damping = dampingValue / 100.0f;
+
+    // Set reverb parameters
+    juce::dsp::Reverb::Parameters reverbParams;
+    reverbParams.roomSize = roomSize;
+    reverbParams.damping = damping;
+    reverbParams.wetLevel = 1.0f;  // DryWetMixer handles dry/wet blend
+    reverbParams.dryLevel = 0.0f;  // DryWetMixer handles dry/wet blend
+    reverbParams.width = 1.0f;     // Full stereo width
+    reverbParams.freezeMode = 0.0f;
+    reverb.setParameters(reverbParams);
+
+    // Set dry/wet mix (percentage to normalized)
+    dryWetMixer.setWetMixProportion(mixValue / 100.0f);
+
+    // Process audio using modern juce::dsp API (Pattern #17)
+    juce::dsp::AudioBlock<float> block(buffer);
+
+    // Push dry signal to mixer
+    dryWetMixer.pushDrySamples(block);
+
+    // Process wet signal through reverb
+    juce::dsp::ProcessContextReplacing<float> context(block);
+    reverb.process(context);
+
+    // Mix dry and wet signals
+    dryWetMixer.mixWetSamples(block);
 }
 
 juce::AudioProcessorEditor* LushVerbAudioProcessor::createEditor()

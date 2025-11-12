@@ -1,5 +1,6 @@
 #pragma once
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_dsp/juce_dsp.h>
 
 class LushVerbAudioProcessor : public juce::AudioProcessor
 {
@@ -30,6 +31,11 @@ public:
     void setStateInformation(const void* data, int sizeInBytes) override;
 
 private:
+    // DSP Components (declare BEFORE parameters for initialization order)
+    juce::dsp::Reverb reverb;
+    juce::dsp::DryWetMixer<float> dryWetMixer;
+
+    // APVTS comes AFTER DSP components
     juce::AudioProcessorValueTreeState parameters;
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
