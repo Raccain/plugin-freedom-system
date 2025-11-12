@@ -31,7 +31,7 @@
 | FlutterVerb | 📦 Installed | 1.0.3 | 2025-11-12 |
 | LushVerb | 📦 Installed | 1.0.0 | 2025-11-12 |
 | OrganicHats | 📦 Installed | 1.0.0 | 2025-11-12 |
-| DrumRoulette | 🚧 Stage 4.1 | - | 2025-11-12 |
+| DrumRoulette | 🚧 Stage 4.3 | - | 2025-11-12 |
 
 ### GainKnob
 
@@ -504,7 +504,7 @@ Global:
 
 ### DrumRoulette
 
-**Status:** 🚧 **Stage 4.1**
+**Status:** 🚧 **Stage 4.3**
 **Created:** 2025-11-12
 **Type:** Instrument (Drum Sampler)
 **Complexity:** 5.0 / 5.0 (maximum - phased implementation)
@@ -550,6 +550,8 @@ Per-Slot (×8):
 - **2025-11-12 (Stage 2):** Foundation - Build system operational, compiles successfully
 - **2025-11-12 (Stage 3):** Shell complete - 73 parameters implemented (65 APVTS + 8 deferred to Stage 4)
 - **2025-11-12 (Stage 4.1):** Voice architecture + sample playback - 8 voices, MIDI mapping C1-G1, multi-output (18 channels)
+- **2025-11-12 (Stage 4.2):** Envelope + pitch shifting - ADSR per voice (sustain=0), pitch ±12 semitones, linear interpolation
+- **2025-11-12 (Stage 4.3):** Tilt filter + volume control - cascaded shelving filters at 1kHz, per-voice gain (-60dB to +6dB)
 
 **Known Issues:**
 - None
