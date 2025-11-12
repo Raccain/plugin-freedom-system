@@ -29,6 +29,33 @@ Most problems have known solutions (Level 1: 5 min). Complex problems need deep 
 
 ---
 
+## Read-Only Protocol
+
+**CRITICAL:** This skill is **read-only** and **advisory only**. It NEVER:
+
+- Edits code files
+- Runs builds
+- Modifies contracts or configurations
+- Implements solutions
+
+**Workflow handoff:**
+
+1. Research completes and presents findings with decision menu
+2. User selects "Apply solution"
+3. Output routing instruction: "User selected: Apply solution. Invoking plugin-improve skill..."
+4. This signals main conversation to invoke plugin-improve
+5. plugin-improve reads research findings from conversation history
+6. plugin-improve handles all implementation (with versioning, backups, testing)
+
+**Why separation matters:**
+
+- Research uses Opus + extended thinking (expensive)
+- Implementation needs codebase context (different focus)
+- Clear decision gate between "here are options" and "making changes"
+- Research can't break anything (safe exploration)
+
+---
+
 ## Entry Points
 
 **Invoked by:**
@@ -563,10 +590,14 @@ What's next?
 
 **Handle responses:**
 
-- **Option 1:** Proceed with application (return solution to caller)
+- **Option 1 ("Apply solution"):**
+  Output: "User selected: Apply solution. Invoking plugin-improve skill..."
+  This routing instruction signals main conversation to invoke plugin-improve, which reads research findings from history and skips Phase 0.5 investigation.
 - **Option 2:** Display full report, then re-present menu
 - **Option 3:** Escalate to Level 2
 - **Option 4:** Ask what they'd like to do
+
+**IMPORTANT:** This skill is **read-only**. Never edit code, run builds, or modify files. All implementation happens through plugin-improve skill after research completes.
 
 ### After Level 2
 
@@ -577,6 +608,15 @@ What's next?
 3. Continue deeper - Escalate to Level 3 (may take up to 60 min)
 4. Other
 ```
+
+**Handle responses:**
+
+- **Option 1 ("Apply recommended solution"):**
+  Output: "User selected: Apply recommended solution. Invoking plugin-improve skill..."
+  This routing instruction signals main conversation to invoke plugin-improve, which reads research findings from history.
+- **Option 2:** Display detailed comparison, then re-present menu
+- **Option 3:** Escalate to Level 3
+- **Option 4:** Ask what they'd like to do
 
 ### After Level 3
 
@@ -589,12 +629,15 @@ What's next?
 5. Other
 ```
 
-**Option 4 integration:**
-If user chooses "Document findings", invoke troubleshooting-docs skill:
+**Handle responses:**
 
-- Pass research report as context
-- Capture in knowledge base
-- Future Level 1 searches will find it (fast path)
+- **Option 1 ("Apply recommended solution"):**
+  Output: "User selected: Apply recommended solution. Invoking plugin-improve skill..."
+  This routing instruction signals main conversation to invoke plugin-improve, which reads research findings from history and proceeds to implementation.
+- **Option 2:** Display comprehensive report with all approaches, then re-present menu
+- **Option 3:** User wants to try different approach - update recommendation, then output routing instruction to invoke plugin-improve with alternative approach
+- **Option 4:** Invoke troubleshooting-docs skill to capture findings in knowledge base (for future Level 1 fast path)
+- **Option 5:** Ask what they'd like to do
 
 ---
 

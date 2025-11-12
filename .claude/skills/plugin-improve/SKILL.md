@@ -16,6 +16,19 @@ preconditions:
 
 **Purpose:** Make changes to completed plugins with versioning, backups, changelog automation, and root cause investigation.
 
+**Integration with deep-research:**
+
+This skill can receive pre-computed research findings from the deep-research skill. When user runs `/research` to investigate a problem and then chooses "Apply solution", deep-research outputs a routing instruction that signals the main conversation to invoke this skill. Phase 0.45 detects the research findings in conversation history and skips investigation, proceeding directly to implementation approval.
+
+**Workflow:**
+1. User: `/research [problem]` → deep-research investigates
+2. deep-research: Presents findings with "Apply solution" option
+3. User: Selects "Apply solution"
+4. deep-research: Outputs routing instruction: "Invoking plugin-improve skill..."
+5. Main conversation: Sees routing instruction, invokes plugin-improve skill
+6. plugin-improve: Detects research in history (Phase 0.45), extracts findings, skips investigation
+7. plugin-improve: Implements with versioning, backups, testing
+
 ## Precondition Checking
 
 **Before starting, verify:**
@@ -76,7 +89,7 @@ Question:
 
 Handle responses:
 - Option 1 → Invoke plugin-ideation skill in improvement mode, then return here when ready
-- Option 2 → Proceed to Phase 0.5 (Investigation)
+- Option 2 → Proceed to Phase 0.45 (Research Detection)
 ```
 
 ## Phase 0.3: Clarification Questions (For Specific Requests)
@@ -148,10 +161,51 @@ Question:
     - label: "Let me add more context first", description: "Provide additional details"
 
 Route based on answer:
-- Option 1 → Proceed to Phase 0.5 (Investigation)
+- Option 1 → Proceed to Phase 0.45 (Research Detection)
 - Option 2 → Return to Phase 0.3 (re-analyze gaps, generate next 4 questions)
 - Option 3 → Collect free-form text, merge with context, return to Phase 0.3
 ```
+
+## Phase 0.45: Research Detection
+
+**BEFORE starting investigation, check conversation history for deep-research findings:**
+
+**Scan recent messages for:**
+
+- Routing instruction: "Invoking plugin-improve skill..." (signals deep-research handoff)
+- Messages from deep-research skill
+- Research reports (Level 1/2/3)
+- Problem analysis and root cause
+- Recommended solutions
+- Implementation roadmap
+
+**If deep-research findings found:**
+
+```markdown
+✓ Research already completed (deep-research Level N)
+
+**Problem:** [Extracted from research]
+**Root Cause:** [Extracted from research]
+**Recommended Solution:** [Extracted from research]
+**Implementation Steps:** [Extracted from research]
+
+Skipping Phase 0.5 investigation (research already done).
+
+Ready to implement? (y/n): _
+```
+
+Wait for user approval, then proceed to Phase 0.9 (Backup Verification).
+
+**If NO research findings found:**
+
+Proceed to Phase 0.5 (Investigation) - perform fresh root cause analysis.
+
+**Why this matters:**
+
+- Avoids duplicate investigation (user already ran /research)
+- Preserves expensive research context (Opus + extended thinking)
+- Maintains separation: research finds solutions, improve implements them
+- Clear handoff: research outputs routing instruction → main conversation invokes improve
 
 ## Phase 0.5: Investigation (3-Tier)
 
@@ -189,16 +243,17 @@ Deeper investigation:
 
 **Tier 3: Deep Research**
 
-Invoke `deep-research` skill (Phase 7 - stub for now):
+Invoke `deep-research` skill for complex issues:
 
 ```
 Complex issue detected. Invoking deep-research skill...
-
-NOTE: deep-research skill will be implemented in Phase 7.
-For now, performing manual comprehensive investigation.
 ```
 
-For now, perform thorough manual investigation.
+Use Skill tool to invoke deep-research:
+- Provide problem context, plugin name, stage
+- deep-research performs graduated investigation (Levels 1-3)
+- Returns structured findings with recommendations
+- Continue with Phase 0.5 "Present findings" using research output
 
 **Present findings:**
 
