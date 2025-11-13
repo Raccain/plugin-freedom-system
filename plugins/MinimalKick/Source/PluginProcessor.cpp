@@ -100,11 +100,13 @@ void MinimalKickAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
     auto* decayParam = parameters.getRawParameterValue("decay");
     auto* sweepParam = parameters.getRawParameterValue("sweep");
     auto* timeParam = parameters.getRawParameterValue("time");
+    auto* driveParam = parameters.getRawParameterValue("drive");
 
     float attackMs = attackParam->load();
     float decayMs = decayParam->load();
     float sweepSemitones = sweepParam->load();
     float pitchDecayMs = timeParam->load();
+    float drivePercent = driveParam->load();
 
     // Process MIDI messages
     for (const auto metadata : midiMessages)
@@ -177,7 +179,12 @@ void MinimalKickAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
 
             // Apply amplitude envelope
             float envelopeValue = envelope.getNextSample();
-            float outputSample = oscillatorSample * envelopeValue;
+            float envelopedSample = oscillatorSample * envelopeValue;
+
+            // Apply saturation/drive (tanh waveshaping)
+            float driveNormalized = drivePercent / 100.0f;  // 0.0 to 1.0
+            float gain = 1.0f + (driveNormalized * 9.0f);   // 1.0 to 10.0
+            float outputSample = std::tanh(gain * envelopedSample);
 
             // Write to both channels (mono to stereo)
             for (int channel = 0; channel < buffer.getNumChannels(); ++channel)

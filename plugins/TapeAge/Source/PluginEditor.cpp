@@ -21,9 +21,11 @@ TapeAgeAudioProcessorEditor::TapeAgeAudioProcessorEditor(TapeAgeAudioProcessor& 
         ", Mix: " + juce::String(mixParam->load()) + "\n");
 
     // Initialize relays with parameter IDs (MUST match APVTS IDs exactly)
+    inputRelay = std::make_unique<juce::WebSliderRelay>("input");
     driveRelay = std::make_unique<juce::WebSliderRelay>("drive");
     ageRelay = std::make_unique<juce::WebSliderRelay>("age");
     mixRelay = std::make_unique<juce::WebSliderRelay>("mix");
+    outputRelay = std::make_unique<juce::WebSliderRelay>("output");
 
     // Initialize WebView with options
     webView = std::make_unique<juce::WebBrowserComponent>(
@@ -31,9 +33,11 @@ TapeAgeAudioProcessorEditor::TapeAgeAudioProcessorEditor(TapeAgeAudioProcessor& 
             .withNativeIntegrationEnabled()  // CRITICAL: Enables JUCE JavaScript library
             .withResourceProvider([this](const auto& url) { return getResource(url); })
             .withKeepPageLoadedWhenBrowserIsHidden()  // FL Studio fix
-            .withOptionsFrom(*driveRelay)     // Register each relay
+            .withOptionsFrom(*inputRelay)     // Register each relay
+            .withOptionsFrom(*driveRelay)
             .withOptionsFrom(*ageRelay)
             .withOptionsFrom(*mixRelay)
+            .withOptionsFrom(*outputRelay)
             .withEventListener("jsLog", [](const auto& var) {
                 // Log JavaScript messages to file
                 if (var.isString())
@@ -49,12 +53,16 @@ TapeAgeAudioProcessorEditor::TapeAgeAudioProcessorEditor(TapeAgeAudioProcessor& 
 
     // Initialize attachments (connect parameters to relays)
     // NOTE: These immediately call sendInitialUpdate() which sends current values to WebView
+    inputAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
+        *processorRef.parameters.getParameter("input"), *inputRelay, nullptr);
     driveAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
         *processorRef.parameters.getParameter("drive"), *driveRelay, nullptr);
     ageAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
         *processorRef.parameters.getParameter("age"), *ageRelay, nullptr);
     mixAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
         *processorRef.parameters.getParameter("mix"), *mixRelay, nullptr);
+    outputAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
+        *processorRef.parameters.getParameter("output"), *outputRelay, nullptr);
 
     debugLog.appendText("  Attachments created (sendInitialUpdate called)\n");
 

@@ -5,6 +5,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout TapeAgeAudioProcessor::creat
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
+    // input - Input gain trim (-12dB to +12dB)
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID { "input", 1 },
+        "Input",
+        juce::NormalisableRange<float>(-12.0f, 12.0f, 0.1f, 1.0f),  // -12dB to +12dB, linear
+        0.0f  // Default: 0dB (unity gain)
+    ));
+
     // drive - Tape saturation amount
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "drive", 1 },
@@ -27,6 +35,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout TapeAgeAudioProcessor::creat
         "Mix",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f, 1.0f),  // 0-100%, linear
         1.0f  // Default: 100% wet
+    ));
+
+    // output - Output gain trim (-12dB to +12dB)
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID { "output", 1 },
+        "Output",
+        juce::NormalisableRange<float>(-12.0f, 12.0f, 0.1f, 1.0f),  // -12dB to +12dB, linear
+        0.0f  // Default: 0dB (unity gain)
     ));
 
     return layout;
@@ -122,7 +138,17 @@ void TapeAgeAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce:
     for (int i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
-    // Phase 4.4: Store dry signal BEFORE any processing
+    // INPUT GAIN: Apply input trim FIRST (before any processing)
+    auto* inputParam = parameters.getRawParameterValue("input");
+    float inputDB = inputParam->load();
+    float inputGain = juce::Decibels::decibelsToGain(inputDB);
+
+    if (inputGain != 1.0f)  // Only apply if not unity gain (optimization)
+    {
+        buffer.applyGain(inputGain);
+    }
+
+    // Phase 4.4: Store dry signal AFTER input gain
     juce::dsp::AudioBlock<float> block(buffer);
     dryWetMixer.pushDrySamples(block);
 
@@ -394,7 +420,17 @@ void TapeAgeAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce:
     // Equal-power crossfade with latency compensation
     dryWetMixer.mixWetSamples(block);
 
-    // Phase 5.2: Calculate peak level for VU meter (AFTER all processing)
+    // OUTPUT GAIN: Apply output trim LAST (after all processing and mixing)
+    auto* outputParam = parameters.getRawParameterValue("output");
+    float outputDB = outputParam->load();
+    float outputGain = juce::Decibels::decibelsToGain(outputDB);
+
+    if (outputGain != 1.0f)  // Only apply if not unity gain (optimization)
+    {
+        buffer.applyGain(outputGain);
+    }
+
+    // Phase 5.2: Calculate peak level for VU meter (AFTER output gain)
     float peakLevel = 0.0f;
     for (int channel = 0; channel < numChannels; ++channel)
     {
