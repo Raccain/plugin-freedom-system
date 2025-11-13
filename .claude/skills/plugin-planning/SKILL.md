@@ -84,6 +84,196 @@ Execute steps 1-6 in order. Do NOT skip steps. Each step builds on previous.
 
 **Duration:** 5-10 minutes
 
+<stage_0_enforcement id="research-step-sequence" enforcement_level="STRICT">
+**Purpose:** Ensure all 6 research steps execute in order before creating architecture.md.
+
+**Why critical:** Skipping research steps creates incomplete architecture contracts that cause implementation failures in Stages 2-5.
+
+**Step Sequence (MANDATORY):**
+
+<step number="1" name="Read Creative Brief" blocking="true">
+**Action:**
+```bash
+BRIEF_PATH="plugins/${PLUGIN_NAME}/.ideas/creative-brief.md"
+if [ ! -f "$BRIEF_PATH" ]; then
+  echo "✗ BLOCKED: creative-brief.md not found"
+  exit 1
+fi
+
+BRIEF_CONTENT=$(cat "$BRIEF_PATH")
+```
+
+**Verification:**
+- File exists: `[ -f "$BRIEF_PATH" ]`
+- Content loaded: `[ -n "$BRIEF_CONTENT" ]`
+- Contains plugin name: `grep -q "$PLUGIN_NAME" "$BRIEF_PATH"`
+
+**If verification fails:** BLOCK with error, cannot proceed to step 2
+</step>
+
+<step number="2" name="Identify Technical Approach" blocking="true" depends_on="1">
+**Action:**
+- Analyze brief to determine plugin type (effect/synth/MIDI/utility)
+- Identify I/O configuration (mono/stereo/sidechain)
+- Determine processing domain (time/frequency/granular)
+
+**Verification:**
+- Plugin type identified and documented
+- I/O configuration determined
+- Processing approach selected
+
+**Outputs required for step 3:**
+- `PLUGIN_TYPE` variable set (effect|synth|midi|utility)
+- `IO_CONFIG` variable set (mono|stereo|sidechain|multi)
+- `PROCESSING_DOMAIN` variable set (time|frequency|granular|hybrid)
+
+**If verification fails:** BLOCK, present error:
+```
+✗ Step 2 incomplete: Technical approach not identified
+
+Required outputs:
+- Plugin type: [not set]
+- I/O config: [not set]
+- Processing domain: [not set]
+
+Cannot proceed to JUCE research without technical approach.
+```
+</step>
+
+<step number="3" name="Research JUCE DSP Modules" blocking="true" depends_on="2">
+**Action:**
+- Search JUCE documentation for relevant dsp:: classes
+- Use WebSearch for JUCE module examples
+- Document specific classes (minimum 2 required)
+
+**Verification:**
+- At least 2 JUCE classes identified
+- Classes relevant to plugin type from step 2
+- Class usage documented (what each does)
+
+**Outputs required for step 6:**
+- List of JUCE classes with descriptions
+- Example: `["juce::dsp::Gain - Volume control", "juce::dsp::IIR::Filter - Filtering"]`
+
+**If verification fails:** BLOCK, present error with suggestion:
+```
+✗ Step 3 incomplete: Insufficient JUCE research
+
+Found: [N] classes (minimum 2 required)
+Plugin type: ${PLUGIN_TYPE}
+
+Suggested search: "JUCE dsp ${PLUGIN_TYPE} modules"
+
+Cannot proceed without identifying DSP components.
+```
+</step>
+
+<step number="4" name="Research Professional Plugins" blocking="true" depends_on="3">
+**Action:**
+- WebSearch for industry plugins (FabFilter, Waves, UAD, etc.)
+- Document 3-5 similar professional plugins
+- Note sonic characteristics and parameter ranges
+
+**Verification:**
+- At least 3 professional plugins documented
+- Each has parameter range examples
+- Sonic characteristics noted
+
+**Outputs required for step 5:**
+- List of professional plugins with metadata
+- Parameter range examples for each
+
+**If verification fails:** BLOCK, present error:
+```
+✗ Step 4 incomplete: Insufficient professional plugin research
+
+Found: [N] plugins (minimum 3 required)
+
+Cannot proceed without industry standard references.
+```
+</step>
+
+<step number="5" name="Research Parameter Ranges" blocking="true" depends_on="4">
+**Action:**
+- Extract industry-standard ranges from step 4 research
+- Document typical defaults
+- Identify skew factors for nonlinear ranges
+
+**Verification:**
+- Parameter ranges documented for all parameters in creative brief
+- Defaults specified
+- Skew factors noted where applicable
+
+**Outputs required for step 6:**
+- Parameter range table with min/max/default/skew
+
+**If verification fails:** BLOCK, present error:
+```
+✗ Step 5 incomplete: Parameter ranges not documented
+
+Creative brief defines [N] parameters
+Ranges documented: [M] parameters
+
+Cannot create architecture.md without complete parameter specifications.
+```
+</step>
+
+<step number="6" name="Design Sync Check" blocking="true" depends_on="5">
+**Action:**
+```bash
+MOCKUP_DIR="plugins/${PLUGIN_NAME}/.ideas/mockups"
+if [ -d "$MOCKUP_DIR" ] && [ -n "$(ls -A $MOCKUP_DIR 2>/dev/null)" ]; then
+  echo "Mockup exists - running design-sync validation"
+  # Invoke design-sync skill
+  # Compare mockup parameters with creative brief
+  # Document sync results
+else
+  echo "No mockup found - skipping design sync"
+fi
+```
+
+**Verification:**
+- If mockup exists: design-sync completed (PASS or user-acknowledged drift)
+- If no mockup: step marked as skipped (valid)
+
+**Outputs:**
+- Design sync result (passed|skipped|drift-acknowledged)
+
+**If verification fails (mockup exists but sync failed):** BLOCK, present error:
+```
+✗ Step 6 incomplete: Design-brief drift detected
+
+[Design-sync findings]
+
+Cannot proceed to architecture.md creation with unresolved drift.
+Resolve conflicts first, then re-run Stage 0.
+```
+</step>
+
+**After all 6 steps verified:**
+
+<final_verification>
+Verify all required outputs collected:
+- ✓ Creative brief analyzed
+- ✓ Technical approach identified (type/IO/domain)
+- ✓ JUCE classes researched (≥2)
+- ✓ Professional plugins researched (≥3)
+- ✓ Parameter ranges documented (all params)
+- ✓ Design sync completed/skipped
+
+If all verified → Proceed to architecture.md creation
+If any missing → BLOCK and show which step failed verification
+</final_verification>
+
+**Anti-pattern:**
+
+<anti_pattern severity="CRITICAL">
+❌ NEVER jump directly from step 1 to architecture.md creation
+❌ NEVER skip research steps 2-5
+✓ ALWAYS execute all 6 steps sequentially with verification
+</anti_pattern>
+</stage_0_enforcement>
+
 **Process:**
 
 1. Read creative brief:

@@ -439,6 +439,238 @@ mockup_finalized: false
 
 ---
 
+<phase_gate_enforcement id="design-approval-gate" enforcement_level="STRICT">
+**Purpose:** Prevent generating implementation scaffolding (Phase B: files 3-7) before design is finalized (Phase A: files 1-2).
+
+**Why critical:** C++ boilerplate generation is expensive. If design changes after Phase B runs, all 5 implementation files must be regenerated. The two-phase approach saves time by deferring scaffolding until design is locked.
+
+**Gate Trigger:** After Phase A completes (v[N]-ui.yaml + v[N]-ui-test.html generated and committed)
+
+## Phase A Completion Detection
+
+Before presenting decision menu, verify Phase A artifacts exist:
+
+```bash
+# Check for latest design iteration files
+MOCKUP_DIR="plugins/${PLUGIN_NAME}/.ideas/mockups"
+LATEST_VERSION=$(ls -1 "$MOCKUP_DIR"/v*-ui.yaml 2>/dev/null | \
+                 sed 's/.*v\([0-9]*\)-.*/\1/' | sort -n | tail -1)
+
+if [ -n "$LATEST_VERSION" ]; then
+  YAML_FILE="$MOCKUP_DIR/v${LATEST_VERSION}-ui.yaml"
+  TEST_HTML="$MOCKUP_DIR/v${LATEST_VERSION}-ui-test.html"
+
+  # Phase A complete if both files exist
+  if [ -f "$YAML_FILE" ] && [ -f "$TEST_HTML" ]; then
+    PHASE_A_COMPLETE=true
+  else
+    echo "✗ ERROR: Phase A incomplete (missing YAML or test HTML)"
+    exit 1
+  fi
+else
+  echo "✗ ERROR: No mockup versions found"
+  exit 1
+fi
+```
+
+## Decision Menu (Required - Phase 5.5)
+
+When Phase A completes, MUST present this menu and WAIT for user choice:
+
+```
+✓ Mockup v${LATEST_VERSION} design created (2 files)
+
+Files generated:
+- v${LATEST_VERSION}-ui.yaml (design specification)
+- v${LATEST_VERSION}-ui-test.html (browser-testable mockup)
+
+What would you like to do?
+
+1. Iterate - Refine design, adjust layout
+2. Finalize - Validate alignment and complete mockup
+3. Save as template - Add to aesthetic library for reuse
+4. Other
+
+Choose (1-4): _
+```
+
+## Option Handling and Phase B Blocking
+
+<option id="1" name="Iterate on design">
+  **Action:** Stay in Phase A, collect feedback, increment version to v[N+1]
+
+  **Phase B status:** BLOCKED (not ready for implementation)
+
+  **Implementation:**
+  - Collect user feedback on what to change
+  - Increment version number: NEXT_VERSION=$((LATEST_VERSION + 1))
+  - Return to Phase 2 (gap analysis) with new context
+  - Generate v[N+1]-ui.yaml and v[N+1]-ui-test.html
+  - Do NOT proceed to Phases 6-10
+</option>
+
+<option id="2" name="Finalize design">
+  **This is the ONLY option that proceeds to Phase B (files 3-7)**
+
+  Before proceeding, verify gate criteria:
+
+  <gate_criteria>
+    1. **WebView constraints validation** (Phase 5.3 already executed)
+       - No viewport units (100vh, 100vw) in CSS
+       - Native feel CSS present (user-select: none)
+       - Context menu disabled in JavaScript
+       - Required html/body height: 100%
+
+    2. **Creative brief validation** (Phase 5.6 automatic)
+       - If creative-brief.md exists: Invoke design-sync skill
+       - Verify UI concept matches brief vision
+       - Check all parameters from brief have controls
+       - Verify parameter counts match
+
+    3. **User explicitly confirmed finalization**
+       - User selected option 2 from Phase 5.5 menu
+  </gate_criteria>
+
+  **If all criteria met:**
+  - Mark design as finalized in YAML file
+  - Proceed to Phase 5.6 (automatic validation gate)
+  - Then proceed to Phase 6-10 (generate 5 implementation files)
+
+  **If any criteria fail:**
+  - Show validation errors with specific issues
+  - Return to Phase 5.5 decision menu
+  - Block Phase B until issues resolved or user overrides
+</option>
+
+<option id="3" name="Save as template">
+  **Action:** Invoke ui-template-library skill, then return to decision menu
+
+  **Phase B status:** BLOCKED until design finalized via option 2
+
+  **Implementation:**
+  ```
+  Invoke Skill tool:
+  - skill: "ui-template-library"
+  - context: "Save aesthetic from plugins/[PluginName]/.ideas/mockups/v[N]-ui-test.html"
+  ```
+
+  After ui-template-library completes:
+  - Return to Phase 5.5 decision menu
+  - User must still select option 2 to proceed to Phase B
+</option>
+
+<option id="4" name="Other">
+  **Action:** Collect user input, handle custom request, reassess
+
+  **Phase B status:** BLOCKED until valid finalization option selected
+
+  **Common "Other" requests:**
+  - "Test in browser again" → Reopen v[N]-ui-test.html
+  - "Validate WebView constraints" → Re-run Phase 5.3 checks
+  - "Show me the YAML" → Display v[N]-ui.yaml contents
+  - "Exit and save progress" → Update state, exit skill
+
+  After handling request:
+  - Return to Phase 5.5 decision menu
+  - User must select option 2 to proceed to Phase B
+</option>
+
+## State Tracking (Finalization Marker)
+
+When user selects option 2 (Finalize), mark design as finalized in YAML:
+
+```bash
+# Append finalization metadata to YAML
+cat >> "$MOCKUP_DIR/v${LATEST_VERSION}-ui.yaml" << EOF
+
+# Finalization metadata
+finalized: true
+finalized_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+finalized_by_phase: 5.5
+EOF
+```
+
+**Purpose:**
+- Prevents accidental regeneration of finalized designs
+- Tracks which version was approved for implementation
+- Enables version history queries (which designs were finalized vs exploratory)
+
+## Phase B Guard (Before Phases 6-10)
+
+Before generating any Phase B file (production HTML, C++ boilerplate, CMake, checklist), VERIFY finalization:
+
+```bash
+# Check finalization marker before Phase B
+if ! grep -q "finalized: true" "$MOCKUP_DIR/v${LATEST_VERSION}-ui.yaml"; then
+  echo "✗ BLOCKED: Phase B requires finalized design"
+  echo ""
+  echo "Phase B (implementation scaffolding) cannot proceed without approval."
+  echo "Current status: Design iteration (Phase A only)"
+  echo ""
+  echo "To proceed:"
+  echo "1. Test the design in browser (v${LATEST_VERSION}-ui-test.html)"
+  echo "2. Return to Phase 5.5 decision menu"
+  echo "3. Select option 2 (Finalize) to approve design"
+  echo ""
+  exit 1
+fi
+
+# If we reach here, design is finalized - safe to proceed to Phase B
+echo "✓ Design finalized - proceeding to Phase B (implementation files)"
+```
+
+**Integration points for Phase B guard:**
+- **Before Phase 6** (production HTML generation)
+- **Before Phase 7** (C++ boilerplate generation)
+- **Before Phase 8** (CMake snippet generation)
+- **Before Phase 9** (integration checklist generation)
+- **Before Phase 10** (parameter-spec.md creation)
+
+## Anti-Pattern Documentation
+
+<anti_pattern severity="HIGH">
+**Premature scaffolding generation:**
+
+❌ NEVER generate Phase B files (3-7) without user approval from Phase 5.5 menu
+
+❌ NEVER skip the Phase 5.5 decision menu after Phase A completes
+
+❌ NEVER assume design is ready for implementation without explicit "Finalize" choice
+
+❌ NEVER proceed to Phases 6-10 if finalization marker is missing from YAML
+
+✓ ALWAYS present Phase 5.5 decision menu after Phase A (files 1-2 generated)
+
+✓ ALWAYS wait for explicit option 2 (Finalize) choice before Phase B
+
+✓ ALWAYS verify gate criteria (WebView constraints + creative brief validation)
+
+✓ ALWAYS check finalization marker in YAML before generating any Phase B file
+
+**Why this matters:**
+
+The entire two-phase design is to avoid generating C++ boilerplate (files 3-7) when design is still changing. If you generate all 7 files at once:
+
+1. User tests design in browser
+2. User wants to change layout/colors/controls
+3. Phase A files (1-2) regenerated ✓
+4. Phase B files (3-7) now outdated and must be regenerated ✗
+5. Wasted time on boilerplate that became obsolete
+
+**The correct flow:**
+
+1. Generate Phase A (YAML + test HTML) → commit → present menu
+2. User iterates (option 1) OR finalizes (option 2)
+3. If iterate: stay in Phase A, increment version, repeat
+4. If finalize: validate, mark as finalized, proceed to Phase B
+5. Generate Phase B files (3-7) ONLY for finalized design
+6. Implementation files match locked design (no drift)
+</anti_pattern>
+
+</phase_gate_enforcement>
+
+---
+
 <decision_gate id="phase_5_5_approval" blocking="true">
 ## Phase 5.5: Design Decision Menu
 
@@ -545,7 +777,24 @@ Choose (1-4): _
 
 ## Phase 6: Generate Production HTML (After Finalization Only)
 
-**Prerequisites:** User confirmed design in Phase 5.5 decision menu.
+**Prerequisites:**
+- User confirmed design in Phase 5.5 decision menu (selected option 2: Finalize)
+- Phase B guard verification passed (finalized: true marker in YAML)
+
+**ENFORCEMENT: Before proceeding, execute Phase B guard check from phase_gate_enforcement block:**
+
+```bash
+# Verify design finalization before Phase B
+MOCKUP_DIR="plugins/${PLUGIN_NAME}/.ideas/mockups"
+LATEST_VERSION=$(ls -1 "$MOCKUP_DIR"/v*-ui.yaml 2>/dev/null | \
+                 sed 's/.*v\([0-9]*\)-.*/\1/' | sort -n | tail -1)
+
+if ! grep -q "finalized: true" "$MOCKUP_DIR/v${LATEST_VERSION}-ui.yaml"; then
+  echo "✗ BLOCKED: Phase 6 requires finalized design"
+  echo "Return to Phase 5.5 and select option 2 (Finalize)"
+  exit 1
+fi
+```
 
 **Create:** `plugins/[Name]/.ideas/mockups/v[N]-ui.html`
 
@@ -603,7 +852,20 @@ for (const match of comboMatches) {
 
 ## Phase 7: Generate C++ Boilerplate (After Finalization Only)
 
-**Prerequisites:** User confirmed design in Phase 5.5 decision menu.
+**Prerequisites:**
+- User confirmed design in Phase 5.5 decision menu (selected option 2: Finalize)
+- Phase B guard verification passed (finalized: true marker in YAML)
+
+**ENFORCEMENT: Before proceeding, execute Phase B guard check:**
+
+```bash
+# Verify design finalization before Phase B
+if ! grep -q "finalized: true" "$MOCKUP_DIR/v${LATEST_VERSION}-ui.yaml"; then
+  echo "✗ BLOCKED: Phase 7 requires finalized design"
+  echo "Return to Phase 5.5 and select option 2 (Finalize)"
+  exit 1
+fi
+```
 
 **Create:**
 - `plugins/[Name]/.ideas/mockups/v[N]-PluginEditor.h`
@@ -635,7 +897,20 @@ for (const match of comboMatches) {
 
 ## Phase 8: Generate Build Configuration (After Finalization Only)
 
-**Prerequisites:** User confirmed design in Phase 5.5 decision menu.
+**Prerequisites:**
+- User confirmed design in Phase 5.5 decision menu (selected option 2: Finalize)
+- Phase B guard verification passed (finalized: true marker in YAML)
+
+**ENFORCEMENT: Before proceeding, execute Phase B guard check:**
+
+```bash
+# Verify design finalization before Phase B
+if ! grep -q "finalized: true" "$MOCKUP_DIR/v${LATEST_VERSION}-ui.yaml"; then
+  echo "✗ BLOCKED: Phase 8 requires finalized design"
+  echo "Return to Phase 5.5 and select option 2 (Finalize)"
+  exit 1
+fi
+```
 
 **Create:** `plugins/[Name]/.ideas/mockups/v[N]-CMakeLists.txt`
 
@@ -655,7 +930,20 @@ for (const match of comboMatches) {
 
 ## Phase 9: Generate Integration Checklist (After Finalization Only)
 
-**Prerequisites:** User confirmed design in Phase 5.5 decision menu.
+**Prerequisites:**
+- User confirmed design in Phase 5.5 decision menu (selected option 2: Finalize)
+- Phase B guard verification passed (finalized: true marker in YAML)
+
+**ENFORCEMENT: Before proceeding, execute Phase B guard check:**
+
+```bash
+# Verify design finalization before Phase B
+if ! grep -q "finalized: true" "$MOCKUP_DIR/v${LATEST_VERSION}-ui.yaml"; then
+  echo "✗ BLOCKED: Phase 9 requires finalized design"
+  echo "Return to Phase 5.5 and select option 2 (Finalize)"
+  exit 1
+fi
+```
 
 **Create:** `plugins/[Name]/.ideas/mockups/v[N]-integration-checklist.md`
 
@@ -720,7 +1008,27 @@ for (const match of comboMatches) {
 
 ## Phase 10: Finalize parameter-spec.md (After Finalization Only)
 
-**Prerequisites:** User confirmed design in Phase 5.5 decision menu AND this is the first mockup version.
+**Prerequisites:**
+- User confirmed design in Phase 5.5 decision menu (selected option 2: Finalize)
+- Phase B guard verification passed (finalized: true marker in YAML)
+- This is the first mockup version (v1 only)
+
+**ENFORCEMENT: Before proceeding, execute Phase B guard check:**
+
+```bash
+# Verify design finalization before Phase B
+if ! grep -q "finalized: true" "$MOCKUP_DIR/v${LATEST_VERSION}-ui.yaml"; then
+  echo "✗ BLOCKED: Phase 10 requires finalized design"
+  echo "Return to Phase 5.5 and select option 2 (Finalize)"
+  exit 1
+fi
+
+# Only generate parameter-spec.md for v1
+if [ "$LATEST_VERSION" != "1" ]; then
+  echo "ℹ Skipping parameter-spec.md (already exists from v1)"
+  exit 0
+fi
+```
 
 **If this is the first UI mockup (v1):**
 
