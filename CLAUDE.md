@@ -161,6 +161,47 @@ This ensures consistent checkpoint behavior and clean separation of concerns.
 - Modify existing: `/improve [PluginName]`
 - Test plugin: `/test [PluginName]`
 
+## GUI-Optional Flow (Phase 7 Enhancement)
+
+**Purpose:** Plugins can skip custom UI (Stage 4) and ship as "headless" plugins using DAW-provided parameter controls. Custom UI can be added later via `/improve`.
+
+**Benefits:**
+- **Time savings:** 14 minutes per plugin when custom UI isn't needed (12 min vs 26 min)
+- **Faster iteration:** Test DSP immediately after Stage 3 without waiting for UI
+- **Progressive enhancement:** Add GUI later when ready via `/improve [PluginName]`
+- **Flexibility:** User decides when/if to build custom UI
+
+**Workflow:**
+
+After Stage 3 (DSP) completes, user chooses:
+1. **Add custom UI** - Create WebView interface (existing behavior, 15 min)
+2. **Ship headless** - Use DAW controls only (new option, 1 min)
+
+**Headless path:**
+- Generates minimal PluginEditor (shows plugin name, instructs to use DAW controls)
+- Proceeds directly to Stage 5 (Validation)
+- Plugin marked as v1.0.0 (Headless)
+- All parameters exposed to DAW automation
+- No custom UI overhead (smaller binary, faster compile)
+
+**GUI addition via /improve:**
+- `/improve [PluginName]` detects headless plugins
+- Offers "Create custom UI" option
+- Invokes ui-mockup → gui-agent (same as Stage 4)
+- Version bumped to v1.1.0 (minor version - new feature)
+- Backward compatible (existing automation/presets unaffected)
+
+**State management:**
+- New field `gui_type: "headless" | "webview"` in .continue-here.md
+- Backward compatible (defaults to "webview" if field missing)
+- Used by /improve to detect headless plugins
+
+**Templates:**
+- `plugins/TEMPLATE-HEADLESS-EDITOR/` - Minimal PluginEditor templates
+- Automatically substituted with plugin name during generation
+
+**Entry point:** After Stage 3 completion (GUI decision gate in plugin-workflow)
+
 ## Implementation Status
 
 - ✓ Phase 0: Foundation & Contracts (complete)
