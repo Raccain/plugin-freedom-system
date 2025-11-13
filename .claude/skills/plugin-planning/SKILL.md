@@ -264,7 +264,7 @@ Contracts created:
 ✓ architecture.md
 ✓ plan.md
 
-Ready to build. Run: /implement [PluginName]
+Ready for implementation. Proceeding to Stage 2 (Foundation + Shell)...
 ```
 </handoff_protocol>
 
