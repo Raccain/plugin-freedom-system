@@ -10,7 +10,7 @@ Schemas ensure consistent data formats between system components, preventing bre
 
 ### subagent-report.json
 
-**Used by:** foundation-agent, shell-agent, dsp-agent, gui-agent
+**Used by:** foundation-shell-agent, dsp-agent, gui-agent
 
 **Purpose:** Standardizes stage completion reports returned to plugin-workflow orchestrator
 
@@ -119,7 +119,7 @@ with open('.claude/schemas/subagent-report.json') as f:
 
 # Test sample report
 sample = {
-    'agent': 'foundation-agent',
+    'agent': 'foundation-shell-agent',
     'status': 'success',
     'outputs': {
         'plugin_name': 'TestPlugin',

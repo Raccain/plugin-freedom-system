@@ -17,7 +17,7 @@ When technical terms appear in the system, they refer to these concepts:
 - **Standalone** → Desktop Application Mode (run plugin as standalone app, not in DAW)
 
 **Workflow Terms:**
-- **Stage 0-6** → Development Phases (Research → Planning → Foundation → Shell → DSP → GUI → Validation)
+- **Stage 0-5** → Development Phases (Research → Planning → Foundation+Shell → DSP → GUI → Validation)
 - **Contract Files** → Design Documents (creative-brief.md, parameter-spec.md, architecture.md, plan.md)
 - **Checkpoint** → Progress Save Point (commit code, update state, present decision menu)
 - **Subagent** → Specialized Worker (focused AI agent for specific implementation stage)
@@ -129,12 +129,11 @@ Do NOT use AskUserQuestion tool for decision menus - use inline numbered lists a
 
 ## Subagent Invocation Protocol
 
-Stages 2-5 use the dispatcher pattern:
+Stages 2-4 use the dispatcher pattern:
 
-- Stage 2 → You **must** invoke foundation-agent via Task tool
-- Stage 3 → You **must** invoke shell-agent via Task tool
-- Stage 4 → You **must** invoke dsp-agent via Task tool
-- Stage 5 → You **must** invoke gui-agent via Task tool
+- Stage 2 → You **must** invoke foundation-shell-agent via Task tool
+- Stage 3 → You **must** invoke dsp-agent via Task tool
+- Stage 4 → You **must** invoke gui-agent via Task tool
 
 The plugin-workflow skill orchestrates, it does **not** implement.
 
@@ -188,7 +187,7 @@ This ensures consistent checkpoint behavior and clean separation of concerns.
 **Lifecycle:**
 
 - `/dream` - Ideate new plugin concept
-- `/implement [Name]` - Build plugin through 7-stage workflow
+- `/implement [Name]` - Build plugin through 6-stage workflow
 - `/continue [Name]` - Resume paused workflow
 - `/improve [Name]` - Fix bugs or add features (with regression testing)
 - `/reconcile [Name]` - Reconcile state between planning and implementation

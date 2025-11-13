@@ -10,7 +10,7 @@ This document maps all integration points, data formats, and error handling betw
 
 All JSON reports must validate against schemas in `.claude/schemas/`:
 
-- **subagent-report.json** - Reports from foundation-agent, shell-agent, dsp-agent, gui-agent
+- **subagent-report.json** - Reports from foundation-foundation-shell-agent (shell portion), foundation-shell-agent (shell portion), dsp-agent, gui-agent
 - **validator-report.json** - Reports from validator agent
 
 See `.claude/schemas/README.md` for validation examples.
@@ -343,7 +343,7 @@ See `.claude/schemas/README.md` for validation examples.
 
 ---
 
-### plugin-workflow → foundation-agent
+### plugin-workflow → foundation-foundation-shell-agent (shell portion)
 
 **When:** Stage 2 (Foundation) implementation
 
@@ -356,7 +356,7 @@ See `.claude/schemas/README.md` for validation examples.
 
 ```json
 {
-  "agent": "foundation-agent",
+  "agent": "foundation-foundation-shell-agent (shell portion)",
   "status": "success",
   "outputs": {
     "plugin_name": "MyPlugin",
@@ -374,15 +374,15 @@ See `.claude/schemas/README.md` for validation examples.
 ```
 
 **Error handling:**
-- Missing contract → foundation-agent returns status: "failure", specific error
-- File creation error → foundation-agent reports which file failed
-- Invalid plugin type → foundation-agent validates architecture.md, returns error
+- Missing contract → foundation-foundation-shell-agent (shell portion) returns status: "failure", specific error
+- File creation error → foundation-foundation-shell-agent (shell portion) reports which file failed
+- Invalid plugin type → foundation-foundation-shell-agent (shell portion) validates architecture.md, returns error
 
-**Contract:** foundation-agent creates files, returns report. plugin-workflow validates schema, commits changes, updates state.
+**Contract:** foundation-foundation-shell-agent (shell portion) creates files, returns report. plugin-workflow validates schema, commits changes, updates state.
 
 ---
 
-### plugin-workflow → shell-agent
+### plugin-workflow → foundation-shell-agent (shell portion)
 
 **When:** Stage 3 (Shell) implementation
 
@@ -396,7 +396,7 @@ See `.claude/schemas/README.md` for validation examples.
 
 ```json
 {
-  "agent": "shell-agent",
+  "agent": "foundation-shell-agent (shell portion)",
   "status": "success",
   "outputs": {
     "plugin_name": "MyPlugin",
@@ -419,11 +419,11 @@ See `.claude/schemas/README.md` for validation examples.
 ```
 
 **Error handling:**
-- Parameter mismatch → shell-agent returns missing/extra parameters in outputs
-- APVTS creation failed → shell-agent returns apvts_created: false with error
-- Validation failure → shell-agent returns status: "failure"
+- Parameter mismatch → foundation-shell-agent (shell portion) returns missing/extra parameters in outputs
+- APVTS creation failed → foundation-shell-agent (shell portion) returns apvts_created: false with error
+- Validation failure → foundation-shell-agent (shell portion) returns status: "failure"
 
-**Contract:** shell-agent modifies files, returns report. plugin-workflow validates schema and parameter counts.
+**Contract:** foundation-shell-agent (shell portion) modifies files, returns report. plugin-workflow validates schema and parameter counts.
 
 ---
 
@@ -835,7 +835,7 @@ orchestration_mode: true" > plugins/TestPlugin/.continue-here.md
 ```python
 # Test subagent report validation
 sample_report = {
-    "agent": "foundation-agent",
+    "agent": "foundation-foundation-shell-agent (shell portion)",
     "status": "success",
     "outputs": {
         "plugin_name": "TestPlugin",
@@ -855,7 +855,7 @@ assert valid, f"Schema validation failed: {error}"
 # Test missing contract detection
 rm plugins/TestPlugin/.ideas/parameter-spec.md
 
-# Invoke foundation-agent
+# Invoke foundation-foundation-shell-agent (shell portion)
 # Verify returns status: "failure" with specific error
 # Verify plugin-workflow blocks progression
 ```

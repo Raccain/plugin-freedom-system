@@ -1,31 +1,47 @@
-# Stage 2: Foundation
+# Stage 2: Foundation + Shell
 
 **Context:** This file is part of the plugin-workflow skill.
 **Invoked by:** Main workflow dispatcher after Stage 1 completion
-**Purpose:** Create plugin structure that compiles successfully with JUCE build system
+**Purpose:** Create plugin structure with build system AND implement ALL parameters with APVTS in single pass
 
 ---
 
-**Goal:** Create plugin structure that compiles
+**Goal:** Create plugin structure that compiles with full parameter system
 
-**Duration:** 5 minutes
+**Duration:** 7 minutes (combined foundation + shell)
 
 **Preconditions:**
 
 - Stage 1 complete (plan.md exists)
 - creative-brief.md exists
 - architecture.md exists
+- parameter-spec.md exists (from finalized UI mockup)
 
 ## Actions
 
-### 1. Prepare Contracts for Subagent
+### 1. Precondition Check: parameter-spec.md REQUIRED
 
-Read contract files that foundation-agent needs:
+**BLOCKING check before proceeding:**
+
+```bash
+if [ ! -f "plugins/${PLUGIN_NAME}/.ideas/parameter-spec.md" ]; then
+  echo "Cannot proceed to Stage 2 - parameter-spec.md missing"
+  echo "Complete UI mockup workflow first (/mockup)"
+  exit 1
+fi
+```
+
+**If parameter-spec.md missing:** STOP IMMEDIATELY, exit skill, wait for user to create contract via ui-mockup skill.
+
+### 2. Prepare Contracts for Subagent
+
+Read contract files that foundation-shell-agent needs:
 
 ```bash
 cat plugins/[PluginName]/.ideas/creative-brief.md
 cat plugins/[PluginName]/.ideas/architecture.md
 cat plugins/[PluginName]/.ideas/plan.md
+cat plugins/[PluginName]/.ideas/parameter-spec.md
 ```
 
 **CRITICAL: Read Required Patterns**
@@ -38,48 +54,65 @@ const criticalPatterns = await Read({
 });
 ```
 
-### 2. Invoke foundation-agent via Task Tool
+### 3. Invoke foundation-shell-agent via Task Tool
 
-Call foundation-agent subagent with complete specification:
+Call foundation-shell-agent subagent with complete specification:
 
 ```typescript
-const foundationResult = Task({
-  subagent_type: "foundation-agent",
-  description: `Create build system for ${pluginName}`,
+const foundationShellResult = Task({
+  subagent_type: "foundation-shell-agent",
+  description: `Create build system and implement parameters for ${pluginName}`,
   prompt: `CRITICAL PATTERNS (MUST FOLLOW):
 
 ${criticalPatterns}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Create foundation build for plugin at plugins/${pluginName}.
+Create foundation and shell for plugin at plugins/${pluginName}.
 
 Inputs:
 - creative-brief.md: plugins/${pluginName}/.ideas/creative-brief.md
 - architecture.md: plugins/${pluginName}/.ideas/architecture.md
 - plan.md: plugins/${pluginName}/.ideas/plan.md
+- parameter-spec.md: plugins/${pluginName}/.ideas/parameter-spec.md
 - Plugin name: ${pluginName}
 
 Tasks:
 1. Read creative-brief.md and extract PRODUCT_NAME
 2. Read architecture.md and determine plugin type (Audio Effect | Synth | Utility)
-3. Create CMakeLists.txt at plugins/${pluginName}/CMakeLists.txt with JUCE 8 integration
-4. Create Source/PluginProcessor.h at plugins/${pluginName}/Source/PluginProcessor.h
-5. Create Source/PluginProcessor.cpp at plugins/${pluginName}/Source/PluginProcessor.cpp
-6. Create Source/PluginEditor.h at plugins/${pluginName}/Source/PluginEditor.h
-7. Create Source/PluginEditor.cpp at plugins/${pluginName}/Source/PluginEditor.cpp
-8. Return JSON report with status and file list
+3. Read parameter-spec.md and extract ALL parameters
+4. Create CMakeLists.txt with JUCE 8 integration
+5. Create Source/PluginProcessor.h with APVTS member
+6. Create Source/PluginProcessor.cpp with:
+   - createParameterLayout() with ALL parameters from spec
+   - JUCE 8 ParameterID format: juce::ParameterID { "id", 1 }
+   - State management (getStateInformation/setStateInformation)
+7. Create Source/PluginEditor.h
+8. Create Source/PluginEditor.cpp with parameter count display
+9. Verify parameter count matches spec exactly (zero-drift)
+10. Return JSON report with file list, parameter list, and count
+
+CRITICAL: All parameter IDs must match parameter-spec.md exactly (case-sensitive).
 
 Build verification handled by workflow after agent completes.
   `,
 });
 ```
 
-### 3. Parse JSON Report with Error Handling
+**What foundation-shell-agent implements:**
+
+- Build system (CMakeLists.txt)
+- Skeleton source files (PluginProcessor, PluginEditor)
+- APVTS with ALL parameters from parameter-spec.md
+- Parameter IDs matching spec exactly (zero-drift)
+- State management (save/load)
+- processBlock stub (no DSP yet)
+
+### 4. Parse JSON Report with Error Handling
 
 **Implement robust JSON parsing:**
 
-````typescript
+```typescript
 function parseSubagentReport(rawOutput: string): object | null {
   try {
     // Strategy 1: Extract from markdown code blocks
@@ -104,21 +137,21 @@ function parseSubagentReport(rawOutput: string): object | null {
   }
 }
 
-const report = parseSubagentReport(foundationResult);
+const report = parseSubagentReport(foundationShellResult);
 
 if (!report) {
   console.log(`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✗ Stage 2 Error: Could not parse foundation-agent report
+✗ Stage 2 Error: Could not parse foundation-shell-agent report
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-The foundation-agent subagent completed but returned malformed output.
+The foundation-shell-agent subagent completed but returned malformed output.
 
 Raw output:
-${foundationResult}
+${foundationShellResult}
 
 What would you like to do?
-1. Retry foundation-agent dispatch
+1. Retry foundation-shell-agent dispatch
 2. Show full subagent output
 3. Report bug (subagent should return valid JSON)
 4. Manual intervention (I'll fix and say "resume automation")
@@ -129,18 +162,18 @@ Choose (1-4): _
   // Wait for user response, handle accordingly
   return;
 }
-````
+```
 
-### 4. Validate Required Fields
+### 5. Validate Required Fields
 
 **Check JSON structure:**
 
 ```typescript
-function validateFoundationReport(report: any): {
+function validateFoundationShellReport(report: any): {
   valid: boolean;
   error?: string;
 } {
-  if (!report.agent || report.agent !== "foundation-agent") {
+  if (!report.agent || report.agent !== "foundation-shell-agent") {
     return { valid: false, error: "Missing or wrong 'agent' field" };
   }
 
@@ -156,10 +189,21 @@ function validateFoundationReport(report: any): {
     return { valid: false, error: "Missing 'ready_for_next_stage' field" };
   }
 
+  // Validate parameter outputs
+  if (report.status === "success") {
+    if (!report.outputs.parameter_count || typeof report.outputs.parameter_count !== "number") {
+      return { valid: false, error: "Missing 'parameter_count' in outputs" };
+    }
+
+    if (!report.outputs.parameters_implemented || !Array.isArray(report.outputs.parameters_implemented)) {
+      return { valid: false, error: "Missing 'parameters_implemented' array" };
+    }
+  }
+
   return { valid: true };
 }
 
-const validation = validateFoundationReport(report);
+const validation = validateFoundationShellReport(report);
 if (!validation.valid) {
   console.log(`
 ✗ Invalid report format: ${validation.error}
@@ -168,7 +212,7 @@ Report received:
 ${JSON.stringify(report, null, 2)}
 
 What would you like to do?
-1. Retry with fresh foundation-agent
+1. Retry with fresh foundation-shell-agent
 2. Report bug (malformed JSON structure)
 3. Manual intervention
 
@@ -178,36 +222,46 @@ Choose (1-3): _
 }
 ```
 
-### 5. Handle foundation-agent Success/Failure
+### 6. Handle foundation-shell-agent Success/Failure
 
-**If status="success" (files created):**
+**If status="success" (files created + parameters implemented):**
 
 ```typescript
 if (report.status === "success" && report.ready_for_next_stage) {
-  console.log(`✓ foundation-agent complete: Source files created`);
+  console.log(`✓ foundation-shell-agent complete: Build system + parameters`);
   console.log(`  - Plugin: ${report.outputs.plugin_name}`);
   console.log(`  - Files: ${report.outputs.source_files_created?.length || 0}`);
+  console.log(`  - Parameters: ${report.outputs.parameter_count}`);
+  console.log(`  - APVTS: ${report.outputs.apvts_created ? "✓" : "✗"}`);
 
   // Now invoke build-automation to verify compilation
   console.log(`\nInvoking build-automation to verify compilation...`);
 
-  // Proceed to section 5a (Build Verification)
+  // Proceed to section 6a (Build Verification)
 }
 ```
 
-**If status="failure" (file creation failed):**
+**If status="failure":**
 
 Present 4-option failure menu with investigation options.
 
-### 5a. Build Verification via build-automation
+**Special handling for parameter_mismatch:**
 
-**CRITICAL: foundation-agent does NOT verify builds. plugin-workflow does this via build-automation.**
+If error_type="parameter_mismatch":
+- Show missing_parameters list
+- Show implemented_parameters list
+- Highlight contract violation (zero-drift broken)
 
-**After foundation-agent returns success, invoke build-automation skill:**
+### 6a. Build Verification via build-automation
+
+**CRITICAL: foundation-shell-agent does NOT verify builds. plugin-workflow does this via build-automation.**
+
+**After foundation-shell-agent returns success, invoke build-automation skill:**
 
 ```typescript
-console.log("✓ foundation-agent complete: Source files created");
+console.log("✓ foundation-shell-agent complete: Build system + parameters");
 console.log("  Files:", report.outputs.source_files_created);
+console.log("  Parameters:", report.outputs.parameter_count);
 console.log("");
 console.log("Invoking build-automation to verify compilation...");
 
@@ -218,7 +272,7 @@ Skill({
     stage: 2,
     flags: ["--no-install"],
     invoking_skill: "plugin-workflow",
-    purpose: "Verify Stage 2 foundation compiles successfully",
+    purpose: "Verify Stage 2 foundation+shell compiles successfully",
   },
 });
 ```
@@ -245,7 +299,7 @@ Skill({
 - ✅ Correct: `~/Developer/plugin-freedom-system/build/`
 - ❌ Wrong: `~/Developer/plugin-freedom-system/plugins/${pluginName}/build/`
 
-**Why foundation-agent doesn't verify builds:**
+**Why foundation-shell-agent doesn't verify builds:**
 - Runs in fresh context with limited tools (no Bash)
 - Doesn't know build system architecture
 - Would require understanding monorepo structure
@@ -253,17 +307,17 @@ Skill({
 
 **Note:** Build failures are handled entirely by build-automation skill. plugin-workflow just invokes it and awaits result.
 
-### 6. Update State Files
+### 7. Update State Files
 
 ```typescript
 updateHandoff(
   pluginName,
   2,
-  "Stage 2: Foundation - Build system created, compilation verified",
+  `Stage 2: Foundation + Shell - Build system + ${report.outputs.parameter_count} parameters`,
   [
-    "Stage 3: Implement parameters",
+    "Stage 3: Implement DSP",
     "Review build artifacts",
-    "Test compilation",
+    "Test parameters in DAW",
   ],
   complexityScore,
   phased
@@ -273,11 +327,11 @@ updatePluginStatus(pluginName, "🚧 Stage 2");
 updatePluginTimeline(
   pluginName,
   2,
-  "Foundation complete - build system operational"
+  `Foundation + Shell complete - ${report.outputs.parameter_count} parameters`
 );
 ```
 
-### 7. Git Commit
+### 8. Git Commit
 
 ```bash
 git add plugins/[PluginName]/Source/
@@ -286,10 +340,11 @@ git add plugins/[PluginName]/.continue-here.md
 git add PLUGINS.md
 
 git commit -m "$(cat <<'EOF'
-feat: [PluginName] Stage 2 - foundation
+feat: [PluginName] Stage 2 - foundation + shell
 
 Build system created with JUCE 8 configuration
-Minimal PluginProcessor and PluginEditor classes
+[N] parameters implemented with APVTS
+State management (save/load) functional
 Compilation verified (VST3, AU, Standalone)
 
 🤖 Generated with Claude Code
@@ -299,34 +354,38 @@ EOF
 )"
 ```
 
-### 8. Decision Menu
+### 9. Decision Menu
 
 ```
-✓ Stage 2 complete: Build system operational
+✓ Stage 2 complete: Build system + parameter system operational
 
 Plugin: [PluginName]
 Build artifacts: VST3, AU, Standalone
-Status: Compiles successfully (no DSP yet)
+Parameters: [N] parameters implemented
+APVTS: Created and functional
+Status: Compiles successfully, loads in DAW (no DSP yet)
 
 What's next?
-1. Continue to Stage 3 (implement parameters) (recommended)
-2. Review build artifacts
-3. Test compilation manually
-4. Review Stage 2 code
-5. Pause here
-6. Other
+1. Continue to Stage 3 (implement DSP) (recommended)
+2. Test parameters in DAW
+3. Review build artifacts
+4. Review parameter code
+5. Show parameter list
+6. Pause here
+7. Other
 
-Choose (1-6): _
+Choose (1-7): _
 ```
 
 **Handle responses:**
 
-- 1 or "continue": Proceed to Stage 3
-- 2: Show build artifacts list
-- 3: Provide manual test instructions
-- 4: Display CMakeLists.txt and source files
-- 5 or "pause": Update handoff, exit
-- 6 or "other": Ask "What would you like to do?" then re-present menu
+- 1 or "continue": Proceed to Stage 3 (DSP)
+- 2: Provide DAW testing instructions
+- 3: Show build artifacts list
+- 4: Display source files with parameter code
+- 5: List all parameters with IDs, types, ranges
+- 6 or "pause": Update handoff, exit
+- 7 or "other": Ask "What would you like to do?" then re-present menu
 
 ---
 

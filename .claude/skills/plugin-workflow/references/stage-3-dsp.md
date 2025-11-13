@@ -1,7 +1,7 @@
-# Stage 4: DSP
+# Stage 3: DSP
 
 **Context:** This file is part of the plugin-workflow skill.
-**Invoked by:** Main workflow dispatcher after Stage 3 completion
+**Invoked by:** Main workflow dispatcher after Stage 2 completion
 **Purpose:** Implement audio processing where parameters control DSP
 
 ---
@@ -12,7 +12,7 @@
 
 **Preconditions:**
 
-- Stage 3 complete (parameters implemented)
+- Stage 2 complete (parameters implemented)
 - architecture.md exists (DSP component specifications)
 - plan.md exists (complexity score, phase breakdown)
 
@@ -31,8 +31,8 @@ const complexityScore = complexityMatch ? parseFloat(complexityMatch[1]) : 0;
 
 // Check if plan specifies phases
 const hasPhases =
-  planContent.includes("### Phase 4.1") ||
-  planContent.includes("## Stage 4: DSP Phases");
+  planContent.includes("### Phase 3.1") ||
+  planContent.includes("## Stage 3: DSP Phases");
 
 console.log(
   `Complexity: ${complexityScore} (${hasPhases ? "phased" : "single-pass"})`

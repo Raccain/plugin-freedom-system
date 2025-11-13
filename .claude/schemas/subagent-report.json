@@ -2,13 +2,13 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://plugin-freedom-system/schemas/subagent-report.json",
   "title": "Subagent Report Schema",
-  "description": "Unified JSON schema for all subagent reports (foundation-agent, shell-agent, dsp-agent, gui-agent). Ensures consistent report structure and validation.",
+  "description": "Unified JSON schema for all subagent reports (foundation-shell-agent, dsp-agent, gui-agent). Ensures consistent report structure and validation.",
   "type": "object",
   "required": ["agent", "status", "outputs"],
   "properties": {
     "agent": {
       "type": "string",
-      "enum": ["foundation-agent", "shell-agent", "dsp-agent", "gui-agent"],
+      "enum": ["foundation-shell-agent", "dsp-agent", "gui-agent"],
       "description": "Which subagent generated this report"
     },
     "status": {
@@ -27,7 +27,7 @@
         "source_files_created": {
           "type": "array",
           "items": {"type": "string"},
-          "description": "List of source files created (foundation-agent)"
+          "description": "List of source files created (foundation-shell-agent)"
         },
         "parameters_implemented": {
           "type": "array",
@@ -42,19 +42,19 @@
               "units": {"type": "string"}
             }
           },
-          "description": "List of parameters implemented (shell-agent)"
+          "description": "List of parameters implemented (foundation-shell-agent)"
         },
         "parameter_count": {
           "type": "integer",
-          "description": "Number of parameters implemented (shell-agent)"
+          "description": "Number of parameters implemented (foundation-shell-agent)"
         },
         "apvts_created": {
           "type": "boolean",
-          "description": "Whether APVTS was successfully created (shell-agent)"
+          "description": "Whether APVTS was successfully created (foundation-shell-agent)"
         },
         "state_management_implemented": {
           "type": "boolean",
-          "description": "Whether state management was implemented (shell-agent)"
+          "description": "Whether state management was implemented (foundation-shell-agent)"
         },
         "dsp_components": {
           "type": "array",

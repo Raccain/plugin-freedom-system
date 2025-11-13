@@ -16,18 +16,17 @@ preconditions:
 
 # plugin-workflow Skill
 
-**Purpose:** Pure orchestrator for stages 2-6 of JUCE plugin implementation. This skill NEVER implements directly - it always delegates to specialized subagents and presents decision menus after each stage completes.
+**Purpose:** Pure orchestrator for stages 2-5 of JUCE plugin implementation. This skill NEVER implements directly - it always delegates to specialized subagents and presents decision menus after each stage completes.
 
 ## Overview
 
-This skill orchestrates plugin implementation stages 2-6. Stages 0-1 (Research & Planning) are handled by the `plugin-planning` skill.
+This skill orchestrates plugin implementation stages 2-5. Stages 0-1 (Research & Planning) are handled by the `plugin-planning` skill.
 
 **Implementation Stages:**
-- **Stage 2:** Foundation - Create build system, verify compilation (foundation-agent)
-- **Stage 3:** Shell - Implement APVTS with all parameters (shell-agent)
-- **Stage 4:** DSP - Implement audio processing (dsp-agent)
-- **Stage 5:** GUI - Integrate WebView UI with parameter bindings (gui-agent)
-- **Stage 6:** Validation - Factory presets, pluginval, CHANGELOG (direct or validator)
+- **Stage 2:** Foundation + Shell - Create build system and implement APVTS (foundation-shell-agent)
+- **Stage 3:** DSP - Implement audio processing (dsp-agent)
+- **Stage 4:** GUI - Integrate WebView UI with parameter bindings (gui-agent)
+- **Stage 5:** Validation - Factory presets, pluginval, CHANGELOG (direct or validator)
 
 <orchestration_rules enforcement_level="STRICT">
   <delegation_rule
@@ -57,13 +56,12 @@ This skill orchestrates plugin implementation stages 2-6. Stages 0-1 (Research &
     </enforcement>
 
     <valid_delegations>
-      - Stage 2: foundation-agent
-      - Stage 3: shell-agent
-      - Stage 4: dsp-agent
-      - Stage 5: gui-agent
+      - Stage 2: foundation-shell-agent
+      - Stage 3: dsp-agent
+      - Stage 4: gui-agent
     </valid_delegations>
 
-    Stage 6 can optionally run directly in orchestrator or via validator subagent.
+    Stage 5 can optionally run directly in orchestrator or via validator subagent.
   </delegation_rule>
 
   <checkpoint_protocol
@@ -89,8 +87,8 @@ This skill orchestrates plugin implementation stages 2-6. Stages 0-1 (Research &
     </enforcement>
 
     <applies_to>
-      - Simple plugins (complexity ≤2): After stages 2, 3, 4, 5, 6
-      - Complex plugins (complexity ≥3): After stages 2, 3 AND after EACH DSP/GUI phase (4.1, 4.2, 4.3+, 5.1, 5.2, 5.3+), then 6
+      - Simple plugins (complexity ≤2): After stages 2, 3, 4, 5
+      - Complex plugins (complexity ≥3): After stages 2 AND after EACH DSP/GUI phase (3.1, 3.2, 3.3+, 4.1, 4.2, 4.3+), then 5
 
       Note: Phase count determined by plan.md (varies by complexity)
     </applies_to>
@@ -215,11 +213,10 @@ Each stage is fully documented in its own reference file in `references/` subdir
 
   <routing_logic>
     Based on current_stage value:
-    - Stage 2 → invoke foundation-agent
-    - Stage 3 → invoke shell-agent
-    - Stage 4 → invoke dsp-agent
-    - Stage 5 → invoke gui-agent
-    - Stage 6 → execute validation
+    - Stage 2 → invoke foundation-shell-agent
+    - Stage 3 → invoke dsp-agent
+    - Stage 4 → invoke gui-agent
+    - Stage 5 → execute validation
 
     If next_phase is set: Resume phased implementation at specified phase.
   </routing_logic>
@@ -312,11 +309,10 @@ See `references/state-management.md` for `checkStagePreconditions()` function.
   2. Check preconditions → If failed, BLOCK with reason
   3. **MANDATORY: design-sync validation before Stage 2** → BLOCK if drift detected
   4. Route to subagent based on stage number:
-     - Stage 2 → foundation-agent (single-pass)
-     - Stage 3 → shell-agent (single-pass)
-     - Stage 4 → dsp-agent (phase-aware dispatch)
-     - Stage 5 → gui-agent (phase-aware dispatch)
-     - Stage 6 → validator (single-pass or direct execution)
+     - Stage 2 → foundation-shell-agent (single-pass, creates build system + parameters)
+     - Stage 3 → dsp-agent (phase-aware dispatch)
+     - Stage 4 → gui-agent (phase-aware dispatch)
+     - Stage 5 → validator (single-pass or direct execution)
   5. Pass contracts and Required Reading to subagent
   6. Wait for subagent completion
 
@@ -325,16 +321,16 @@ See `references/state-management.md` for `checkStagePreconditions()` function.
 
 ## Phase-Aware Dispatch
 
-For Stages 4-5 with complexity ≥3, use phase-aware dispatch to incrementally implement complex plugins.
+For Stages 3-4 with complexity ≥3, use phase-aware dispatch to incrementally implement complex plugins.
 
 **When to use:**
-- Stage 4 (DSP) or 5 (GUI)
+- Stage 3 (DSP) or 4 (GUI)
 - Complexity score ≥3 (from plan.md)
-- plan.md contains phase markers (### Phase 4.X or ### Phase 5.X)
+- plan.md contains phase markers (### Phase 3.X or ### Phase 4.X)
 
 **How it works:**
 1. Detect phases by scanning plan.md for phase markers
-2. Loop through phases sequentially (Phase 4.1 → 4.2 → 4.3...)
+2. Loop through phases sequentially (Phase 3.1 → 3.2 → 3.3...)
 3. Invoke subagent once per phase with phase-specific prompt
 4. Execute checkpoint protocol after each phase
 5. Present decision menu showing progress ("Phase 2 of 4 complete")
@@ -419,7 +415,7 @@ For detailed algorithm, pseudocode, and examples, see [references/phase-aware-di
 4. **Checkpoint enforcement after EVERY subagent:**
 
 <workflow_loop>
-  <stage_iteration from="2" to="6">
+  <stage_iteration from="2" to="5">
     <dispatch_phase>
       Display: "━━━ Stage ${currentStage} ━━━"
 
@@ -539,7 +535,7 @@ For detailed algorithm, pseudocode, and examples, see [references/phase-aware-di
   </stage_iteration>
 
   <completion_check>
-    IF currentStage > 6:
+    IF currentStage > 5:
       Display: "✓ All stages complete!"
       updatePluginStatus(pluginName, '✅ Working')
   </completion_check>
@@ -562,11 +558,10 @@ runWorkflow(pluginName, resumeStage)
 <reference_files>
   Each stage has a reference file containing subagent prompt templates:
 
-  - [stage-2-foundation.md](references/stage-2-foundation.md) - foundation-agent
-  - [stage-3-shell.md](references/stage-3-shell.md) - shell-agent
-  - [stage-4-dsp.md](references/stage-4-dsp.md) - dsp-agent
-  - [stage-5-gui.md](references/stage-5-gui.md) - gui-agent
-  - [stage-6-validation.md](references/stage-6-validation.md) - validator
+  - [stage-2-foundation-shell.md](references/stage-2-foundation-shell.md) - foundation-shell-agent
+  - [stage-3-dsp.md](references/stage-3-dsp.md) - dsp-agent
+  - [stage-4-gui.md](references/stage-4-gui.md) - gui-agent
+  - [stage-5-validation.md](references/stage-5-validation.md) - validator
   - [state-management.md](references/state-management.md) - State machine functions
   - [dispatcher-pattern.md](references/dispatcher-pattern.md) - Routing logic
   - [precondition-checks.md](references/precondition-checks.md) - Contract validation
@@ -584,15 +579,14 @@ runWorkflow(pluginName, resumeStage)
 
 - `/implement` command (after plugin-planning completes)
 - `context-resume` skill (when resuming implementation stages)
-- `/continue` command (for stages 2-6)
+- `/continue` command (for stages 2-5)
 
 **ALWAYS invokes (via Task tool):**
 
-- `foundation-agent` subagent (Stage 2) - REQUIRED, never implement directly
-- `shell-agent` subagent (Stage 3) - REQUIRED, never implement directly
-- `dsp-agent` subagent (Stage 4) - REQUIRED, never implement directly
-- `gui-agent` subagent (Stage 5) - REQUIRED, never implement directly
-- `validator` subagent (Stage 6) - Optional, can run directly
+- `foundation-shell-agent` subagent (Stage 2) - REQUIRED, never implement directly
+- `dsp-agent` subagent (Stage 3) - REQUIRED, never implement directly
+- `gui-agent` subagent (Stage 4) - REQUIRED, never implement directly
+- `validator` subagent (Stage 5) - Optional, can run directly
 
 **Also invokes:**
 
@@ -647,12 +641,12 @@ Continue anyway, log warning.
 
 Workflow is successful when:
 
-- All subagents (stages 2-5) invoked successfully via Task tool
+- All subagents (stages 2-4) invoked successfully via Task tool
 - Plugin compiles without errors at each stage
-- All stages completed in sequence (2 → 3 → 4 → 5 → 6)
+- All stages completed in sequence (2 → 3 → 4 → 5)
 - Decision menus presented after EVERY stage
 - Tests pass (if run)
-- PLUGINS.md updated to ✅ Working after Stage 6
+- PLUGINS.md updated to ✅ Working after Stage 5
 - Handoff file updated after each stage
 - Git history shows atomic commits for each stage
 
@@ -702,12 +696,11 @@ Summary of subagent and system component contracts:
 
 | Component | Stage | Input | Output | Purpose |
 |-----------|-------|-------|--------|---------|
-| foundation-agent | 2 | Contracts + Required Reading | JSON report | Create build system |
-| shell-agent | 3 | Contracts + Required Reading | JSON report | Implement APVTS |
-| dsp-agent | 4 | Contracts + Required Reading | JSON report | Implement audio processing |
-| gui-agent | 5 | Contracts + Required Reading | JSON report | Integrate WebView UI |
-| validator | 1-5 | Stage-specific expectations | JSON report | Advisory validation |
-| build-automation | 2-6 | Plugin name + build config | Build result | Verify compilation |
+| foundation-shell-agent | 2 | Contracts + Required Reading | JSON report | Create build system + implement APVTS |
+| dsp-agent | 3 | Contracts + Required Reading | JSON report | Implement audio processing |
+| gui-agent | 4 | Contracts + Required Reading | JSON report | Integrate WebView UI |
+| validator | 1-4 | Stage-specific expectations | JSON report | Advisory validation |
+| build-automation | 2-5 | Plugin name + build config | Build result | Verify compilation |
 | context-resume | N/A | Handoff context | Workflow resumption | Resume from checkpoint |
 | /implement | N/A | Plugin name | Full workflow | Entry point command |
 
@@ -788,7 +781,7 @@ For detailed error patterns, recovery strategies, and reporting format, see [ref
     </anti_pattern>
 
     <anti_pattern severity="HIGH">
-      ❌ Skipping phase detection for Stages 4-5 when complexity ≥3
+      ❌ Skipping phase detection for Stages 3-4 when complexity ≥3
       ✓ Read plan.md to check for phases BEFORE invoking dsp-agent or gui-agent
     </anti_pattern>
 

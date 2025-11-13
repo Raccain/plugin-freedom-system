@@ -1,7 +1,7 @@
-# Stage 5: GUI
+# Stage 3: GUI
 
 **Context:** This file is part of the plugin-workflow skill.
-**Invoked by:** Main workflow dispatcher after Stage 4 completion
+**Invoked by:** Main workflow dispatcher after Stage 3 completion
 **Purpose:** Integrate WebView UI with parameter bindings
 
 ---
@@ -12,7 +12,7 @@
 
 **Preconditions:**
 
-- Stage 4 complete and tests passed (DSP operational)
+- Stage 3 complete and tests passed (DSP operational)
 - Finalized UI mockup exists (v[N]-ui.html)
 - parameter-spec.md exists
 
@@ -66,14 +66,14 @@ echo "✓ Found finalized mockup: $LATEST_MOCKUP"
 
 ### 2. Read Complexity and Check for Phases
 
-Same as Stage 4 - check if phased implementation needed:
+Same as Stage 3 - check if phased implementation needed:
 
 ```typescript
 const planContent = readFile(`plugins/${pluginName}/.ideas/plan.md`);
 const complexityScore = extractComplexityScore(planContent);
 const hasPhases =
-  planContent.includes("### Phase 5.1") ||
-  planContent.includes("## Stage 5: GUI Phases");
+  planContent.includes("### Phase 4.1") ||
+  planContent.includes("## Stage 3: GUI Phases");
 
 console.log(
   `Complexity: ${complexityScore} (${hasPhases ? "phased" : "single-pass"})`
@@ -159,10 +159,10 @@ if (report.status === "success") {
 
 **If complexity ≥3 AND plan.md defines UI phases:**
 
-Parse phase breakdown (similar to Stage 4):
+Parse phase breakdown (similar to Stage 3):
 
 ```typescript
-// Extract Phase 5.1, 5.2, etc. from plan.md
+// Extract Phase 4.1, 5.2, etc. from plan.md
 const phasePattern = /### Phase (5\.\d+):\s*(.+?)\n/g;
 const phases = [];
 let match;
@@ -187,7 +187,7 @@ const criticalPatterns = await Read({
 });
 ```
 
-// Execute each phase sequentially (same pattern as Stage 4)
+// Execute each phase sequentially (same pattern as Stage 3)
 for (let i = 0; i < phases.length; i++) {
   const phase = phases[i];
 
@@ -272,7 +272,7 @@ console.log(`\n✓ All ${phases.length} UI phases complete!`);
 updateHandoff(
   pluginName,
   5,
-  "Stage 5: GUI - WebView UI integrated, all parameters bound",
+  "Stage 3: GUI - WebView UI integrated, all parameters bound",
   ["Auto-test Stage 5", "Test UI in DAW", "Review bindings"],
   complexityScore,
   false
@@ -455,7 +455,7 @@ Validate Stage 5 completion for ${pluginName}.
 - architecture.md: ${architectureContent}
 - plan.md: ${planContent}
 
-**Expected outputs for Stage 5:**
+**Expected outputs for Stage 3:**
 - Member declaration order correct (Relays → WebView → Attachments)
 - All parameters from spec have UI bindings
 - HTML element IDs match relay names
