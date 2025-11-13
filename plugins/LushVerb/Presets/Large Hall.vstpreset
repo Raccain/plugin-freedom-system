@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<LushVerb>
-  <PARAM id="SIZE" value="12.0"/>
-  <PARAM id="DAMPING" value="40.0"/>
-  <PARAM id="SHIMMER" value="20.0"/>
-  <PARAM id="MIX" value="40.0"/>
-</LushVerb>
