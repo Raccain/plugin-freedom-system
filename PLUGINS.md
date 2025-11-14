@@ -33,7 +33,7 @@
 | LushVerb | 💡 Ideated | - | Audio Effect (Reverb) | 2025-11-12 |
 | OrganicHats | 📦 Installed | 1.0.0 | Synth (Instrument) | 2025-11-12 |
 | DrumRoulette | 📦 Installed | 1.0.0 | Instrument (Drum Sampler) | 2025-11-12 |
-| Scatter | 🚧 Stage 4 | - | Audio Effect (Granular Delay) | 2025-11-14 |
+| Scatter | ✅ Working | 1.0.0 | Audio Effect (Granular Delay) | 2025-11-14 |
 | AutoClip | 📦 Installed | 1.0.0 | Audio Effect (Hard Clipper) | 2025-11-13 |
 | MinimalKick | 🚧 Stage 5 | - | Synth | 2025-11-13 |
 | Drum808 | 📦 Installed | 1.0.0 | Synth (Drum Instrument) | 2025-11-13 |

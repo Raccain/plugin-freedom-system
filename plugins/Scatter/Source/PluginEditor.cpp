@@ -33,23 +33,23 @@ ScatterAudioProcessorEditor::ScatterAudioProcessorEditor(ScatterAudioProcessor& 
 
     // 3. Create attachments LAST (Pattern #12: 3 parameters required)
     delayTimeAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
-        *processorRef.apvts.getParameter("delay_time"), *delayTimeRelay, nullptr);
+        *processorRef.parameters.getParameter("delay_time"), *delayTimeRelay, nullptr);
     grainSizeAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
-        *processorRef.apvts.getParameter("grain_size"), *grainSizeRelay, nullptr);
+        *processorRef.parameters.getParameter("grain_size"), *grainSizeRelay, nullptr);
     densityAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
-        *processorRef.apvts.getParameter("density"), *densityRelay, nullptr);
+        *processorRef.parameters.getParameter("density"), *densityRelay, nullptr);
     pitchRandomAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
-        *processorRef.apvts.getParameter("pitch_random"), *pitchRandomRelay, nullptr);
+        *processorRef.parameters.getParameter("pitch_random"), *pitchRandomRelay, nullptr);
     scaleAttachment = std::make_unique<juce::WebComboBoxParameterAttachment>(
-        *processorRef.apvts.getParameter("scale"), *scaleRelay, nullptr);
+        *processorRef.parameters.getParameter("scale"), *scaleRelay, nullptr);
     rootNoteAttachment = std::make_unique<juce::WebComboBoxParameterAttachment>(
-        *processorRef.apvts.getParameter("root_note"), *rootNoteRelay, nullptr);
+        *processorRef.parameters.getParameter("root_note"), *rootNoteRelay, nullptr);
     panRandomAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
-        *processorRef.apvts.getParameter("pan_random"), *panRandomRelay, nullptr);
+        *processorRef.parameters.getParameter("pan_random"), *panRandomRelay, nullptr);
     feedbackAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
-        *processorRef.apvts.getParameter("feedback"), *feedbackRelay, nullptr);
+        *processorRef.parameters.getParameter("feedback"), *feedbackRelay, nullptr);
     mixAttachment = std::make_unique<juce::WebSliderParameterAttachment>(
-        *processorRef.apvts.getParameter("mix"), *mixRelay, nullptr);
+        *processorRef.parameters.getParameter("mix"), *mixRelay, nullptr);
 
     // Add WebView to editor
     addAndMakeVisible(*webView);
