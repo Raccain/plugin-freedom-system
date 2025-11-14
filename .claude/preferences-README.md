@@ -12,12 +12,12 @@ This file controls how the Plugin Freedom System handles checkpoint decision gat
 
 Controls workflow automation level:
 
-- **"manual"** (default): Present decision menu after each stage (0, 2, 3, 4, 5). You must manually select "Continue to next stage" at each checkpoint.
-  - Time cost: ~3-5 minutes per plugin (5 decision points)
+- **"manual"** (default): Present decision menu after each stage (0, 1, 2, 3). You must manually select "Continue to next stage" at each checkpoint.
+  - Time cost: ~2-3 minutes per plugin (4 decision points)
   - Use when: Learning the system, troubleshooting, or want control over each stage
 
-- **"express"**: Automatically progress through all stages without decision menus. Final menu still appears after Stage 4.
-  - Time savings: 3-5 minutes per plugin (0 intermediate decisions)
+- **"express"**: Automatically progress through all stages without decision menus. Final menu still appears after Stage 3.
+  - Time savings: 2-3 minutes per plugin (0 intermediate decisions)
   - Use when: Building straightforward plugins, comfortable with the workflow, want speed
 
 **Example:**
@@ -32,16 +32,13 @@ Controls workflow automation level:
 #### `workflow.auto_test`
 **Type:** Boolean
 **Default:** false
+**Status:** DEPRECATED (validation now automatic during Stage 3)
 
-Run automated validation tests (pluginval) after Stage 4 completes.
+This setting is preserved for backward compatibility but no longer affects workflow behavior. Validation now runs automatically at the end of Stage 3 as part of unified validation.
 
-- **true**: After final menu selection, automatically invoke plugin-testing skill (Mode 2: Build + Pluginval)
-- **false**: Present "Run validation tests" option in final menu (manual decision)
-
-**Notes:**
-- Tests run AFTER final menu (you still see the menu)
-- If tests fail, workflow drops to manual mode for investigation
-- Test output is always shown (not hidden)
+**Previous behavior (old 5-stage system):**
+- Controlled whether pluginval ran automatically after Stage 4
+- **New behavior:** Validation is automatic and integrated into Stage 3 completion
 
 **Example:**
 ```json
@@ -57,12 +54,12 @@ Run automated validation tests (pluginval) after Stage 4 completes.
 **Type:** Boolean
 **Default:** false
 
-Install plugin to system folders automatically after tests pass.
+Install plugin to system folders automatically after Stage 3 completes.
 
-- **true**: After tests pass (or if auto_test=false, after Stage 4), automatically invoke plugin-lifecycle skill (Mode 1: Installation)
+- **true**: After Stage 3 validation passes, automatically invoke plugin-lifecycle skill (Mode 1: Installation)
 - **false**: Present "Install to system folders" option in final menu (manual decision)
 
-**Prerequisite:** Tests must pass first (if auto_test=true)
+**Prerequisite:** Stage 3 validation must pass first
 
 **Installation targets:**
 - `~/Library/Audio/Plug-Ins/VST3/[PluginName].vst3`
@@ -178,9 +175,9 @@ Force manual mode (show menus) for this workflow only.
 ```
 
 **Workflow:**
-- Stages auto-flow: 0 → 2 → 3 → 4 → 5
+- Stages auto-flow: 0 → 1 → 2 → 3
 - Final menu appears (install? package? done?)
-- Time savings: 3-5 minutes
+- Time savings: 2-3 minutes
 
 ---
 
@@ -200,12 +197,11 @@ Force manual mode (show menus) for this workflow only.
 ```
 
 **Workflow:**
-1. Stages auto-flow (0 → 2 → 3 → 4 → 5)
+1. Stages auto-flow (0 → 1 → 2 → 3)
 2. Final menu appears
-3. After menu selection, tests run automatically
-4. If tests pass, installation happens automatically
-5. After install, PKG created automatically
-6. Complete workflow with minimal decisions
+3. After menu selection, installation happens automatically
+4. After install, PKG created automatically
+5. Complete workflow with minimal decisions
 
 **When to use:** Building multiple similar plugins, production workflows, CI/CD scenarios
 
@@ -446,11 +442,11 @@ Switches to express mode for remainder of workflow.
 | Preference | Values | Default | Effect |
 |------------|--------|---------|--------|
 | `workflow.mode` | "express", "manual" | "manual" | Auto-progress vs menus |
-| `workflow.auto_test` | true, false | false | Auto-run pluginval |
+| `workflow.auto_test` | true, false | false | DEPRECATED (validation automatic) |
 | `workflow.auto_install` | true, false | false | Auto-install to system |
 | `workflow.auto_package` | true, false | false | Auto-create PKG |
 
-**Time savings with express mode:** 3-5 minutes per plugin (eliminates 5 decision points)
+**Time savings with express mode:** 2-3 minutes per plugin (eliminates 4 decision points)
 
 **Safety:** Express mode drops to manual on any error (no silent failures)
 

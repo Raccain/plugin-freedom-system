@@ -156,7 +156,7 @@ IF no handoff exists for any plugin:
 
 IF specific [PluginName] doesn't have handoff:
 - Display: "[PluginName] doesn't have a handoff file"
-- Explain: Plugin may be complete (Stage 4), not started, or handoff removed
+- Explain: Plugin may be complete (Stage 3), not started, or handoff removed
 - Suggest: Check `PLUGINS.md`, `/improve [PluginName]`, or `/implement [PluginName]`
 
 See `context-resume` skill's `error-recovery.md` for additional scenarios.

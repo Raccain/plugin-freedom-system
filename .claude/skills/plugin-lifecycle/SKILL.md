@@ -203,7 +203,7 @@ After successful operations, check workflow mode before presenting decision menu
 - `/reset-to-ideation [PluginName]` → Mode 3 (Reset)
 - `/destroy [PluginName]` → Mode 4 (Destroy)
 - `/clean [PluginName]` → Interactive menu
-- `plugin-workflow` skill → After Stage 4 (auto-installs)
+- `plugin-workflow` skill → After Stage 3 (auto-installs)
 - `plugin-improve` skill → After successful changes (offers reinstallation)
 - Natural language: "Install [PluginName]", "Remove [PluginName]", "Clean up [PluginName]"
 

@@ -7,7 +7,7 @@ allowed-tools: Bash(test:*)
 
 # /implement
 
-When user runs `/implement [PluginName?]`, invoke the plugin-workflow skill to build the plugin (stages 1-4 only).
+When user runs `/implement [PluginName?]`, invoke the plugin-workflow skill to build the plugin (stages 1-3).
 
 <prerequisite>
   Planning (Stage 0) must be completed first via `/plan` command.
@@ -238,9 +238,9 @@ Invoke the plugin-workflow skill with the plugin name and starting stage. The sk
   </command_responsibility>
 
   <skill_responsibility ref="plugin-workflow">
-    The plugin-workflow skill orchestrates stages 1-4:
+    The plugin-workflow skill orchestrates stages 1-3:
 
-    Stage 1 (Foundation) → Stage 2 (DSP) → Stage 3 (GUI) → Stage 4 (Validation)
+    Stage 1 (Foundation) → Stage 2 (DSP) → Stage 3 (GUI with automatic validation)
 
     Each stage uses specialized subagent, follows checkpoint protocol (commit, state update, decision menu).
 
@@ -284,6 +284,6 @@ Resume with `/continue [PluginName]`
 
 Complete plugin development flow:
 1. `/dream [PluginName]` - Creative brief + UI mockup
-2. `/plan [PluginName]` - Research and planning (Stages 0-1)
-3. `/implement [PluginName]` - Build plugin (Stages 1-4)
+2. `/plan [PluginName]` - Research and planning (Stage 0)
+3. `/implement [PluginName]` - Build plugin (Stages 1-3)
 4. `/install-plugin [PluginName]` - Deploy to system folders

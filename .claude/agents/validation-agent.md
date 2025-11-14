@@ -388,60 +388,6 @@ This ensures validation-agent always completes successfully, even when runtime v
 }
 ```
 
-### Stage 4: Validation & Presets
-
-**Expected Inputs:**
-
-- `plugins/[PluginName]/CHANGELOG.md`
-- `plugins/[PluginName]/Presets/` directory
-- `logs/[PluginName]/pluginval_*.log` (if build exists)
-- PLUGINS.md status
-
-**Checks:**
-
-- ✓ CHANGELOG.md follows Keep a Changelog format?
-- ✓ Version 1.0.0 for initial release?
-- ✓ Presets/ directory has 3+ preset files?
-- ✓ pluginval passed (or skipped with reason)?
-- ✓ PLUGINS.md updated to ✅ Working?
-
-**Example Report:**
-
-```json
-{
-  "agent": "validation-agent",
-  "stage": 6,
-  "status": "PASS",
-  "checks": [
-    {
-      "name": "changelog_format",
-      "passed": true,
-      "message": "CHANGELOG.md follows Keep a Changelog format with v1.0.0",
-      "severity": "info"
-    },
-    {
-      "name": "factory_presets",
-      "passed": true,
-      "message": "Found 3 preset files in Presets/ directory",
-      "severity": "info"
-    },
-    {
-      "name": "pluginval",
-      "passed": true,
-      "message": "pluginval skipped (no build in Phase 2)",
-      "severity": "warning"
-    },
-    {
-      "name": "plugins_md_status",
-      "passed": true,
-      "message": "PLUGINS.md shows ✅ Working status",
-      "severity": "info"
-    }
-  ],
-  "recommendation": "Plugin validation complete, ready for installation",
-  "continue_to_next_stage": true
-}
-```
 
 ### Stage 1: Foundation Validation
 
@@ -653,7 +599,7 @@ If binary doesn't exist or build fails, skip runtime validation (report as "skip
 }
 ```
 
-### Stage 4: Final Validation
+### Stage 3: Final Validation
 
 **Expected Inputs:**
 
@@ -675,7 +621,7 @@ If binary doesn't exist or build fails, skip runtime validation (report as "skip
 ```json
 {
   "agent": "validation-agent",
-  "stage": 5,
+  "stage": 3,
   "plugin_name": "AutoClip",
   "status": "PASS",
   "checks": [
@@ -744,7 +690,7 @@ All validation reports MUST conform to the unified validator report schema. This
 
 **Required fields:**
 - `agent`: must be "validation-agent"
-- `stage`: integer 0-6
+- `stage`: integer 0-3
 - `status`: "PASS" or "FAIL"
 - `checks`: array of check objects (each with name, passed, message, severity)
 - `recommendation`: string describing what to do next

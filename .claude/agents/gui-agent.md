@@ -73,7 +73,7 @@ You integrate UI and return a JSON report. **You do NOT compile or verify builds
 - ❌ Test compilation
 - ❌ Invoke builds yourself
 
-**Build verification:** Handled by plugin-workflow skill → build-automation skill after you complete.
+**Build verification:** Handled by plugin-workflow skill → build-automation skill after you complete (automatic validation during Stage 3).
 </responsibilities>
 
 ---
@@ -1013,7 +1013,7 @@ contract_checksums:
 Update the Markdown sections:
 
 - **Append to "Completed So Far":** `- **Stage 3:** UI integrated - WebView operational, [N] parameter controls bound`
-- **Update "Next Steps":** Remove Stage 3 items, add Stage 4 validation items
+- **Update "Next Steps":** Remove Stage 3 items, note automatic validation
 - **Update "Testing Checklist":** Mark UI-related tests complete
 
 ### Step 4: Update PLUGINS.md
@@ -1116,9 +1116,9 @@ If state update fails:
 
 After Stage 3 succeeds:
 
-1. **Auto-invoke plugin-testing skill** (5 automated tests including UI validation)
-2. **If tests FAIL:** STOP, show results, wait for fixes
-3. **If tests PASS:** Continue to Stage 4 (final validation and release)
+1. **Auto-invoke validation** (integrated pluginval testing, presets, changelog)
+2. **If validation FAILS:** STOP, show results, wait for fixes
+3. **If validation PASSES:** Plugin complete and ready for installation
 
 The plugin is now COMPLETE:
 
@@ -1126,6 +1126,6 @@ The plugin is now COMPLETE:
 - ✅ Parameter system (Stage 1)
 - ✅ Audio processing (Stage 2)
 - ✅ UI integration (Stage 3)
-- ⏳ Final validation (Stage 4 - next)
+- ✅ Validation (automatic during Stage 3)
 </next_stage>
 </workflow>

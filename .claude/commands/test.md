@@ -66,7 +66,7 @@ Use /implement [PluginName] to build it first.
 
 ## Integration
 
-This command is also auto-invoked by plugin-workflow after Stage 3 (DSP) and Stage 4 (GUI).
+This command is auto-invoked by plugin-workflow after Stages 2 (DSP) and 3 (GUI) for automatic validation.
 
 ## Error Handling
 

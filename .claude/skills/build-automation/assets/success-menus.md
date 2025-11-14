@@ -12,27 +12,18 @@ menus:
   stage_3_dsp:
     completion: "DSP implementation complete"
     options:
-      - label: "Continue to Stage 4 (GUI)"
+      - label: "Continue to Stage 3 (GUI)"
         recommended: true
       - label: "Test in DAW now"
       - label: "Review DSP code"
       - label: "Pause workflow"
 
-  stage_4_gui:
-    completion: "GUI implementation complete"
+  stage_3_gui:
+    completion: "GUI implementation complete - Plugin validated and ready"
     options:
-      - label: "Continue to Stage 5 (Validation)"
-        recommended: true
       - label: "Test in DAW now"
+        recommended: true
       - label: "Review GUI code"
-      - label: "Pause workflow"
-
-  stage_5_validation:
-    completion: "Plugin complete and validated"
-    options:
-      - label: "Test in DAW now"
-        recommended: true
-      - label: "Review final code"
       - label: "Package for distribution"
       - label: "Start new plugin"
 
