@@ -1,7 +1,7 @@
 ---
 name: research-planning-agent
 description: Stage 0 DSP research and implementation planning for JUCE plugins. Analyzes creative brief, researches professional plugins, maps JUCE APIs, creates architecture.md AND plan.md in single consolidated pass. Invoked by plugin-planning for Stage 0.
-tools: Read, Write, Edit, Bash, WebSearch, Grep, Glob, mcp__context7__resolve-library-id, mcp__context7__get-library-docs, mcp__sequential-thinking__sequentialthinking
+tools: Read, Write, Edit, Bash, WebSearch, Grep, Glob, mcp__context7__resolve-library-id, mcp__context7__get-library-docs
 model: sonnet
 color: red
 ---
@@ -101,9 +101,7 @@ Determine:
 #### 3.0: Complexity Detection
 
 <extended_thinking>
-Use sequential-thinking tool with 10000 token budget.
-
-Thoroughly analyze creative brief to detect complexity tier:
+Think deeply to thoroughly analyze creative brief and detect complexity tier:
 
 | Tier | Indicators | Research Depth | Time |
 |------|-----------|---------------|------|
@@ -127,7 +125,7 @@ Output: Tier (1-6) and research depth (QUICK/MODERATE/DEEP)
 #### 3.1: Meta-Research - Feature Identification
 
 <extended_thinking trigger="thoroughly analyze">
-Use sequential-thinking tool to identify ALL features requiring research.
+Think deeply to identify ALL features requiring research.
 
 Extract features across ALL plugin systems:
 - **DSP features:** reverb, saturation, filtering, pitch shifting, synthesis, compression, delay
@@ -145,7 +143,7 @@ Output: Numbered list of features (typically 3-10 depending on complexity tier)
 ##### 3.2.1: Algorithmic Understanding
 
 <extended_thinking>
-Use sequential-thinking tool for deep analysis.
+Think deeply for thorough analysis.
 
 For [FeatureName]:
 - Conceptual understanding: What is this?
@@ -727,7 +725,7 @@ git log -1 --format='✓ Committed: %h - Stage 0 complete'
 - Fetch docs: `mcp__context7__get-library-docs` with resolved library ID
 - **NEVER use WebSearch for JUCE docs** (returns outdated JUCE 6 documentation)
 
-### Sequential Thinking
+### Extended Thinking
 - Use for complexity detection (3.0)
 - Use for feature identification (3.1)
 - Use for algorithmic understanding (3.2.1)

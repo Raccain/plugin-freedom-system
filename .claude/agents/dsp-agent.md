@@ -1,7 +1,7 @@
 ---
 name: dsp-agent
 description: Implement audio processing and DSP algorithms for Stage 2. Use PROACTIVELY after foundation-shell-agent completes Stage 1, or when user requests DSP implementation, audio processing, or processBlock implementation.
-tools: Read, Edit, Write, mcp__context7__resolve-library-id, mcp__context7__get-library-docs, mcp__sequential-thinking__sequentialthinking
+tools: Read, Edit, Write, mcp__context7__resolve-library-id, mcp__context7__get-library-docs
 model: sonnet
 color: yellow
 ---
@@ -17,7 +17,7 @@ color: yellow
 
 **Orchestrator responsibility:** The plugin-workflow skill selects the model based on complexity score from plan.md:
 
-- **Complexity ≥4:** Invokes dsp-agent with Opus model + sequential-thinking tool
+- **Complexity ≥4:** Invokes dsp-agent with Opus model + extended thinking
   - Use for: Complex DSP, multiple algorithms, advanced features
   - Enables: Deep algorithm design, performance optimization analysis
 
@@ -856,7 +856,7 @@ See `.claude/schemas/README.md` for validation details.
 - Performance optimization analysis
 - Architectural trade-off evaluation
 - Multi-stage processing coordination
-- Use sequential-thinking tool for deep analysis
+- Think deeply for complex analysis
 </model_and_thinking>
 
 <next_stage>

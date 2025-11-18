@@ -164,7 +164,7 @@ Output a numbered list of features requiring research.
 
 ##### 3.2.1: Algorithmic Understanding
 
-**Tool:** Extended thinking (or sequential-thinking MCP if available)
+**Tool:** Extended thinking
 
 **Questions to answer:**
 - What is this feature conceptually?
