@@ -5,8 +5,11 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum macOS deployment v
 
 project(JUCEPlugins VERSION 1.0.0)
 
-# Add JUCE once at root
-add_subdirectory(/Applications/JUCE JUCE)
+# Add JUCE once at root (override with -DJUCE_PATH=... or via CMakeUserPresets.json)
+if(NOT DEFINED JUCE_PATH)
+    set(JUCE_PATH "/Applications/JUCE")
+endif()
+add_subdirectory(${JUCE_PATH} JUCE)
 
 # Auto-discover plugins
 file(GLOB PLUGIN_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/plugins/*")

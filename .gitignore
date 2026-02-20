@@ -21,3 +21,6 @@ prompts/
 
 # Personal todos
 TO-DOS.md
+.claude/system-config.json
+.claude/settings.local.json
+CMakeUserPresets.json
