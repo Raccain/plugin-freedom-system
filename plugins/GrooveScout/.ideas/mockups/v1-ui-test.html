@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GrooveScout UI Mockup v1</title>
+  <style>
+    /* =====================================================================
+       WEBVIEW CONSTRAINTS (REQUIRED)
+       html/body height:100% replaces forbidden viewport units
+       ===================================================================== */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: default;
+      overflow: hidden;
+      background: #0f0f0f;
+      color: #ffffff;
+      font-family: 'Inter', 'DM Sans', 'Helvetica Neue', system-ui, sans-serif;
+    }
+
+    /* =====================================================================
+       CUSTOM PROPERTIES
+       ===================================================================== */
+    :root {
+      --bg:           #0f0f0f;
+      --surface:      #181818;
+      --surface-2:    #1a1a1a;
+      --border:       #222222;
+      --border-card:  #282828;
+      --accent:       #00e5ff;
+      --accent-dim:   #00b8cc;
+      --accent-glow:  0 0 8px rgba(0,229,255,0.55), 0 0 22px rgba(0,229,255,0.18);
+      --accent-glow-strong: 0 0 12px rgba(0,229,255,0.9), 0 0 32px rgba(0,229,255,0.35);
+      --text:         #ffffff;
+      --text-2:       #888888;
+      --text-3:       #555555;
+      --inactive:     #2a2a2a;
+      --font-mono:    'JetBrains Mono', 'IBM Plex Mono', 'Fira Mono', 'Courier New', monospace;
+      --font-ui:      'Inter', 'DM Sans', 'Helvetica Neue', system-ui, sans-serif;
+      --radius:       4px;
+      --radius-card:  5px;
+    }
+
+    /* =====================================================================
+       PLUGIN SHELL  750 x 560
+       ===================================================================== */
+    .plugin-shell {
+      width: 750px;
+      height: 560px;
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* =====================================================================
+       ROW 1 — TITLE BAR  (y=0, h=36)
+       ===================================================================== */
+    .title-bar {
+      position: absolute;
+      left: 0; top: 0;
+      width: 750px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid #1c1c1c;
+      background: #0f0f0f;
+    }
+
+    .title-text {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.38em;
+      color: var(--accent);
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    .title-version {
+      position: absolute;
+      right: 16px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-3);
+      letter-spacing: 0.1em;
+    }
+
+    /* =====================================================================
+       ROW 2 — ANALYSIS BAR  (y=36, h=80)
+       ===================================================================== */
+    .analysis-bar {
+      position: absolute;
+      left: 0; top: 36px;
+      width: 750px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 24px;
+      border-bottom: 1px solid #161616;
+      background: #0f0f0f;
+    }
+
+    /* --- Analyze / Cancel button --- */
+    .analyze-btn-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .analyze-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 1.5px solid var(--accent);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+      color: var(--accent);
+      position: relative;
+    }
+
+    .analyze-btn:hover {
+      box-shadow: var(--accent-glow);
+      background: rgba(0,229,255,0.06);
+    }
+
+    .analyze-btn:active {
+      background: rgba(0,229,255,0.12);
+    }
+
+    .analyze-btn svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .analyze-btn-label {
+      font-family: var(--font-ui);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      color: var(--text-3);
+      text-transform: uppercase;
+    }
+
+    .cancel-btn {
+      border-color: #ff6b6b;
+      color: #ff6b6b;
+    }
+    .cancel-btn:hover {
+      box-shadow: 0 0 8px rgba(255,107,107,0.5), 0 0 20px rgba(255,107,107,0.2);
+      background: rgba(255,107,107,0.06);
+    }
+
+    /* --- BPM / KEY results column --- */
+    .results-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      padding-left: 8px;
+    }
+
+    .result-row {
+      display: flex;
+      align-items: center;
+      height: 38px;
+    }
+
+    .result-label {
+      font-family: var(--font-ui);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      color: var(--text-3);
+      text-transform: uppercase;
+      width: 32px;
+      flex-shrink: 0;
+    }
+
+    .result-value {
+      font-family: var(--font-mono);
+      font-size: 26px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      min-width: 110px;
+      line-height: 1;
+    }
+
+    .result-value.key-value {
+      font-size: 17px;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      min-width: 140px;
+    }
+
+    .result-value.clickable {
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+    .result-value.clickable:hover {
+      color: var(--accent);
+    }
+    .result-value.clickable:hover::after {
+      content: ' ↗';
+      font-size: 14px;
+      color: var(--accent);
+      opacity: 0.7;
+    }
+
+    .result-value.has-value {
+      color: var(--text);
+    }
+
+    .result-value.placeholder {
+      color: var(--text-3);
+    }
+
+    /* BPM multiplier chips */
+    .multiplier-chips {
+      display: flex;
+      gap: 4px;
+      margin-left: 10px;
+    }
+
+    .chip {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      padding: 3px 7px;
+      border-radius: 3px;
+      border: 1px solid var(--border-card);
+      background: var(--surface);
+      color: var(--text-3);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .chip:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent-dim);
+    }
+
+    .chip.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(0,229,255,0.08);
+    }
+
+    /* Toggle switches */
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toggle {
+      position: relative;
+      width: 32px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      display: none;
+    }
+
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      background: var(--inactive);
+      border: 1px solid #333;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .toggle input:checked + .toggle-track {
+      background: rgba(0,229,255,0.18);
+      border-color: var(--accent);
+      box-shadow: 0 0 6px rgba(0,229,255,0.3);
+    }
+
+    .toggle-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #555;
+      transition: transform 0.2s ease, background 0.2s ease;
+      pointer-events: none;
+    }
+
+    .toggle input:checked ~ .toggle-thumb {
+      transform: translateX(16px);
+      background: var(--accent);
+    }
+
+    /* =====================================================================
+       ROW 3 — PROGRESS BAR  (y=116, h=4)
+       ===================================================================== */
+    .progress-bar-row {
+      position: absolute;
+      left: 0; top: 116px;
+      width: 750px;
+      height: 4px;
+      background: #161616;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      box-shadow: 0 0 6px rgba(0,229,255,0.8);
+      transition: width 0.15s linear;
+    }
+
+    .progress-bar-row.hidden {
+      opacity: 0;
+    }
+
+    /* =====================================================================
+       ROW 4 — MIDI CLIP ROW  (y=120, h=166)
+       ===================================================================== */
+    .midi-clip-row {
+      position: absolute;
+      left: 0; top: 120px;
+      width: 750px;
+      height: 166px;
+      display: flex;
+      align-items: flex-end;
+      padding: 0 20px 18px;
+      gap: 12px;
+    }
+
+    .midi-clip-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+      flex: 1;
+    }
+
+    .midi-clip-label {
+      font-family: var(--font-ui);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      color: var(--text-3);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      padding-left: 2px;
+    }
+
+    .midi-clip-box {
+      width: 100%;
+      height: 110px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    /* Placeholder piano-roll (pre-analysis) */
+    .midi-clip-box .placeholder-roll {
+      position: absolute;
+      inset: 0;
+      opacity: 1;
+      transition: opacity 0.3s ease;
+    }
+
+    .midi-clip-box .active-roll {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    /* Active state */
+    .midi-clip-box.active {
+      border-color: var(--accent);
+      box-shadow: var(--accent-glow);
+    }
+
+    .midi-clip-box.active .placeholder-roll {
+      opacity: 0;
+    }
+
+    .midi-clip-box.active .active-roll {
+      opacity: 1;
+    }
+
+    /* Pulsing during analysis */
+    @keyframes clip-pulse {
+      0%, 100% { box-shadow: 0 0 4px rgba(0,229,255,0.2); border-color: #333; }
+      50%       { box-shadow: 0 0 14px rgba(0,229,255,0.5); border-color: var(--accent-dim); }
+    }
+
+    .midi-clip-box.analyzing {
+      animation: clip-pulse 1.4s ease-in-out infinite;
+    }
+
+    /* Drag handle */
+    .drag-handle {
+      position: absolute;
+      bottom: 6px;
+      right: 7px;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      color: var(--accent);
+      pointer-events: none;
+    }
+
+    .midi-clip-box.active:hover .drag-handle {
+      opacity: 0.85;
+    }
+
+    .midi-clip-box.active {
+      cursor: grab;
+    }
+
+    .midi-clip-box.active:active {
+      cursor: grabbing;
+    }
+
+    /* Piano roll canvas background grid */
+    .roll-bg {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* =====================================================================
+       ROW 5 — DETECTION SETTINGS ACCORDION  (y=286, h=274)
+       ===================================================================== */
+    .detection-settings {
+      position: absolute;
+      left: 0; top: 286px;
+      width: 750px;
+      height: 274px;
+      background: var(--bg);
+      border-top: 1px solid #1a1a1a;
+    }
+
+    .accordion-header {
+      width: 100%;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      gap: 10px;
+      background: var(--surface-2);
+      border-bottom: 1px solid #1e1e1e;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .accordion-header:hover {
+      background: #1e1e1e;
+    }
+
+    .accordion-chevron {
+      font-size: 10px;
+      color: var(--text-3);
+      transition: transform 0.22s ease;
+      display: inline-block;
+      line-height: 1;
+    }
+
+    .accordion-header.open .accordion-chevron {
+      transform: rotate(0deg);
+    }
+
+    .accordion-header:not(.open) .accordion-chevron {
+      transform: rotate(-90deg);
+    }
+
+    .accordion-title {
+      font-family: var(--font-ui);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--text-2);
+    }
+
+    .accordion-body {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .accordion-body.open {
+      max-height: 240px;
+    }
+
+    .accordion-cards {
+      display: flex;
+      gap: 12px;
+      padding: 14px 20px 16px;
+    }
+
+    /* --- Drum cards --- */
+    .drum-card {
+      flex: 1;
+      background: #141414;
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-card);
+      padding: 10px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    .drum-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .drum-card-name {
+      font-family: var(--font-ui);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--text-2);
+    }
+
+    /* Card param row */
+    .card-param-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .card-param-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .card-param-label {
+      font-family: var(--font-ui);
+      font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      color: var(--text-3);
+      text-transform: uppercase;
+      width: 30px;
+      flex-shrink: 0;
+    }
+
+    /* Custom sliders */
+    .param-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      background: var(--inactive);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .param-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--text-2);
+      border: 1.5px solid #444;
+      transition: background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .param-slider:hover::-webkit-slider-thumb {
+      background: var(--accent);
+      box-shadow: 0 0 5px rgba(0,229,255,0.5);
+    }
+
+    .param-slider::-moz-range-thumb {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--text-2);
+      border: 1.5px solid #444;
+      cursor: pointer;
+    }
+
+    .param-value-display {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      color: var(--text-3);
+      width: 34px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* Dual-handle frequency range slider */
+    .freq-range-wrap {
+      flex: 1;
+      position: relative;
+      height: 18px;
+      display: flex;
+      align-items: center;
+    }
+
+    .freq-track {
+      position: absolute;
+      left: 0; right: 0;
+      height: 3px;
+      background: var(--inactive);
+      border-radius: 2px;
+    }
+
+    .freq-fill {
+      position: absolute;
+      height: 3px;
+      background: rgba(0,229,255,0.4);
+      border-radius: 2px;
+    }
+
+    .freq-range-wrap input[type="range"] {
+      position: absolute;
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      background: transparent;
+      outline: none;
+      cursor: pointer;
+      pointer-events: none;
+    }
+
+    .freq-range-wrap input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      border: 1.5px solid rgba(0,229,255,0.4);
+      pointer-events: all;
+      transition: background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .freq-range-wrap input[type="range"]::-webkit-slider-thumb:hover {
+      background: var(--accent);
+      box-shadow: 0 0 5px rgba(0,229,255,0.6);
+    }
+
+    .freq-range-wrap input[type="range"]::-moz-range-thumb {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      border: 1.5px solid rgba(0,229,255,0.4);
+      pointer-events: all;
+    }
+
+    /* =====================================================================
+       STATE TESTER (development only — outside plugin shell)
+       ===================================================================== */
+    .state-tester {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-family: monospace;
+      font-size: 11px;
+    }
+
+    .state-tester span {
+      color: #555;
+      margin-right: 4px;
+    }
+
+    .state-btn {
+      padding: 4px 12px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #1a1a1a;
+      color: #aaa;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 11px;
+      transition: all 0.15s ease;
+    }
+
+    .state-btn:hover { background: #242424; color: #fff; border-color: #666; }
+    .state-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,0.08); }
+
+    /* =====================================================================
+       PAGE CENTERING
+       ===================================================================== */
+    .page-wrap {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #070707;
+      gap: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-wrap">
+    <div class="plugin-shell" id="pluginShell">
+
+      <!-- ROW 1: Title Bar -->
+      <div class="title-bar">
+        <span class="title-text">GrooveScout</span>
+        <span class="title-version">v1.0</span>
+      </div>
+
+      <!-- ROW 2: Analysis Bar -->
+      <div class="analysis-bar">
+
+        <!-- Analyze / Cancel button -->
+        <div class="analyze-btn-wrap">
+          <button class="analyze-btn" id="analyzeBtn" title="Analyze audio">
+            <!-- Scan/play icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="7"/>
+              <line x1="16.5" y1="16.5" x2="22" y2="22"/>
+              <line x1="8" y1="11" x2="14" y2="11"/>
+              <line x1="11" y1="8" x2="11" y2="14"/>
+            </svg>
+          </button>
+          <span class="analyze-btn-label" id="analyzeBtnLabel">Analyze</span>
+        </div>
+
+        <!-- BPM / KEY results -->
+        <div class="results-col">
+
+          <!-- BPM row -->
+          <div class="result-row">
+            <span class="result-label">BPM</span>
+            <span class="result-value clickable placeholder" id="bpmDisplay" title="Click to set DAW tempo">---</span>
+            <div class="multiplier-chips" id="multiplierChips">
+              <button class="chip" data-mult="0">½x</button>
+              <button class="chip active" data-mult="1">1x</button>
+              <button class="chip" data-mult="2">2x</button>
+            </div>
+            <div class="toggle-group" style="margin-left: 16px;">
+              <label class="toggle" title="Enable BPM analysis">
+                <input type="checkbox" id="analyzeBPM" checked />
+                <div class="toggle-track"></div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </div>
+          </div>
+
+          <!-- KEY row -->
+          <div class="result-row">
+            <span class="result-label">KEY</span>
+            <span class="result-value key-value placeholder" id="keyDisplay">---</span>
+            <div class="toggle-group" style="margin-left: auto;">
+              <label class="toggle" title="Enable key analysis">
+                <input type="checkbox" id="analyzeKey" checked />
+                <div class="toggle-track"></div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ROW 3: Progress Bar -->
+      <div class="progress-bar-row hidden" id="progressBarRow">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <!-- ROW 4: MIDI Clip Row -->
+      <div class="midi-clip-row">
+
+        <!-- ROOT CHORD clip -->
+        <div class="midi-clip-wrap">
+          <span class="midi-clip-label">Root Chord</span>
+          <div class="midi-clip-box" id="clip-chord" data-clip="chord">
+            <canvas class="roll-bg placeholder-roll" id="canvas-chord-placeholder" width="168" height="110"></canvas>
+            <canvas class="roll-bg active-roll" id="canvas-chord-active" width="168" height="110"></canvas>
+            <div class="drag-handle">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                <circle cx="4" cy="3" r="1.2"/><circle cx="10" cy="3" r="1.2"/>
+                <circle cx="4" cy="7" r="1.2"/><circle cx="10" cy="7" r="1.2"/>
+                <circle cx="4" cy="11" r="1.2"/><circle cx="10" cy="11" r="1.2"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- KICK clip -->
+        <div class="midi-clip-wrap">
+          <span class="midi-clip-label">Kick</span>
+          <div class="midi-clip-box" id="clip-kick" data-clip="kick">
+            <canvas class="roll-bg placeholder-roll" id="canvas-kick-placeholder" width="168" height="110"></canvas>
+            <canvas class="roll-bg active-roll" id="canvas-kick-active" width="168" height="110"></canvas>
+            <div class="drag-handle">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                <circle cx="4" cy="3" r="1.2"/><circle cx="10" cy="3" r="1.2"/>
+                <circle cx="4" cy="7" r="1.2"/><circle cx="10" cy="7" r="1.2"/>
+                <circle cx="4" cy="11" r="1.2"/><circle cx="10" cy="11" r="1.2"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- SNARE clip -->
+        <div class="midi-clip-wrap">
+          <span class="midi-clip-label">Snare</span>
+          <div class="midi-clip-box" id="clip-snare" data-clip="snare">
+            <canvas class="roll-bg placeholder-roll" id="canvas-snare-placeholder" width="168" height="110"></canvas>
+            <canvas class="roll-bg active-roll" id="canvas-snare-active" width="168" height="110"></canvas>
+            <div class="drag-handle">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                <circle cx="4" cy="3" r="1.2"/><circle cx="10" cy="3" r="1.2"/>
+                <circle cx="4" cy="7" r="1.2"/><circle cx="10" cy="7" r="1.2"/>
+                <circle cx="4" cy="11" r="1.2"/><circle cx="10" cy="11" r="1.2"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- HIHAT clip -->
+        <div class="midi-clip-wrap">
+          <span class="midi-clip-label">Hihat</span>
+          <div class="midi-clip-box" id="clip-hihat" data-clip="hihat">
+            <canvas class="roll-bg placeholder-roll" id="canvas-hihat-placeholder" width="168" height="110"></canvas>
+            <canvas class="roll-bg active-roll" id="canvas-hihat-active" width="168" height="110"></canvas>
+            <div class="drag-handle">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                <circle cx="4" cy="3" r="1.2"/><circle cx="10" cy="3" r="1.2"/>
+                <circle cx="4" cy="7" r="1.2"/><circle cx="10" cy="7" r="1.2"/>
+                <circle cx="4" cy="11" r="1.2"/><circle cx="10" cy="11" r="1.2"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /midi-clip-row -->
+
+      <!-- ROW 5: Detection Settings Accordion -->
+      <div class="detection-settings">
+
+        <div class="accordion-header open" id="accordionHeader">
+          <span class="accordion-chevron">&#9660;</span>
+          <span class="accordion-title">Detection Settings</span>
+        </div>
+
+        <div class="accordion-body open" id="accordionBody">
+          <div class="accordion-cards">
+
+            <!-- KICK card -->
+            <div class="drum-card">
+              <div class="drum-card-header">
+                <span class="drum-card-name">Kick</span>
+                <label class="toggle" title="Enable kick analysis">
+                  <input type="checkbox" id="analyzeKick" checked />
+                  <div class="toggle-track"></div>
+                  <div class="toggle-thumb"></div>
+                </label>
+              </div>
+              <div class="card-param-row">
+                <span class="card-param-label">Sens</span>
+                <input type="range" class="param-slider" id="kickSensitivity"
+                  min="0" max="100" value="50" />
+                <span class="param-value-display" id="kickSensitivityVal">0.50</span>
+              </div>
+              <div class="card-param-row" style="flex-direction:column; align-items:flex-start; gap:4px;">
+                <div style="display:flex; align-items:center; gap:8px; width:100%;">
+                  <span class="card-param-label">Freq</span>
+                  <span class="param-value-display" id="kickFreqLowVal" style="width:auto; color: var(--text-3); font-size:8px;">40 Hz</span>
+                  <div style="flex:1"></div>
+                  <span class="param-value-display" id="kickFreqHighVal" style="width:auto; color: var(--text-3); font-size:8px;">120 Hz</span>
+                </div>
+                <div class="freq-range-wrap" id="kickFreqRange">
+                  <div class="freq-track"></div>
+                  <div class="freq-fill" id="kickFreqFill"></div>
+                  <input type="range" id="kickFreqLow" min="20" max="500" value="40" />
+                  <input type="range" id="kickFreqHigh" min="50" max="1000" value="120" />
+                </div>
+              </div>
+            </div>
+
+            <!-- SNARE card -->
+            <div class="drum-card">
+              <div class="drum-card-header">
+                <span class="drum-card-name">Snare</span>
+                <label class="toggle" title="Enable snare analysis">
+                  <input type="checkbox" id="analyzeSnare" checked />
+                  <div class="toggle-track"></div>
+                  <div class="toggle-thumb"></div>
+                </label>
+              </div>
+              <div class="card-param-row">
+                <span class="card-param-label">Sens</span>
+                <input type="range" class="param-slider" id="snareSensitivity"
+                  min="0" max="100" value="50" />
+                <span class="param-value-display" id="snareSensitivityVal">0.50</span>
+              </div>
+              <div class="card-param-row" style="flex-direction:column; align-items:flex-start; gap:4px;">
+                <div style="display:flex; align-items:center; gap:8px; width:100%;">
+                  <span class="card-param-label">Freq</span>
+                  <span class="param-value-display" id="snareFreqLowVal" style="width:auto; color: var(--text-3); font-size:8px;">200 Hz</span>
+                  <div style="flex:1"></div>
+                  <span class="param-value-display" id="snareFreqHighVal" style="width:auto; color: var(--text-3); font-size:8px;">8.0 kHz</span>
+                </div>
+                <div class="freq-range-wrap" id="snareFreqRange">
+                  <div class="freq-track"></div>
+                  <div class="freq-fill" id="snareFreqFill"></div>
+                  <input type="range" id="snareFreqLow" min="100" max="2000" value="200" />
+                  <input type="range" id="snareFreqHigh" min="1000" max="20000" value="8000" />
+                </div>
+              </div>
+            </div>
+
+            <!-- HIHAT card -->
+            <div class="drum-card">
+              <div class="drum-card-header">
+                <span class="drum-card-name">Hihat</span>
+                <label class="toggle" title="Enable hihat analysis">
+                  <input type="checkbox" id="analyzeHihat" checked />
+                  <div class="toggle-track"></div>
+                  <div class="toggle-thumb"></div>
+                </label>
+              </div>
+              <div class="card-param-row">
+                <span class="card-param-label">Sens</span>
+                <input type="range" class="param-slider" id="hihatSensitivity"
+                  min="0" max="100" value="50" />
+                <span class="param-value-display" id="hihatSensitivityVal">0.50</span>
+              </div>
+              <div class="card-param-row" style="flex-direction:column; align-items:flex-start; gap:4px;">
+                <div style="display:flex; align-items:center; gap:8px; width:100%;">
+                  <span class="card-param-label">Freq</span>
+                  <span class="param-value-display" id="hihatFreqLowVal" style="width:auto; color: var(--text-3); font-size:8px;">5.0 kHz</span>
+                  <div style="flex:1"></div>
+                  <span class="param-value-display" id="hihatFreqHighVal" style="width:auto; color: var(--text-3); font-size:8px;">16 kHz</span>
+                </div>
+                <div class="freq-range-wrap" id="hihatFreqRange">
+                  <div class="freq-track"></div>
+                  <div class="freq-fill" id="hihatFreqFill"></div>
+                  <input type="range" id="hihatFreqLow" min="1000" max="20000" value="5000" />
+                  <input type="range" id="hihatFreqHigh" min="5000" max="20000" value="16000" />
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div><!-- /accordion-body -->
+
+      </div><!-- /detection-settings -->
+
+    </div><!-- /plugin-shell -->
+
+    <!-- STATE TESTER (dev panel outside plugin) -->
+    <div class="state-tester">
+      <span>State:</span>
+      <button class="state-btn active" id="btn-idle" onclick="setState('idle')">1 Idle</button>
+      <button class="state-btn" id="btn-analyzing" onclick="setState('analyzing')">2 Analyzing</button>
+      <button class="state-btn" id="btn-complete" onclick="setState('complete')">3 Complete</button>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // MOCK JUCE BACKEND
+    // =========================================================================
+    window.Juce = {
+      getSliderState: (id) => ({
+        normalisedValue: 0.5,
+        setNormalisedValue: (v) => console.log(`[JUCE] ${id} → ${v.toFixed(3)}`),
+        valueChangedEvent: { addListener: (fn) => {} }
+      }),
+      getToggleState: (id) => ({
+        value: true,
+        setValue: (v) => console.log(`[JUCE] ${id} → ${v}`),
+        valueChangedEvent: { addListener: (fn) => {} }
+      }),
+      getComboBoxState: (id) => ({
+        selectedId: 1,
+        setSelectedId: (id) => console.log(`[JUCE] bpmMultiplier → ${id}`),
+        valueChangedEvent: { addListener: (fn) => {} }
+      }),
+      sendEventToBackend: (evt) => console.log('[JUCE] event:', evt)
+    };
+
+    // =========================================================================
+    // CONTEXT MENU DISABLED (REQUIRED)
+    // =========================================================================
+    document.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      return false;
+    });
+
+    // =========================================================================
+    // PIANO ROLL RENDERING
+    // =========================================================================
+
+    const ACCENT     = '#00e5ff';
+    const ACCENT_DIM = '#00b8cc';
+    const BG_CANVAS  = '#1a1a1a';
+    const GRID_LINE  = '#242424';
+
+    // Draw horizontal pitch-row grid lines on canvas
+    function drawGrid(ctx, w, h, rowCount) {
+      ctx.fillStyle = BG_CANVAS;
+      ctx.fillRect(0, 0, w, h);
+      const rowH = h / rowCount;
+      ctx.strokeStyle = GRID_LINE;
+      ctx.lineWidth = 0.5;
+      for (let i = 1; i < rowCount; i++) {
+        const y = Math.round(i * rowH) + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      // Subtle beat dividers (vertical)
+      ctx.strokeStyle = '#1e1e1e';
+      for (let b = 1; b < 4; b++) {
+        const x = Math.round((b / 4) * w) + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+    }
+
+    // Draw a note bar
+    function drawNote(ctx, x, y, w, h, color, alpha) {
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = color;
+      // Note body
+      const r = 2;
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, r);
+      ctx.fill();
+      // Bright top edge highlight
+      ctx.globalAlpha = alpha * 0.5;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + r, y + 0.5, w - r * 2, 1);
+      ctx.globalAlpha = 1;
+    }
+
+    const ROWS = 24; // piano roll rows displayed
+
+    // ---- Placeholder patterns (generic, low opacity suggestions) ----
+    function drawPlaceholder(ctx, pattern) {
+      const w = ctx.canvas.width;
+      const h = ctx.canvas.height;
+      drawGrid(ctx, w, h, ROWS);
+      const rowH = h / ROWS;
+      for (const note of pattern) {
+        const ny = note.row * rowH + 1;
+        const nh = rowH - 2;
+        const nx = note.beat * w;
+        const nw = note.dur * w - 2;
+        drawNote(ctx, nx, ny, nw, nh, '#aaaaaa', 0.18);
+      }
+    }
+
+    // ---- Active patterns (neon, post-analysis) ----
+    function drawActive(ctx, pattern) {
+      const w = ctx.canvas.width;
+      const h = ctx.canvas.height;
+      drawGrid(ctx, w, h, ROWS);
+      const rowH = h / ROWS;
+      // Glow pass
+      ctx.shadowColor = ACCENT;
+      ctx.shadowBlur = 4;
+      for (const note of pattern) {
+        const ny = note.row * rowH + 1;
+        const nh = rowH - 2;
+        const nx = note.beat * w;
+        const nw = note.dur * w - 2;
+        drawNote(ctx, nx, ny, nw, nh, ACCENT, 0.85);
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    // ---- Note pattern data ----
+    // Row 0 = top of roll (highest pitch), row 23 = bottom (lowest)
+    // beat = 0..1 (normalized beat position in 1 measure), dur = note duration fraction
+
+    // Root chord: F# minor triad — F#4, A4, C#5 (displayed as 3 stacked notes, longer)
+    const CHORD_PATTERN = [
+      { row: 4,  beat: 0.02, dur: 0.46 },   // C#5
+      { row: 7,  beat: 0.02, dur: 0.46 },   // A4
+      { row: 10, beat: 0.02, dur: 0.46 },   // F#4
+    ];
+
+    const CHORD_PLACEHOLDER = [
+      { row: 3,  beat: 0.02, dur: 0.60 },
+      { row: 6,  beat: 0.02, dur: 0.60 },
+      { row: 9,  beat: 0.02, dur: 0.60 },
+      { row: 13, beat: 0.55, dur: 0.42 },
+    ];
+
+    // Kick: hits on beats 0 (downbeat) and 0.625 (e-and)
+    const KICK_PATTERN = [
+      { row: 20, beat: 0.00, dur: 0.10 },
+      { row: 20, beat: 0.25, dur: 0.07 },
+      { row: 20, beat: 0.625, dur: 0.10 },
+    ];
+
+    const KICK_PLACEHOLDER = [
+      { row: 19, beat: 0.00, dur: 0.12 },
+      { row: 20, beat: 0.50, dur: 0.09 },
+      { row: 21, beat: 0.75, dur: 0.07 },
+    ];
+
+    // Snare: beats 2 and 4 (0.5 and... just beat 2 in 1-bar normalized = 0.5)
+    const SNARE_PATTERN = [
+      { row: 13, beat: 0.00, dur: 0.09 },   // ghost on 1
+      { row: 12, beat: 0.25, dur: 0.11 },   // snare on 2
+      { row: 12, beat: 0.75, dur: 0.11 },   // snare on 4
+    ];
+
+    const SNARE_PLACEHOLDER = [
+      { row: 12, beat: 0.25, dur: 0.10 },
+      { row: 13, beat: 0.75, dur: 0.10 },
+      { row: 14, beat: 0.50, dur: 0.06 },
+    ];
+
+    // Hihat: 8th notes (dense, high rows)
+    const HIHAT_PATTERN = [
+      { row: 2,  beat: 0.00,  dur: 0.10 },
+      { row: 2,  beat: 0.125, dur: 0.10 },
+      { row: 2,  beat: 0.25,  dur: 0.10 },
+      { row: 2,  beat: 0.375, dur: 0.10 },
+      { row: 1,  beat: 0.50,  dur: 0.10 },  // open hihat (slightly different pitch row)
+      { row: 2,  beat: 0.625, dur: 0.10 },
+      { row: 2,  beat: 0.75,  dur: 0.10 },
+      { row: 2,  beat: 0.875, dur: 0.10 },
+    ];
+
+    const HIHAT_PLACEHOLDER = [
+      { row: 1,  beat: 0.00,  dur: 0.09 },
+      { row: 2,  beat: 0.25,  dur: 0.09 },
+      { row: 1,  beat: 0.50,  dur: 0.09 },
+      { row: 2,  beat: 0.75,  dur: 0.09 },
+    ];
+
+    const CLIPS = [
+      { id: 'chord', placeholder: CHORD_PLACEHOLDER, active: CHORD_PATTERN },
+      { id: 'kick',  placeholder: KICK_PLACEHOLDER,  active: KICK_PATTERN  },
+      { id: 'snare', placeholder: SNARE_PLACEHOLDER, active: SNARE_PATTERN },
+      { id: 'hihat', placeholder: HIHAT_PLACEHOLDER, active: HIHAT_PATTERN },
+    ];
+
+    function renderAllClips() {
+      for (const clip of CLIPS) {
+        const ph  = document.getElementById(`canvas-${clip.id}-placeholder`);
+        const act = document.getElementById(`canvas-${clip.id}-active`);
+        if (ph)  drawPlaceholder(ph.getContext('2d'), clip.placeholder);
+        if (act) drawActive(act.getContext('2d'), clip.active);
+      }
+    }
+
+    // =========================================================================
+    // FREQUENCY DISPLAY FORMAT
+    // =========================================================================
+    function formatHz(hz) {
+      if (hz >= 1000) return (hz / 1000).toFixed(1).replace(/\.0$/, '') + ' kHz';
+      return Math.round(hz) + ' Hz';
+    }
+
+    // =========================================================================
+    // DUAL-HANDLE FREQUENCY RANGE SLIDERS
+    // =========================================================================
+    function setupFreqRange(prefix, fillId) {
+      const lowSlider  = document.getElementById(`${prefix}FreqLow`);
+      const highSlider = document.getElementById(`${prefix}FreqHigh`);
+      const lowLabel   = document.getElementById(`${prefix}FreqLowVal`);
+      const highLabel  = document.getElementById(`${prefix}FreqHighVal`);
+      const fill       = document.getElementById(fillId);
+
+      function updateFill() {
+        const min    = parseFloat(lowSlider.min);
+        const max    = parseFloat(highSlider.max);
+        const low    = parseFloat(lowSlider.value);
+        const high   = parseFloat(highSlider.value);
+        const leftPct  = ((low  - min) / (max - min)) * 100;
+        const rightPct = ((high - min) / (max - min)) * 100;
+        fill.style.left  = leftPct + '%';
+        fill.style.width = (rightPct - leftPct) + '%';
+        if (lowLabel)  lowLabel.textContent  = formatHz(low);
+        if (highLabel) highLabel.textContent = formatHz(high);
+        Juce.getSliderState(`${prefix}FreqLow`).setNormalisedValue(
+          (low - min) / (max - min)
+        );
+        Juce.getSliderState(`${prefix}FreqHigh`).setNormalisedValue(
+          (high - min) / (max - min)
+        );
+      }
+
+      function clampLow() {
+        if (parseFloat(lowSlider.value) > parseFloat(highSlider.value) - 1) {
+          lowSlider.value = parseFloat(highSlider.value) - 1;
+        }
+        updateFill();
+      }
+      function clampHigh() {
+        if (parseFloat(highSlider.value) < parseFloat(lowSlider.value) + 1) {
+          highSlider.value = parseFloat(lowSlider.value) + 1;
+        }
+        updateFill();
+      }
+
+      lowSlider.addEventListener('input', clampLow);
+      highSlider.addEventListener('input', clampHigh);
+      updateFill();
+    }
+
+    // =========================================================================
+    // SENSITIVITY SLIDERS
+    // =========================================================================
+    function setupSensitivity(prefix) {
+      const slider  = document.getElementById(`${prefix}Sensitivity`);
+      const display = document.getElementById(`${prefix}SensitivityVal`);
+      if (!slider || !display) return;
+      slider.addEventListener('input', () => {
+        const v = slider.value / 100;
+        display.textContent = v.toFixed(2);
+        Juce.getSliderState(`${prefix}Sensitivity`).setNormalisedValue(v);
+      });
+    }
+
+    // =========================================================================
+    // BPM MULTIPLIER CHIPS
+    // =========================================================================
+    const chips = document.querySelectorAll('.chip');
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        Juce.getComboBoxState('bpmMultiplier').setSelectedId(parseInt(chip.dataset.mult));
+        console.log('[UI] BPM multiplier:', chip.textContent);
+      });
+    });
+
+    // =========================================================================
+    // TOGGLE BINDINGS
+    // =========================================================================
+    function bindToggle(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('change', () => {
+        Juce.getToggleState(id).setValue(el.checked);
+        console.log(`[UI] ${id}:`, el.checked);
+      });
+    }
+    ['analyzeBPM', 'analyzeKey', 'analyzeKick', 'analyzeSnare', 'analyzeHihat'].forEach(bindToggle);
+
+    // =========================================================================
+    // ACCORDION
+    // =========================================================================
+    const accordionHeader = document.getElementById('accordionHeader');
+    const accordionBody   = document.getElementById('accordionBody');
+
+    accordionHeader.addEventListener('click', () => {
+      const isOpen = accordionBody.classList.contains('open');
+      accordionBody.classList.toggle('open', !isOpen);
+      accordionHeader.classList.toggle('open', !isOpen);
+    });
+
+    // =========================================================================
+    // ANALYZE BUTTON
+    // =========================================================================
+    const analyzeBtn      = document.getElementById('analyzeBtn');
+    const analyzeBtnLabel = document.getElementById('analyzeBtnLabel');
+    let   analysisTimer   = null;
+
+    analyzeBtn.addEventListener('click', () => {
+      if (currentState === 'idle' || currentState === 'complete') {
+        setState('analyzing');
+      } else if (currentState === 'analyzing') {
+        setState('idle');
+      }
+    });
+
+    // =========================================================================
+    // BPM DISPLAY CLICK
+    // =========================================================================
+    document.getElementById('bpmDisplay').addEventListener('click', () => {
+      if (currentState === 'complete') {
+        console.log('[UI] Set DAW tempo to 120.5 BPM');
+        Juce.sendEventToBackend({ type: 'setDawTempo', bpm: 120.5 });
+      }
+    });
+
+    // =========================================================================
+    // STATE MACHINE
+    // =========================================================================
+    let currentState = 'idle';
+    let progressInterval = null;
+
+    function setState(state) {
+      currentState = state;
+      // Update tester buttons
+      document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`btn-${state}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const clips         = ['chord', 'kick', 'snare', 'hihat'];
+      const clipEls       = clips.map(id => document.getElementById(`clip-${id}`));
+      const bpmDisplay    = document.getElementById('bpmDisplay');
+      const keyDisplay    = document.getElementById('keyDisplay');
+      const progressRow   = document.getElementById('progressBarRow');
+      const progressFill  = document.getElementById('progressFill');
+
+      if (state === 'idle') {
+        // Reset to pre-analysis
+        analyzeBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <line x1="16.5" y1="16.5" x2="22" y2="22"/>
+          <line x1="8" y1="11" x2="14" y2="11"/>
+          <line x1="11" y1="8" x2="11" y2="14"/>
+        </svg>`;
+        analyzeBtn.classList.remove('cancel-btn');
+        analyzeBtnLabel.textContent = 'Analyze';
+
+        bpmDisplay.textContent = '---';
+        bpmDisplay.classList.add('placeholder');
+        bpmDisplay.classList.remove('has-value');
+        keyDisplay.textContent = '---';
+        keyDisplay.classList.add('placeholder');
+        keyDisplay.classList.remove('has-value');
+
+        progressRow.classList.add('hidden');
+        progressFill.style.width = '0%';
+
+        clipEls.forEach(el => {
+          el.classList.remove('active', 'analyzing');
+        });
+
+        clearInterval(progressInterval);
+
+      } else if (state === 'analyzing') {
+        // Switch to cancel
+        analyzeBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>`;
+        analyzeBtn.classList.add('cancel-btn');
+        analyzeBtnLabel.textContent = 'Cancel';
+
+        progressRow.classList.remove('hidden');
+        progressFill.style.width = '0%';
+
+        // Reset values
+        bpmDisplay.textContent = '---';
+        bpmDisplay.classList.add('placeholder');
+        bpmDisplay.classList.remove('has-value');
+        keyDisplay.textContent = '---';
+        keyDisplay.classList.add('placeholder');
+        keyDisplay.classList.remove('has-value');
+
+        clipEls.forEach(el => {
+          el.classList.remove('active');
+          el.classList.add('analyzing');
+        });
+
+        // Simulate progressive reveal over ~3 seconds
+        let progress = 0;
+        clearInterval(progressInterval);
+        progressInterval = setInterval(() => {
+          progress += 1.2;
+          if (progress > 100) progress = 100;
+          progressFill.style.width = progress + '%';
+
+          // BPM appears at ~30%
+          if (progress >= 30 && bpmDisplay.textContent === '---') {
+            bpmDisplay.textContent = '120.5';
+            bpmDisplay.classList.remove('placeholder');
+            bpmDisplay.classList.add('has-value');
+          }
+          // Key appears at ~50%
+          if (progress >= 50 && keyDisplay.textContent === '---') {
+            keyDisplay.textContent = 'F# minor';
+            keyDisplay.classList.remove('placeholder');
+            keyDisplay.classList.add('has-value');
+          }
+          // Clips reveal sequentially
+          if (progress >= 60) {
+            document.getElementById('clip-chord').classList.remove('analyzing');
+            document.getElementById('clip-chord').classList.add('active');
+          }
+          if (progress >= 72) {
+            document.getElementById('clip-kick').classList.remove('analyzing');
+            document.getElementById('clip-kick').classList.add('active');
+          }
+          if (progress >= 84) {
+            document.getElementById('clip-snare').classList.remove('analyzing');
+            document.getElementById('clip-snare').classList.add('active');
+          }
+          if (progress >= 96) {
+            document.getElementById('clip-hihat').classList.remove('analyzing');
+            document.getElementById('clip-hihat').classList.add('active');
+          }
+          // Complete
+          if (progress >= 100) {
+            clearInterval(progressInterval);
+            setTimeout(() => setState('complete'), 300);
+          }
+        }, 40);
+
+      } else if (state === 'complete') {
+        // Analysis done
+        analyzeBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <line x1="16.5" y1="16.5" x2="22" y2="22"/>
+          <line x1="8" y1="11" x2="14" y2="11"/>
+          <line x1="11" y1="8" x2="11" y2="14"/>
+        </svg>`;
+        analyzeBtn.classList.remove('cancel-btn');
+        analyzeBtnLabel.textContent = 'Re-Analyze';
+
+        bpmDisplay.textContent = '120.5';
+        bpmDisplay.classList.remove('placeholder');
+        bpmDisplay.classList.add('has-value');
+        keyDisplay.textContent = 'F# minor';
+        keyDisplay.classList.remove('placeholder');
+        keyDisplay.classList.add('has-value');
+
+        progressRow.classList.add('hidden');
+        progressFill.style.width = '0%';
+
+        clipEls.forEach(el => {
+          el.classList.remove('analyzing');
+          el.classList.add('active');
+        });
+
+        clearInterval(progressInterval);
+      }
+    }
+
+    // =========================================================================
+    // INIT
+    // =========================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+      renderAllClips();
+      setupFreqRange('kick',  'kickFreqFill');
+      setupFreqRange('snare', 'snareFreqFill');
+      setupFreqRange('hihat', 'hihatFreqFill');
+      setupSensitivity('kick');
+      setupSensitivity('snare');
+      setupSensitivity('hihat');
+
+      // Open accordion by default to show settings
+      accordionBody.classList.add('open');
+      accordionHeader.classList.add('open');
+
+      setState('idle');
+    });
+  </script>
+</body>
+</html>
