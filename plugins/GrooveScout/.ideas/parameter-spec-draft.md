@@ -38,6 +38,16 @@
 |-------------|------|---------|---------|-------------|
 | `bpmMultiplier` | Choice | "½x", "1x", "2x" | "1x" | Multiplier applied to detected BPM. Use ½x when plugin detects double-time, 2x when it detects half-time. |
 
+### Analysis Toggles
+
+| Parameter ID | Type | Default | Description |
+|-------------|------|---------|-------------|
+| `analyzeBPM` | Bool | true | Include BPM detection when Analyze is triggered |
+| `analyzeKey` | Bool | true | Include key detection when Analyze is triggered |
+| `analyzeKick` | Bool | true | Include kick MIDI extraction when Analyze is triggered |
+| `analyzeSnare` | Bool | true | Include snare MIDI extraction when Analyze is triggered |
+| `analyzeHihat` | Bool | true | Include hihat MIDI extraction when Analyze is triggered |
+
 ---
 
 ## Non-Parameter Controls (UI Actions / State)
@@ -46,7 +56,8 @@ These are UI interactions and plugin state — not APVTS parameters:
 
 | Control | Type | Description |
 |---------|------|-------------|
-| Analyze button | Trigger | Initiates one-shot analysis of current audio buffer |
+| Analyze button | Trigger | Initiates one-shot analysis of enabled analysis types |
+| Cancel button | Trigger | Stops analysis in progress; appears only while analysis is running |
 | BPM display | Clickable output | Shows detected BPM × multiplier; click to set DAW project tempo |
 | Key display | Read-only label | Shows detected key (e.g. "F# minor", "A major") |
 | Root chord MIDI | Draggable clip | Root chord triad of detected key (e.g. F#-A-C# for F# minor) |
