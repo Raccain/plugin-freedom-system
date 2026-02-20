@@ -1,0 +1,360 @@
+# GrooveScout UI Specification v2
+# Window: 750x560px fixed
+# Visual: Dark neon — near-black background, cyan accent (#00e5ff)
+#
+# Changes from v1:
+#   Fix 1 — Analyze button: replaced generic magnifying glass with
+#            an oscilloscope/spectrum+scanline SVG that reads as "audio analysis"
+#   Fix 2 — BPM/KEY toggle alignment: both toggles right-aligned flush
+#            via margin-left: auto on toggle wrapper
+#   Fix 3 — Drum card toggle disables inner controls (JS + CSS disabled state)
+#   Fix 4 — Dual-handle freq range sliders fully rewritten with log-scale
+#            mousedown/mousemove/mouseup drag, constrained handles, live display
+
+window:
+  width: 750
+  height: 560
+  resizable: false
+  title: "GrooveScout"
+
+# Layout rows (top-to-bottom):
+#   Row 1 — Title Bar:          y=0,   h=36
+#   Row 2 — Analysis Bar:       y=36,  h=80
+#   Row 3 — Progress Bar:       y=116, h=4
+#   Row 4 — MIDI Clip Row:      y=120, h=166 (16px label + 110px box + 40px padding)
+#   Row 5 — Detection Settings: y=286, h=274
+
+layout:
+  title_bar:
+    y: 0
+    height: 36
+    border_bottom: "1px solid #1e1e1e"
+
+  analysis_bar:
+    y: 36
+    height: 80
+    padding_left: 20
+    padding_right: 20
+    # Fix 2: both BPM toggle and KEY toggle use margin-left:auto on toggle wrapper
+    toggle_alignment: right_flush
+
+  progress_bar:
+    y: 116
+    height: 4
+
+  midi_clip_row:
+    y: 120
+    height: 166
+    clip_width: 168
+    clip_height: 110
+    clip_label_offset_y: 16
+    clip_box_offset_y: 36
+    clips:
+      - label: "ROOT CHORD"
+        x: 20
+      - label: "KICK"
+        x: 200
+      - label: "SNARE"
+        x: 380
+      - label: "HIHAT"
+        x: 560
+
+  detection_settings:
+    y: 286
+    height: 274
+    header_height: 36
+    cards_y: 322
+    card_height: 220
+    card_width: 218
+    card_gap: 12
+    # Fix 3: cards track enabled state; disabling toggle greys controls
+    card_disable_on_toggle_off: true
+    cards:
+      - name: "KICK"
+        x: 20
+      - name: "SNARE"
+        x: 250
+      - name: "HIHAT"
+        x: 480
+
+# APVTS-bound controls
+controls:
+  # --- Float sliders ---
+
+  - id: kick_sensitivity
+    type: slider
+    label: "SENS"
+    position: { x: 35, y: 390 }
+    size: { width: 190, height: 20 }
+    range: [0.0, 1.0]
+    default: 0.5
+    orientation: horizontal
+    group: kick_card
+
+  - id: kick_freq_low
+    type: slider
+    label: "FREQ LOW"
+    position: { x: 35, y: 430 }
+    size: { width: 190, height: 20 }
+    # Fix 4: full range 20–1000 Hz, log scale, default 40 Hz
+    range: [20.0, 1000.0]
+    default: 40.0
+    scale: logarithmic
+    orientation: horizontal
+    group: kick_card
+
+  - id: kick_freq_high
+    type: slider
+    label: "FREQ HIGH"
+    position: { x: 35, y: 460 }
+    size: { width: 190, height: 20 }
+    # Fix 4: full range 20–1000 Hz, log scale, default 120 Hz
+    range: [20.0, 1000.0]
+    default: 120.0
+    scale: logarithmic
+    orientation: horizontal
+    group: kick_card
+
+  - id: snare_sensitivity
+    type: slider
+    label: "SENS"
+    position: { x: 265, y: 390 }
+    size: { width: 190, height: 20 }
+    range: [0.0, 1.0]
+    default: 0.5
+    orientation: horizontal
+    group: snare_card
+
+  - id: snare_freq_low
+    type: slider
+    label: "FREQ LOW"
+    position: { x: 265, y: 430 }
+    size: { width: 190, height: 20 }
+    # Fix 4: range 100–20000 Hz, log scale, default 200 Hz
+    range: [100.0, 20000.0]
+    default: 200.0
+    scale: logarithmic
+    orientation: horizontal
+    group: snare_card
+
+  - id: snare_freq_high
+    type: slider
+    label: "FREQ HIGH"
+    position: { x: 265, y: 460 }
+    size: { width: 190, height: 20 }
+    # Fix 4: range 100–20000 Hz, log scale, default 8000 Hz
+    range: [100.0, 20000.0]
+    default: 8000.0
+    scale: logarithmic
+    orientation: horizontal
+    group: snare_card
+
+  - id: hihat_sensitivity
+    type: slider
+    label: "SENS"
+    position: { x: 495, y: 390 }
+    size: { width: 190, height: 20 }
+    range: [0.0, 1.0]
+    default: 0.5
+    orientation: horizontal
+    group: hihat_card
+
+  - id: hihat_freq_low
+    type: slider
+    label: "FREQ LOW"
+    position: { x: 495, y: 430 }
+    size: { width: 190, height: 20 }
+    # Fix 4: range 1000–20000 Hz, log scale, default 5000 Hz
+    range: [1000.0, 20000.0]
+    default: 5000.0
+    scale: logarithmic
+    orientation: horizontal
+    group: hihat_card
+
+  - id: hihat_freq_high
+    type: slider
+    label: "FREQ HIGH"
+    position: { x: 495, y: 460 }
+    size: { width: 190, height: 20 }
+    # Fix 4: range 1000–20000 Hz, log scale, default 16000 Hz
+    range: [1000.0, 20000.0]
+    default: 16000.0
+    scale: logarithmic
+    orientation: horizontal
+    group: hihat_card
+
+  # --- Choice (combo) ---
+
+  - id: bpm_multiplier
+    type: combo
+    label: "BPM Multiplier"
+    position: { x: 520, y: 68 }
+    size: { width: 120, height: 24 }
+    options: ["½x", "1x", "2x"]
+    default_index: 1
+    group: analysis_bar
+
+  # --- Bool toggles ---
+
+  - id: analyze_bpm
+    type: toggle
+    label: "analyzeBPM"
+    # Fix 2: x position represents right-flush alignment in analysis bar
+    position: { x: 702, y: 44 }
+    size: { width: 32, height: 16 }
+    default: true
+    group: analysis_bar
+    alignment: right_flush
+
+  - id: analyze_key
+    type: toggle
+    label: "analyzeKey"
+    # Fix 2: same x position as analyze_bpm (right-flush)
+    position: { x: 702, y: 76 }
+    size: { width: 32, height: 16 }
+    default: true
+    group: analysis_bar
+    alignment: right_flush
+
+  - id: analyze_kick
+    type: toggle
+    label: "analyzeKick"
+    position: { x: 215, y: 338 }
+    size: { width: 36, height: 18 }
+    default: true
+    group: kick_card
+    # Fix 3: toggling OFF disables kick_sensitivity, kick_freq_low, kick_freq_high
+    disables_group_controls: true
+
+  - id: analyze_snare
+    type: toggle
+    label: "analyzeSnare"
+    position: { x: 445, y: 338 }
+    size: { width: 36, height: 18 }
+    default: true
+    group: snare_card
+    # Fix 3: toggling OFF disables snare_sensitivity, snare_freq_low, snare_freq_high
+    disables_group_controls: true
+
+  - id: analyze_hihat
+    type: toggle
+    label: "analyzeHihat"
+    position: { x: 675, y: 338 }
+    size: { width: 36, height: 18 }
+    default: true
+    group: hihat_card
+    # Fix 3: toggling OFF disables hihat_sensitivity, hihat_freq_low, hihat_freq_high
+    disables_group_controls: true
+
+# Non-parameter UI elements (actions / state displays)
+ui_elements:
+  - id: analyze_button
+    type: circular_button
+    label: "ANALYZE"
+    center: { x: 56, y: 76 }
+    diameter: 52
+    style: neon_accent
+    # Fix 1: spectrum bars + scan-line SVG icon (oscilloscope/analysis aesthetic)
+    icon: spectrum_scanline_svg
+
+  - id: cancel_button
+    type: circular_button
+    label: "CANCEL"
+    center: { x: 56, y: 76 }
+    diameter: 52
+    style: neon_warning
+    visible_state: analyzing
+
+  - id: bpm_display
+    type: clickable_label
+    label: "---"
+    position: { x: 220, y: 40 }
+    size: { width: 140, height: 36 }
+    font: monospace
+    font_size: 28
+    action: set_daw_tempo
+
+  - id: key_display
+    type: label
+    label: "---"
+    position: { x: 220, y: 76 }
+    size: { width: 160, height: 28 }
+    font_size: 18
+
+  - id: progress_bar
+    type: progress_bar
+    position: { x: 0, y: 116 }
+    size: { width: 750, height: 4 }
+    accent_color: "#00e5ff"
+    visible_state: analyzing
+
+  - id: midi_clip_root_chord
+    type: midi_drag_clip
+    label: "ROOT CHORD"
+    position: { x: 20, y: 136 }
+    size: { width: 168, height: 110 }
+
+  - id: midi_clip_kick
+    type: midi_drag_clip
+    label: "KICK"
+    position: { x: 200, y: 136 }
+    size: { width: 168, height: 110 }
+
+  - id: midi_clip_snare
+    type: midi_drag_clip
+    label: "SNARE"
+    position: { x: 380, y: 136 }
+    size: { width: 168, height: 110 }
+
+  - id: midi_clip_hihat
+    type: midi_drag_clip
+    label: "HIHAT"
+    position: { x: 560, y: 136 }
+    size: { width: 168, height: 110 }
+
+  - id: detection_settings_accordion
+    type: accordion
+    label: "DETECTION SETTINGS"
+    position: { x: 0, y: 286 }
+    size: { width: 750, height: 274 }
+    default_expanded: false
+
+styling:
+  colors:
+    background: "#0f0f0f"
+    surface: "#181818"
+    surface_raised: "#1a1a1a"
+    border: "#222222"
+    border_active: "#00e5ff"
+    accent: "#00e5ff"
+    accent_dim: "#00b8cc"
+    text_primary: "#ffffff"
+    text_secondary: "#888888"
+    text_label: "#666666"
+    inactive_fill: "#2a2a2a"
+    warning: "#ff6b6b"
+    # Fix 3: disabled card state
+    card_disabled_bg: "#111111"
+    controls_disabled_opacity: 0.35
+
+  fonts:
+    values: "'JetBrains Mono', 'IBM Plex Mono', 'Fira Mono', monospace"
+    labels: "'Inter', 'DM Sans', 'Helvetica Neue', system-ui, sans-serif"
+    title: "'Inter', 'DM Sans', system-ui, sans-serif"
+
+  effects:
+    accent_glow: "0 0 8px rgba(0,229,255,0.6), 0 0 20px rgba(0,229,255,0.2)"
+    accent_glow_strong: "0 0 12px rgba(0,229,255,0.9), 0 0 30px rgba(0,229,255,0.4)"
+    card_shadow: "inset 0 1px 0 rgba(255,255,255,0.04)"
+
+  # Fix 4: freq range slider implementation notes
+  freq_range_sliders:
+    implementation: div_track_with_absolute_handles
+    drag_model: document_mousemove_mouseup
+    scale: logarithmic
+    handle_min_gap_px: 10
+    handle_diameter_px: 13
+    track_height_px: 3
+    fill_color: "rgba(0,229,255,0.45)"
+    handle_color: "#00b8cc"
+    handle_active_color: "#00e5ff"
