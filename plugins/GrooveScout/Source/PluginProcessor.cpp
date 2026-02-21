@@ -1,9 +1,11 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "GrooveScoutAnalyzer.h"
 
 //==============================================================================
 // Parameter layout — EXACT specification from parameter-spec.md
 // Order and values are immutable during Stages 1–5.
+// Total: 15 parameters (9 Float, 1 Choice, 5 Bool)
 //==============================================================================
 
 juce::AudioProcessorValueTreeState::ParameterLayout
@@ -114,6 +116,57 @@ GrooveScoutAudioProcessor::createParameterLayout()
         "Hz"
     ));
 
+    // -------------------------------------------------------------------------
+    // BPM Control
+    // -------------------------------------------------------------------------
+
+    // 11. bpmMultiplier — Choice: "1/2x", "1x", "2x", default index 1 ("1x")
+    layout.add (std::make_unique<juce::AudioParameterChoice> (
+        juce::ParameterID { "bpmMultiplier", 1 },
+        "BPM Multiplier",
+        juce::StringArray { "1/2x", "1x", "2x" },
+        1  // default: "1x"
+    ));
+
+    // -------------------------------------------------------------------------
+    // Analysis Toggles
+    // -------------------------------------------------------------------------
+
+    // 12. analyzeBPM — Bool, default true
+    layout.add (std::make_unique<juce::AudioParameterBool> (
+        juce::ParameterID { "analyzeBPM", 1 },
+        "Analyze BPM",
+        true
+    ));
+
+    // 13. analyzeKey — Bool, default true
+    layout.add (std::make_unique<juce::AudioParameterBool> (
+        juce::ParameterID { "analyzeKey", 1 },
+        "Analyze Key",
+        true
+    ));
+
+    // 14. analyzeKick — Bool, default true
+    layout.add (std::make_unique<juce::AudioParameterBool> (
+        juce::ParameterID { "analyzeKick", 1 },
+        "Analyze Kick",
+        true
+    ));
+
+    // 15. analyzeSnare — Bool, default true
+    layout.add (std::make_unique<juce::AudioParameterBool> (
+        juce::ParameterID { "analyzeSnare", 1 },
+        "Analyze Snare",
+        true
+    ));
+
+    // 16. analyzeHihat — Bool, default true
+    layout.add (std::make_unique<juce::AudioParameterBool> (
+        juce::ParameterID { "analyzeHihat", 1 },
+        "Analyze Hihat",
+        true
+    ));
+
     return layout;
 }
 
@@ -131,6 +184,9 @@ GrooveScoutAudioProcessor::GrooveScoutAudioProcessor()
 
 GrooveScoutAudioProcessor::~GrooveScoutAudioProcessor()
 {
+    // CRITICAL: stop background thread before destruction
+    if (analyzerThread)
+        analyzerThread->stopThread (2000);
 }
 
 //==============================================================================
@@ -142,17 +198,38 @@ void GrooveScoutAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     currentSampleRate = sampleRate;
     currentBlockSize  = samplesPerBlock;
 
-    // Stage 2 (DSP.1) will:
-    // - Pre-allocate recording buffer: max 30s * sampleRate * 2 channels
-    // - Initialise preview IIR filter state
-    // - Initialise waveform RMS accumulator
+    // Pre-allocate recording buffer: max 30s × sampleRate × 2 channels.
+    // This is the ONLY place we allocate — NEVER allocate in processBlock().
+    const int maxCaptureSamples = static_cast<int> (sampleRate * 30.0);
+    recordingBuffer.setSize (2, maxCaptureSamples, false, true, false);
+    recordedSamples.store (0);
 
-    juce::ignoreUnused (sampleRate, samplesPerBlock);
+    // Pre-allocate waveform RMS circular buffer (200 buckets for display)
+    {
+        juce::ScopedLock sl (waveformLock);
+        waveformRms.assign (200, 0.0f);
+    }
+    waveformDirty.store (false);
+
+    // Reset all analysis state on prepare (new session / sample rate change)
+    isCapturing.store (false);
+    recordingComplete.store (false);
+    analyzeTriggered.store (false);
+    analysisComplete.store (false);
+    analysisCancelled.store (false);
+    analysisProgress.store (0);
+    analysisStep.store (0);
+    analysisError.store (0);
 }
 
 void GrooveScoutAudioProcessor::releaseResources()
 {
-    // Stage 2 will reset filter state and cancel any active preview here.
+    // Cancel any active analysis thread
+    if (analyzerThread && analyzerThread->isThreadRunning())
+        analyzerThread->stopThread (2000);
+
+    isCapturing.store (false);
+    isPreviewActive.store (false);
 }
 
 bool GrooveScoutAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -178,20 +255,45 @@ void GrooveScoutAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     juce::ScopedNoDenormals noDenormals;
     juce::ignoreUnused (midiMessages);
 
-    // GrooveScout is an analysis utility: audio passes through unmodified.
-    // Stage 2 (DSP.1) will add:
-    //   - Recording buffer append (when isCapturing == true)
-    //   - Preview playback from recording buffer (when isPreviewActive == true)
-    //   - Waveform RMS accumulator update
-    //
-    // In Stage 1, the buffer is passed through without modification.
-    // (JUCE routes the input bus to the output bus automatically when no
-    //  modification is made — no explicit copy needed here.)
+    const int numSamples  = buffer.getNumSamples();
+    const int numChannels = juce::jmin (buffer.getNumChannels(), 2);
 
-    // Parameter access example (for Stage 2 DSP implementation):
-    // auto* captureDurationParam = parameters.getRawParameterValue ("captureDuration");
-    // float captureDurationSec = captureDurationParam->load();  // Atomic read
+    // Recording — append incoming audio to pre-allocated recording buffer.
+    // Audio thread ONLY writes during isCapturing == true.
+    // All reads of recordingBuffer happen in background thread AFTER isCapturing == false.
+    if (isCapturing.load())
+    {
+        const int currentHead    = recordedSamples.load();
+        const int bufferCapacity = recordingBuffer.getNumSamples();
+        const int samplesAvailable = bufferCapacity - currentHead;
 
+        if (samplesAvailable > 0)
+        {
+            const int samplesToCopy = juce::jmin (numSamples, samplesAvailable);
+
+            for (int ch = 0; ch < numChannels; ++ch)
+                recordingBuffer.copyFrom (ch, currentHead,
+                                          buffer.getReadPointer (ch), samplesToCopy);
+
+            recordedSamples.store (currentHead + samplesToCopy);
+
+            // Signal waveform update — UI Timer polls waveformDirty at ~60ms
+            // (actual RMS value push happens in a Timer callback, not here)
+            waveformDirty.store (true);
+
+            if (samplesAvailable <= numSamples)
+            {
+                // Buffer full — auto-stop capture
+                isCapturing.store (false);
+                recordingComplete.store (true);
+                DBG ("GrooveScout: recording buffer full, auto-stopped");
+            }
+        }
+    }
+
+    // Audio passthrough — GrooveScout is an analysis utility.
+    // The buffer already contains input audio and is routed to the output bus
+    // by JUCE automatically. No modification needed.
     juce::ignoreUnused (buffer);
 }
 
@@ -227,49 +329,94 @@ void GrooveScoutAudioProcessor::setStateInformation (const void* data, int sizeI
 }
 
 //==============================================================================
-// Public action methods — stubs for Stage 1
-// DSP agent fills these in Stage 2 (Phase DSP.1).
+// Public action methods — called from UI thread (message thread).
 //==============================================================================
 
 void GrooveScoutAudioProcessor::startRecording()
 {
-    // Stage 2 implementation:
-    //   recordedSamples.store (0);
-    //   isCapturing.store (true);
-    //   recordingComplete.store (false);
-    //   (cancel any active preview)
-    DBG ("GrooveScout: startRecording() called (stub)");
+    // Stop any running analysis thread first
+    if (analyzerThread && analyzerThread->isThreadRunning())
+        analyzerThread->stopThread (2000);
+
+    // Reset all state flags
+    recordedSamples.store (0);
+    analysisComplete.store (false);
+    analysisCancelled.store (false);
+    analysisError.store (0);
+    recordingComplete.store (false);
+    kickClipAvailable.store (false);
+    snareClipAvailable.store (false);
+    hihatClipAvailable.store (false);
+    chordClipAvailable.store (false);
+
+    // Begin capture — audio thread starts appending on next processBlock()
+    isCapturing.store (true);
+    DBG ("GrooveScout: startRecording()");
 }
 
 void GrooveScoutAudioProcessor::stopCurrentOperation()
 {
-    // Stage 2 implementation:
-    //   isCapturing.store (false);
-    //   isPreviewActive.store (false);
-    //   analyzerThread.stopThread (2000);  // if analysis running
-    DBG ("GrooveScout: stopCurrentOperation() called (stub)");
+    isCapturing.store (false);
+    isPreviewActive.store (false);
+
+    if (analyzerThread && analyzerThread->isThreadRunning())
+        analyzerThread->stopThread (2000);
+
+    DBG ("GrooveScout: stopCurrentOperation()");
 }
 
 void GrooveScoutAudioProcessor::startAnalysis()
 {
-    // Stage 2 implementation:
-    //   if (recordedSamples.load() == 0) return;
-    //   isPreviewActive.store (false);
-    //   analyzerThread.stopThread (2000);
-    //   analyzerThread.startThread (juce::Thread::Priority::low);
-    DBG ("GrooveScout: startAnalysis() called (stub)");
+    if (recordedSamples.load() == 0)
+    {
+        DBG ("GrooveScout: startAnalysis() called with empty buffer — ignored");
+        return;
+    }
+
+    // Ensure capture and preview are stopped before analysis begins
+    isCapturing.store (false);
+    isPreviewActive.store (false);
+
+    // Reset analysis state
+    analysisComplete.store (false);
+    analysisCancelled.store (false);
+    analysisError.store (0);
+    analysisProgress.store (0);
+    analysisStep.store (0);
+
+    // Create analyzer thread on first use, then start it
+    if (!analyzerThread)
+        analyzerThread = std::make_unique<GrooveScoutAnalyzer> (*this);
+
+    if (analyzerThread->isThreadRunning())
+        analyzerThread->stopThread (2000);
+
+    analyzerThread->startThread (juce::Thread::Priority::low);
+    DBG ("GrooveScout: startAnalysis() — thread started");
+}
+
+void GrooveScoutAudioProcessor::cancelAnalysis()
+{
+    if (analyzerThread && analyzerThread->isThreadRunning())
+    {
+        analyzerThread->stopThread (2000);
+        analysisCancelled.store (true);
+        analysisProgress.store (0);
+        analysisStep.store (0);
+        DBG ("GrooveScout: cancelAnalysis()");
+    }
 }
 
 void GrooveScoutAudioProcessor::togglePreview (const juce::String& band)
 {
-    // Stage 2 implementation:
-    //   if active band matches and isPreviewActive, deactivate.
-    //   Otherwise set previewBand, reset previewPlayhead, set isPreviewActive.
-    DBG ("GrooveScout: togglePreview(" + band + ") called (stub)");
+    // Phase DSP.1: stub — preview playback implemented in a future phase
+    // when we have IIR filter for band-isolation.
+    DBG ("GrooveScout: togglePreview(" + band + ") — stub");
+    juce::ignoreUnused (band);
 }
 
 //==============================================================================
-// Public query methods — stubs for Stage 1
+// Public query methods
 //==============================================================================
 
 float GrooveScoutAudioProcessor::getCaptureDurationSeconds() const
@@ -285,14 +432,16 @@ float GrooveScoutAudioProcessor::getAnalysisProgress() const
 
 float GrooveScoutAudioProcessor::getDetectedBpm() const
 {
-    // Stage 2 will return the result published by the analysis thread.
-    return 0.0f;
+    // Stage 2 (DSP.2) will return the BPM published by the analysis thread.
+    // Read is safe: detectedBpm is set once by background thread before
+    // analysisComplete becomes true. Caller should check analysisComplete first.
+    return detectedBpm;
 }
 
 juce::String GrooveScoutAudioProcessor::getDetectedKey() const
 {
-    // Stage 2 will return the key string published by the analysis thread.
-    return {};
+    // Stage 2 (DSP.3) will return the key string published by the analysis thread.
+    return detectedKey;
 }
 
 //==============================================================================

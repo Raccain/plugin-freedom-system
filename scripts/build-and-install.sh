@@ -196,10 +196,25 @@ phase_2_build() {
         fi
     fi
 
+    # Resolve JUCE_PATH from CMakeUserPresets.json or env
+    local juce_path_arg=""
+    if [ -f "CMakeUserPresets.json" ] && command -v jq &>/dev/null; then
+        local juce_from_presets
+        juce_from_presets=$(jq -r '.configurePresets[]?.cacheVariables.JUCE_PATH // empty' CMakeUserPresets.json 2>/dev/null | head -1)
+        if [ -n "$juce_from_presets" ]; then
+            juce_path_arg="-DJUCE_PATH=$juce_from_presets"
+            info "  - JUCE path from CMakeUserPresets.json: $juce_from_presets"
+        fi
+    fi
+    if [ -z "$juce_path_arg" ] && [ -n "$JUCE_PATH" ]; then
+        juce_path_arg="-DJUCE_PATH=$JUCE_PATH"
+        info "  - JUCE path from env: $JUCE_PATH"
+    fi
+
     # One-time configure at root (only if build/ doesn't exist)
     if [ ! -d "$build_dir" ]; then
         info "  - Configuring CMake at root with Ninja generator..."
-        if ! execute cmake -B "$build_dir" -G Ninja -DCMAKE_BUILD_TYPE=Release; then
+        if ! execute cmake -B "$build_dir" -G Ninja -DCMAKE_BUILD_TYPE=Release $juce_path_arg; then
             error "CMake configuration failed"
             echo "ERROR: CMake configuration failed" >> "$LOG_FILE"
             exit 1

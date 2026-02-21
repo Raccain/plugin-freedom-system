@@ -3,6 +3,9 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_gui_extra/juce_gui_extra.h>
 
+// Forward declaration — GrooveScoutAnalyzer is defined in GrooveScoutAnalyzer.h
+class GrooveScoutAnalyzer;
+
 //==============================================================================
 /**
  * GrooveScout — Audio Analysis Utility
@@ -12,8 +15,9 @@
  * user via the REC/STOP/Analyze workflow.
  *
  * Stage 1: Foundation + Shell — APVTS parameters declared, stub methods only.
- * DSP implementation (recording buffer, BPM/key detection, onset detection,
- * MIDI assembly) is added in Stage 2 (DSP phases DSP.1–DSP.4).
+ * Stage 2 (DSP.1): Recording buffer infrastructure + GrooveScoutAnalyzer stub thread.
+ * DSP implementation (BPM/key detection, onset detection, MIDI assembly) is
+ * added in DSP phases DSP.2–DSP.4.
  */
 class GrooveScoutAudioProcessor : public juce::AudioProcessor
 {
@@ -97,19 +101,43 @@ public:
     std::atomic<int>   analysisProgress  { 0 };  // 0–100 percent
     std::atomic<int>   analysisStep      { 0 };  // step index for UI label
 
+    // Extended analysis state (Stage 2 DSP.1)
+    std::atomic<bool>  analyzeTriggered  { false };
+    std::atomic<bool>  analysisCancelled { false };
+    std::atomic<int>   analysisError     { 0 };  // 0=none, 1=buffer too short, 2=cancelled
+
+    // Clip availability flags (set by background thread, read by message thread)
+    std::atomic<bool>  kickClipAvailable  { false };
+    std::atomic<bool>  snareClipAvailable { false };
+    std::atomic<bool>  hihatClipAvailable { false };
+    std::atomic<bool>  chordClipAvailable { false };
+
+    // Analysis results — set once by background thread, read after analysisComplete
+    // NOT atomic: lifecycle is: background thread writes, then analysisComplete=true,
+    // then message thread reads. No concurrent access.
+    float          detectedBpm { 0.0f };
+    juce::String   detectedKey {};
+
+    // Recording buffer — pre-allocated in prepareToPlay()
+    // Written by audio thread ONLY during isCapturing==true.
+    // Read by background thread ONLY after isCapturing==false.
+    juce::AudioBuffer<float> recordingBuffer;
+
+    // Current sample rate — needed by GrooveScoutAnalyzer
+    double currentSampleRate = 44100.0;
+
     //==============================================================================
     // Public action methods — called from UI thread (message thread).
-    // Implementations are stubs in Stage 1; DSP agent fills them in Stage 2.
     //==============================================================================
 
     void startRecording();
     void stopCurrentOperation();
     void startAnalysis();
+    void cancelAnalysis();
     void togglePreview (const juce::String& band);
 
     //==============================================================================
     // Public query methods — called from UI thread (message thread).
-    // Implementations return stub values in Stage 1.
     //==============================================================================
 
     float          getCaptureDurationSeconds() const;
@@ -119,11 +147,19 @@ public:
 
 private:
     //==============================================================================
-    // Internal state (Stage 1 stubs — populated by DSP agent in Stage 2)
+    // Internal state
     //==============================================================================
 
-    double currentSampleRate   = 44100.0;
     int    currentBlockSize    = 512;
+
+    // Background analysis thread
+    std::unique_ptr<GrooveScoutAnalyzer> analyzerThread;
+
+    // Waveform RMS data — accessed by Timer callback on message thread only
+    // (waveformLock protects against race if Timer and processBlock both touch it)
+    std::vector<float>     waveformRms;
+    std::atomic<bool>      waveformDirty { false };
+    juce::CriticalSection  waveformLock;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GrooveScoutAudioProcessor)
 };

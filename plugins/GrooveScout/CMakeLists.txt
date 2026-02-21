@@ -19,6 +19,7 @@ target_sources(GrooveScout
     PRIVATE
         Source/PluginProcessor.cpp
         Source/PluginEditor.cpp
+        Source/GrooveScoutAnalyzer.cpp
 )
 
 # Include paths
