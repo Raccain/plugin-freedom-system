@@ -1,0 +1,423 @@
+# GrooveScout UI Specification v3
+# Window: 750x560px fixed
+# Visual: Dark neon — near-black background, cyan accent (#00e5ff)
+#
+# Changes from v2:
+#   Restructure — Layout reordered to match recording workflow:
+#     v2: title → analysis results → MIDI clips → detection settings
+#     v3: title → record controls → waveform → drum detection → analyze action → results → MIDI clips
+#   Removed: bpmMultiplier, analyzeBPM, analyzeKey, analyzeKick, analyzeSnare, analyzeHihat
+#   Removed: accordion wrapper for drum cards (always visible)
+#   Removed: enable/disable toggles on drum cards
+#   Added: captureDuration rotary knob
+#   Added: REC/STOP buttons
+#   Added: waveform display (non-parameter visual)
+#   Added: preview buttons per drum card
+#   Added: ANALYZE action button (rectangular, not circular)
+#   Added: progress bar + step label below action row
+#   States: idle, recording, buffer_ready, analyzing, complete, partial
+
+window:
+  width: 750
+  height: 560
+  resizable: false
+  title: "GrooveScout"
+
+# Layout rows (top-to-bottom):
+#   Row 1 — Title Bar:          y=0,   h=36
+#   Row 2 — Record Controls:    y=36,  h=44
+#   Row 3 — Waveform Canvas:    y=80,  h=56
+#   Row 4 — Drum Detection:     y=136, h=164
+#   Row 5 — Action Row:         y=300, h=44
+#   Row 6 — Results:            y=344, h=56
+#   Row 7 — MIDI Clip Tiles:    y=400, h=160
+#   Total height: 560
+
+layout:
+  title_bar:
+    y: 0
+    height: 36
+    border_bottom: "1px solid #1e1e1e"
+    title_align: left
+    version_align: right
+
+  record_controls:
+    y: 36
+    height: 44
+    padding_horizontal: 20
+    layout: horizontal_flex
+    elements:
+      - rec_button
+      - stop_button
+      - capture_duration_knob
+      - bars_hint
+      - buffer_status
+
+  waveform_canvas:
+    y: 80
+    height: 56
+    border_top: "1px solid #222"
+    border_bottom: "1px solid #222"
+    background: "#111111"
+    full_width: true
+
+  drum_detection_cards:
+    y: 136
+    height: 164
+    padding_horizontal: 15
+    padding_vertical: 10
+    card_gap: 12
+    # Three cards: KICK, SNARE, HIHAT
+    # Card width = (750 - 15 - 15 - 12 - 12) / 3 = 232px
+    card_width: 232
+    card_height: 144
+    cards:
+      - name: "KICK"
+        x: 15
+      - name: "SNARE"
+        x: 259
+      - name: "HIHAT"
+        x: 503
+
+  action_row:
+    y: 300
+    height: 44
+    padding_horizontal: 20
+    layout: centered
+    elements:
+      - analyze_button
+      - stop_button_analyzing
+
+  progress_area:
+    y: 344
+    height: 0
+    # Overlays bottom of action row when active — thin bar + step label
+    # Actually rendered at y=340, height=16 (4px bar + 12px label below)
+    note: "shown only during analyzing state — overlaps top of results row"
+
+  results:
+    y: 344
+    height: 56
+    padding_horizontal: 20
+    layout: two_column_equal
+    border_top: "1px solid #1a1a1a"
+
+  midi_clips:
+    y: 400
+    height: 160
+    padding_horizontal: 20
+    gap: 10
+    # Four equal tiles
+    # Tile width = (750 - 20 - 20 - 10 - 10 - 10) / 4 = 170px
+    tile_width: 170
+    tile_height: 140
+    border_top: "1px solid #1a1a1a"
+
+# APVTS-bound controls (10 parameters total)
+controls:
+  # captureDuration — rotary knob (1–30s, default 15s)
+  - id: capture_duration
+    type: slider
+    label: "DUR"
+    position: { x: 154, y: 44 }
+    size: { width: 44, height: 36 }
+    range: [1.0, 30.0]
+    default: 15.0
+    orientation: rotary
+    unit: "s"
+    group: record_controls
+
+  # --- Kick card controls ---
+  - id: kick_sensitivity
+    type: slider
+    label: "SENS"
+    position: { x: 15, y: 236 }
+    size: { width: 232, height: 20 }
+    range: [0.0, 1.0]
+    default: 0.5
+    orientation: horizontal
+    group: kick_card
+
+  - id: kick_freq_low
+    type: slider
+    label: "FREQ LOW"
+    position: { x: 15, y: 190 }
+    size: { width: 232, height: 20 }
+    range: [20.0, 1000.0]
+    default: 40.0
+    scale: logarithmic
+    orientation: horizontal
+    group: kick_card
+
+  - id: kick_freq_high
+    type: slider
+    label: "FREQ HIGH"
+    position: { x: 15, y: 190 }
+    size: { width: 232, height: 20 }
+    range: [20.0, 1000.0]
+    default: 120.0
+    scale: logarithmic
+    orientation: horizontal
+    group: kick_card
+    note: "dual-handle with kick_freq_low — same track, same row"
+
+  # --- Snare card controls ---
+  - id: snare_sensitivity
+    type: slider
+    label: "SENS"
+    position: { x: 259, y: 236 }
+    size: { width: 232, height: 20 }
+    range: [0.0, 1.0]
+    default: 0.5
+    orientation: horizontal
+    group: snare_card
+
+  - id: snare_freq_low
+    type: slider
+    label: "FREQ LOW"
+    position: { x: 259, y: 190 }
+    size: { width: 232, height: 20 }
+    range: [100.0, 20000.0]
+    default: 200.0
+    scale: logarithmic
+    orientation: horizontal
+    group: snare_card
+
+  - id: snare_freq_high
+    type: slider
+    label: "FREQ HIGH"
+    position: { x: 259, y: 190 }
+    size: { width: 232, height: 20 }
+    range: [100.0, 20000.0]
+    default: 8000.0
+    scale: logarithmic
+    orientation: horizontal
+    group: snare_card
+    note: "dual-handle with snare_freq_low"
+
+  # --- Hihat card controls ---
+  - id: hihat_sensitivity
+    type: slider
+    label: "SENS"
+    position: { x: 503, y: 236 }
+    size: { width: 232, height: 20 }
+    range: [0.0, 1.0]
+    default: 0.5
+    orientation: horizontal
+    group: hihat_card
+
+  - id: hihat_freq_low
+    type: slider
+    label: "FREQ LOW"
+    position: { x: 503, y: 190 }
+    size: { width: 232, height: 20 }
+    range: [1000.0, 20000.0]
+    default: 5000.0
+    scale: logarithmic
+    orientation: horizontal
+    group: hihat_card
+
+  - id: hihat_freq_high
+    type: slider
+    label: "FREQ HIGH"
+    position: { x: 503, y: 190 }
+    size: { width: 232, height: 20 }
+    range: [1000.0, 20000.0]
+    default: 16000.0
+    scale: logarithmic
+    orientation: horizontal
+    group: hihat_card
+    note: "dual-handle with hihat_freq_low"
+
+# Non-parameter UI elements (actions / state displays)
+ui_elements:
+  - id: rec_button
+    type: action_button
+    label: "● REC"
+    style: pill_accent_border
+    position: { x: 20, y: 48 }
+    size: { width: 72, height: 28 }
+    states:
+      idle: { enabled: true, label: "● REC", style: accent_border }
+      recording: { enabled: true, label: "● REC", style: accent_fill_glow }
+      buffer_ready: { enabled: true, label: "● REC", style: accent_border }
+      analyzing: { enabled: false, label: "● REC", style: dimmed }
+      complete: { enabled: true, label: "● REC", style: accent_border }
+
+  - id: stop_button_record
+    type: action_button
+    label: "■ STOP"
+    style: pill_warning_border
+    position: { x: 100, y: 48 }
+    size: { width: 72, height: 28 }
+    visible_states: [recording]
+    note: "hidden unless recording"
+
+  - id: capture_duration_knob
+    type: rotary_display
+    label_above: "CAPTURE"
+    value_below: "15s"
+    center: { x: 226, y: 56 }
+    diameter: 28
+    note: "compact rotary; value displayed below in monospace"
+
+  - id: bars_hint
+    type: label
+    label: "≈ 8 bars"
+    position: { x: 265, y: 52 }
+    visible_states: [buffer_ready, analyzing, complete, partial]
+    note: "hidden when detectedBPM is 0 (before analysis)"
+
+  - id: buffer_status
+    type: label
+    label: "BUFFER EMPTY"
+    position: { x: 490, y: 52 }
+    states:
+      idle: "BUFFER EMPTY"
+      recording: "RECORDING..."
+      buffer_ready: "BUFFER READY"
+      analyzing: "BUFFER READY"
+      complete: "BUFFER READY"
+      partial: "BUFFER READY"
+
+  - id: waveform_display
+    type: canvas
+    position: { x: 0, y: 80 }
+    size: { width: 750, height: 56 }
+    states:
+      empty: "flat center line + dim placeholder text"
+      recording: "left-to-right cyan bars filling as audio arrives"
+      ready: "full waveform at normal opacity"
+
+  - id: preview_kick
+    type: toggle_button
+    label: "▶ PREVIEW"
+    label_active: "■ STOP PREVIEW"
+    position: { x: 15, y: 262 }
+    size: { width: 232, height: 22 }
+    disabled_states: [idle]
+
+  - id: preview_snare
+    type: toggle_button
+    label: "▶ PREVIEW"
+    label_active: "■ STOP PREVIEW"
+    position: { x: 259, y: 262 }
+    size: { width: 232, height: 22 }
+    disabled_states: [idle]
+
+  - id: preview_hihat
+    type: toggle_button
+    label: "▶ PREVIEW"
+    label_active: "■ STOP PREVIEW"
+    position: { x: 503, y: 262 }
+    size: { width: 232, height: 22 }
+    disabled_states: [idle]
+
+  - id: analyze_button
+    type: action_button
+    label: "ANALYZE"
+    style: rect_accent
+    position: { x: 275, y: 308 }
+    size: { width: 200, height: 30 }
+    disabled_states: [idle, recording]
+
+  - id: stop_button_analyze
+    type: action_button
+    label: "■ STOP"
+    style: pill_warning_border
+    position: { x: 487, y: 308 }
+    size: { width: 72, height: 30 }
+    visible_states: [analyzing]
+
+  - id: progress_bar
+    type: progress_bar
+    position: { x: 0, y: 336 }
+    size: { width: 750, height: 4 }
+    visible_states: [analyzing]
+
+  - id: progress_step_label
+    type: label
+    label: "Detecting BPM..."
+    position: { x: 0, y: 341 }
+    size: { width: 750, height: 12 }
+    align: center
+    visible_states: [analyzing]
+
+  - id: bpm_display
+    type: clickable_label
+    position: { x: 20, y: 356 }
+    size: { width: 335, height: 36 }
+    states:
+      placeholder: "--"
+      active: "124.0"
+      failed: "?"
+    action: set_daw_tempo
+
+  - id: key_display
+    type: label
+    position: { x: 395, y: 356 }
+    size: { width: 335, height: 36 }
+    states:
+      placeholder: "--"
+      active: "F# minor"
+      failed: "?"
+
+  - id: midi_tile_chord
+    type: midi_drag_tile
+    label: "ROOT CHORD"
+    position: { x: 20, y: 408 }
+    size: { width: 170, height: 132 }
+
+  - id: midi_tile_kick
+    type: midi_drag_tile
+    label: "KICK"
+    position: { x: 200, y: 408 }
+    size: { width: 170, height: 132 }
+
+  - id: midi_tile_snare
+    type: midi_drag_tile
+    label: "SNARE"
+    position: { x: 380, y: 408 }
+    size: { width: 170, height: 132 }
+
+  - id: midi_tile_hihat
+    type: midi_drag_tile
+    label: "HIHAT"
+    position: { x: 560, y: 408 }
+    size: { width: 170, height: 132 }
+
+styling:
+  colors:
+    background: "#0f0f0f"
+    surface: "#181818"
+    surface_raised: "#1a1a1a"
+    border: "#222222"
+    border_active: "#00e5ff"
+    accent: "#00e5ff"
+    accent_dim: "#00b8cc"
+    text_primary: "#ffffff"
+    text_secondary: "#888888"
+    text_label: "#666666"
+    inactive_fill: "#2a2a2a"
+    warning: "#ff6b6b"
+
+  fonts:
+    values: "'JetBrains Mono', 'IBM Plex Mono', 'Fira Mono', monospace"
+    labels: "'Inter', 'DM Sans', 'Helvetica Neue', system-ui, sans-serif"
+    title: "'Inter', 'DM Sans', system-ui, sans-serif"
+
+  effects:
+    accent_glow: "0 0 8px rgba(0,229,255,0.6), 0 0 20px rgba(0,229,255,0.2)"
+    accent_glow_strong: "0 0 12px rgba(0,229,255,0.9), 0 0 30px rgba(0,229,255,0.4)"
+    card_shadow: "inset 0 1px 0 rgba(255,255,255,0.04)"
+
+  freq_range_sliders:
+    implementation: div_track_with_absolute_handles
+    drag_model: document_mousemove_mouseup
+    scale: logarithmic
+    handle_min_gap_px: 10
+    handle_diameter_px: 13
+    track_height_px: 3
+    fill_color: "rgba(0,229,255,0.45)"
+    handle_color: "#00b8cc"
+    handle_active_color: "#00e5ff"
