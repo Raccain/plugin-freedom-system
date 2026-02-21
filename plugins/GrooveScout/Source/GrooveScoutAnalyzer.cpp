@@ -9,8 +9,9 @@
 // FFT with Hann window, pitch class profile accumulation, Pearson
 // correlation against 24 key profiles, and root chord MIDI derivation.
 //
-// Future phases:
-//   DSP.4: Drum onset detection + MIDI assembly
+// Phase DSP.4: Band-separated drum onset detection (kick, snare, hihat)
+// using cascaded IIR bandpass filtering + adaptive energy-based onset
+// detection. MIDI pattern assembly for each drum plus root chord.
 //==============================================================================
 
 #include "GrooveScoutAnalyzer.h"
@@ -32,7 +33,7 @@ GrooveScoutAnalyzer::~GrooveScoutAnalyzer()
 
 void GrooveScoutAnalyzer::run()
 {
-    DBG ("GrooveScoutAnalyzer: analysis started (DSP.3)");
+    DBG ("GrooveScoutAnalyzer: analysis started (DSP.4)");
 
     // -------------------------------------------------------------------------
     // 1. Validate minimum buffer length (2 seconds required)
@@ -551,9 +552,104 @@ void GrooveScoutAnalyzer::run()
     }
 
     // -------------------------------------------------------------------------
-    // 4. Drum onset detection stub (DSP.4 will replace)
+    // 4. Drum Onset Detection (DSP.4)
+    //    Per-band IIR bandpass filtering + adaptive onset detection.
+    //    Bands: kick, snare, hihat — each gated by its analyze* toggle.
     // -------------------------------------------------------------------------
     proc.analysisStep.store (3);      // UI label: "Detecting Drums..."
+    proc.analysisProgress.store (50);
+
+    const int onsetNumRecorded = proc.recordedSamples.load();
+    const double onsetSr       = proc.currentSampleRate;
+
+    // Read analyze toggles
+    auto* analyzeKickParam  = proc.parameters.getRawParameterValue ("analyzeKick");
+    auto* analyzeSnareParam = proc.parameters.getRawParameterValue ("analyzeSnare");
+    auto* analyzeHihatParam = proc.parameters.getRawParameterValue ("analyzeHihat");
+
+    const bool doKick  = (analyzeKickParam  == nullptr) || (analyzeKickParam->load()  > 0.5f);
+    const bool doSnare = (analyzeSnareParam == nullptr) || (analyzeSnareParam->load() > 0.5f);
+    const bool doHihat = (analyzeHihatParam == nullptr) || (analyzeHihatParam->load() > 0.5f);
+
+    // Read frequency and sensitivity parameters
+    auto readFloat = [&] (const char* id, float fallback) -> float
+    {
+        auto* p = proc.parameters.getRawParameterValue (id);
+        return (p != nullptr) ? p->load() : fallback;
+    };
+
+    const float kickFreqLow   = readFloat ("kickFreqLow",   40.0f);
+    const float kickFreqHigh  = readFloat ("kickFreqHigh",  120.0f);
+    const float kickSens      = readFloat ("kickSensitivity", 0.5f);
+
+    const float snareFreqLow  = readFloat ("snareFreqLow",  200.0f);
+    const float snareFreqHigh = readFloat ("snareFreqHigh", 8000.0f);
+    const float snareSens     = readFloat ("snareSensitivity", 0.5f);
+
+    const float hihatFreqLow  = readFloat ("hihatFreqLow",  5000.0f);
+    const float hihatFreqHigh = readFloat ("hihatFreqHigh", 16000.0f);
+    const float hihatSens     = readFloat ("hihatSensitivity", 0.5f);
+
+    // Mix recording buffer to mono for onset detection.
+    // Each band gets its own copy (filtering is destructive).
+    auto makeMono = [&] () -> std::vector<float>
+    {
+        std::vector<float> mono (static_cast<size_t> (onsetNumRecorded));
+        const float* left  = proc.recordingBuffer.getReadPointer (0);
+        const float* right = proc.recordingBuffer.getReadPointer (1);
+        for (int i = 0; i < onsetNumRecorded; ++i)
+            mono[static_cast<size_t> (i)] = (left[i] + right[i]) * 0.5f;
+        return mono;
+    };
+
+    // Onset lists per drum
+    std::vector<OnsetEvent> kickOnsets;
+    std::vector<OnsetEvent> snareOnsets;
+    std::vector<OnsetEvent> hihatOnsets;
+
+    // --- Kick band ---
+    if (doKick && kickFreqLow < kickFreqHigh)
+    {
+        auto mono = makeMono();
+        kickOnsets = detectOnsetsInBand (mono, onsetNumRecorded, onsetSr,
+                                         kickFreqLow, kickFreqHigh, kickSens);
+        DBG ("GrooveScoutAnalyzer: kick onsets detected = " + juce::String (static_cast<int> (kickOnsets.size())));
+    }
+
+    proc.analysisProgress.store (58);
+
+    if (threadShouldExit())
+    {
+        proc.analysisCancelled.store (true);
+        return;
+    }
+
+    // --- Snare band ---
+    if (doSnare && snareFreqLow < snareFreqHigh)
+    {
+        auto mono = makeMono();
+        snareOnsets = detectOnsetsInBand (mono, onsetNumRecorded, onsetSr,
+                                          snareFreqLow, snareFreqHigh, snareSens);
+        DBG ("GrooveScoutAnalyzer: snare onsets detected = " + juce::String (static_cast<int> (snareOnsets.size())));
+    }
+
+    proc.analysisProgress.store (66);
+
+    if (threadShouldExit())
+    {
+        proc.analysisCancelled.store (true);
+        return;
+    }
+
+    // --- Hihat band ---
+    if (doHihat && hihatFreqLow < hihatFreqHigh)
+    {
+        auto mono = makeMono();
+        hihatOnsets = detectOnsetsInBand (mono, onsetNumRecorded, onsetSr,
+                                          hihatFreqLow, hihatFreqHigh, hihatSens);
+        DBG ("GrooveScoutAnalyzer: hihat onsets detected = " + juce::String (static_cast<int> (hihatOnsets.size())));
+    }
+
     proc.analysisProgress.store (75);
 
     if (threadShouldExit())
@@ -563,13 +659,375 @@ void GrooveScoutAnalyzer::run()
     }
 
     // -------------------------------------------------------------------------
-    // 5. MIDI assembly stub (DSP.4 will replace)
+    // 5. MIDI Pattern Assembly (DSP.4)
+    //    Write per-drum MIDI files + root chord MIDI to temp directory.
     // -------------------------------------------------------------------------
     proc.analysisStep.store (4);      // UI label: "Writing MIDI..."
+
+    // Determine BPM for MIDI tempo event. If BPM was not detected (0), use 120 BPM default.
+    const float midiTempoBpm = (proc.detectedBpm > 0.0f) ? proc.detectedBpm : 120.0f;
+
+    // Create GrooveScout subdirectory in system temp directory
+    juce::File tempDir = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                             .getChildFile ("GrooveScout");
+    tempDir.createDirectory();
+
+    // --- Write kick MIDI ---
+    if (! kickOnsets.empty())
+    {
+        juce::File kickFile = tempDir.getChildFile ("groovescout_kick.mid");
+        if (writeDrumMidiFile (kickOnsets, 36, midiTempoBpm, onsetSr, kickFile))
+        {
+            proc.kickClipAvailable.store (true);
+            DBG ("GrooveScoutAnalyzer: wrote " + kickFile.getFullPathName());
+        }
+    }
+
+    proc.analysisProgress.store (80);
+
+    if (threadShouldExit())
+    {
+        proc.analysisCancelled.store (true);
+        return;
+    }
+
+    // --- Write snare MIDI ---
+    if (! snareOnsets.empty())
+    {
+        juce::File snareFile = tempDir.getChildFile ("groovescout_snare.mid");
+        if (writeDrumMidiFile (snareOnsets, 38, midiTempoBpm, onsetSr, snareFile))
+        {
+            proc.snareClipAvailable.store (true);
+            DBG ("GrooveScoutAnalyzer: wrote " + snareFile.getFullPathName());
+        }
+    }
+
+    proc.analysisProgress.store (85);
+
+    if (threadShouldExit())
+    {
+        proc.analysisCancelled.store (true);
+        return;
+    }
+
+    // --- Write hihat MIDI ---
+    if (! hihatOnsets.empty())
+    {
+        juce::File hihatFile = tempDir.getChildFile ("groovescout_hihat.mid");
+        if (writeDrumMidiFile (hihatOnsets, 42, midiTempoBpm, onsetSr, hihatFile))
+        {
+            proc.hihatClipAvailable.store (true);
+            DBG ("GrooveScoutAnalyzer: wrote " + hihatFile.getFullPathName());
+        }
+    }
+
+    proc.analysisProgress.store (90);
+
+    if (threadShouldExit())
+    {
+        proc.analysisCancelled.store (true);
+        return;
+    }
+
+    // --- Write root chord MIDI ---
+    if (proc.rootChordValid)
+    {
+        juce::File chordFile = tempDir.getChildFile ("groovescout_chord.mid");
+        if (writeChordMidiFile (proc.rootChordMidi, midiTempoBpm, chordFile))
+        {
+            proc.chordClipAvailable.store (true);
+            DBG ("GrooveScoutAnalyzer: wrote " + chordFile.getFullPathName());
+        }
+    }
+
+    proc.analysisProgress.store (95);
+
+    // Final progress + completion
     proc.analysisProgress.store (100);
 
     // CRITICAL: set analysisComplete LAST — after all result fields are written.
     // Message thread reads results only after seeing analysisComplete == true.
     proc.analysisComplete.store (true);
-    DBG ("GrooveScoutAnalyzer: analysis complete (DSP.3)");
+    DBG ("GrooveScoutAnalyzer: analysis complete (DSP.4)");
+}
+
+//==============================================================================
+// DSP.4 Helper: Band-separated onset detection
+//==============================================================================
+
+std::vector<GrooveScoutAnalyzer::OnsetEvent>
+GrooveScoutAnalyzer::detectOnsetsInBand (std::vector<float>& monoBuffer,
+                                          int numSamples,
+                                          double sampleRate,
+                                          float freqLow,
+                                          float freqHigh,
+                                          float sensitivity)
+{
+    std::vector<OnsetEvent> onsets;
+
+    if (numSamples < 256 || freqLow >= freqHigh)
+        return onsets;
+
+    // -----------------------------------------------------------------
+    // Step 1: Apply bandpass filter (HP then LP in series, offline)
+    //         Using juce::dsp::IIR::Filter processSample() per sample.
+    // -----------------------------------------------------------------
+
+    // High-pass at freqLow (Butterworth Q = 0.707)
+    {
+        juce::dsp::IIR::Filter<float> hpFilter;
+        hpFilter.coefficients = juce::dsp::IIR::Coefficients<float>::makeHighPass (
+            sampleRate, freqLow, 0.707f);
+        hpFilter.reset();
+
+        for (int i = 0; i < numSamples; ++i)
+            monoBuffer[static_cast<size_t> (i)] = hpFilter.processSample (monoBuffer[static_cast<size_t> (i)]);
+    }
+
+    // Low-pass at freqHigh (Butterworth Q = 0.707)
+    {
+        juce::dsp::IIR::Filter<float> lpFilter;
+        lpFilter.coefficients = juce::dsp::IIR::Coefficients<float>::makeLowPass (
+            sampleRate, freqHigh, 0.707f);
+        lpFilter.reset();
+
+        for (int i = 0; i < numSamples; ++i)
+            monoBuffer[static_cast<size_t> (i)] = lpFilter.processSample (monoBuffer[static_cast<size_t> (i)]);
+    }
+
+    // -----------------------------------------------------------------
+    // Step 2: Compute per-frame RMS energy and onset function
+    //         Window: 256 samples, hop: 128 samples
+    //         O[n] = max(0, E[n] - E[n-1])  (half-wave rectified delta)
+    // -----------------------------------------------------------------
+    const int windowSize = 256;
+    const int hopSize    = 128;
+
+    const int numFrames = (numSamples - windowSize) / hopSize + 1;
+    if (numFrames < 2)
+        return onsets;
+
+    std::vector<float> energy (static_cast<size_t> (numFrames));
+    std::vector<float> onsetFunc (static_cast<size_t> (numFrames));
+
+    // Compute RMS energy per frame
+    for (int f = 0; f < numFrames; ++f)
+    {
+        const int start = f * hopSize;
+        float sum = 0.0f;
+
+        for (int j = 0; j < windowSize; ++j)
+        {
+            const float s = monoBuffer[static_cast<size_t> (start + j)];
+            sum += s * s;
+        }
+
+        energy[static_cast<size_t> (f)] = std::sqrt (sum / static_cast<float> (windowSize));
+    }
+
+    // Compute onset function: half-wave rectified energy delta
+    onsetFunc[0] = 0.0f;
+    for (int f = 1; f < numFrames; ++f)
+        onsetFunc[static_cast<size_t> (f)] = std::max (0.0f,
+                                                         energy[static_cast<size_t> (f)]
+                                                       - energy[static_cast<size_t> (f - 1)]);
+
+    // -----------------------------------------------------------------
+    // Step 3: Adaptive threshold + peak detection
+    //         T[n] = mean(O[n-w..n]) + (1 - sensitivity) * 4 * std(O[n-w..n])
+    //         w = 40 frames (~500ms window)
+    //         Minimum inter-onset interval: 10 frames (~80ms)
+    // -----------------------------------------------------------------
+    const int threshWindow = 40;
+    const int minOnsetGap  = 10;  // frames of suppression after detected onset
+
+    // Find peak onset strength for velocity normalization
+    float peakOnset = 0.0f;
+    for (int f = 0; f < numFrames; ++f)
+        peakOnset = std::max (peakOnset, onsetFunc[static_cast<size_t> (f)]);
+
+    if (peakOnset < 1e-10f)
+        return onsets;  // No energy in this band
+
+    int cooldown = 0;  // frames remaining in suppression window
+
+    for (int f = 1; f < numFrames; ++f)
+    {
+        if (cooldown > 0)
+        {
+            --cooldown;
+            continue;
+        }
+
+        // Compute adaptive threshold over the previous `threshWindow` frames
+        const int wStart = std::max (0, f - threshWindow);
+        const int wLen   = f - wStart;
+
+        float mean = 0.0f;
+        for (int k = wStart; k < f; ++k)
+            mean += onsetFunc[static_cast<size_t> (k)];
+        mean /= static_cast<float> (wLen);
+
+        float variance = 0.0f;
+        for (int k = wStart; k < f; ++k)
+        {
+            const float diff = onsetFunc[static_cast<size_t> (k)] - mean;
+            variance += diff * diff;
+        }
+        variance /= static_cast<float> (wLen);
+        const float stdDev = std::sqrt (variance);
+
+        const float threshold = mean + (1.0f - sensitivity) * 4.0f * stdDev;
+
+        // Check if current frame exceeds threshold
+        const float val = onsetFunc[static_cast<size_t> (f)];
+        if (val <= threshold)
+            continue;
+
+        // Local maximum check: O[f] > O[f-1] and O[f] >= O[f+1]
+        const float prev = onsetFunc[static_cast<size_t> (f - 1)];
+        const float next = (f + 1 < numFrames) ? onsetFunc[static_cast<size_t> (f + 1)] : 0.0f;
+
+        if (val > prev && val >= next)
+        {
+            // Detected onset
+            OnsetEvent ev;
+            ev.sampleOffset = f * hopSize + windowSize / 2;  // Center of the window
+            ev.strength     = val;
+            onsets.push_back (ev);
+
+            cooldown = minOnsetGap;
+        }
+    }
+
+    return onsets;
+}
+
+//==============================================================================
+// DSP.4 Helper: Write drum MIDI file
+//==============================================================================
+
+bool GrooveScoutAnalyzer::writeDrumMidiFile (const std::vector<OnsetEvent>& onsets,
+                                              int midiNote,
+                                              float bpm,
+                                              double sampleRate,
+                                              const juce::File& destFile)
+{
+    if (onsets.empty())
+        return false;
+
+    const int ppq = 480;  // Pulses per quarter note
+    const int noteDurationTicks = 60;  // 1/32nd note at 480 PPQ (480 / 8 = 60)
+
+    // Tempo meta-event: microseconds per beat = 60,000,000 / BPM
+    const int microsPerBeat = static_cast<int> (60000000.0 / static_cast<double> (bpm));
+
+    // Find peak onset strength for velocity normalization
+    float peakStrength = 0.0f;
+    for (const auto& ev : onsets)
+        peakStrength = std::max (peakStrength, ev.strength);
+
+    if (peakStrength < 1e-10f)
+        peakStrength = 1.0f;
+
+    juce::MidiMessageSequence seq;
+
+    // Add tempo meta-event at tick 0
+    seq.addEvent (juce::MidiMessage::tempoMetaEvent (microsPerBeat), 0.0);
+
+    // Add note events for each detected onset (channel 10 = drum channel, 0-indexed = 9)
+    for (const auto& ev : onsets)
+    {
+        // Convert sample offset to beat position
+        // beatPosition = (sampleOffset / sampleRate) * (bpm / 60.0)
+        const double timeSeconds = static_cast<double> (ev.sampleOffset) / sampleRate;
+        const double beatPosition = timeSeconds * (static_cast<double> (bpm) / 60.0);
+
+        // Convert beat position to MIDI ticks
+        const int tick = static_cast<int> (std::round (beatPosition * ppq));
+        if (tick < 0)
+            continue;
+
+        // Onset strength to velocity (1-127)
+        int velocity = static_cast<int> (std::round ((ev.strength / peakStrength) * 127.0f));
+        velocity = juce::jlimit (1, 127, velocity);
+
+        // Note on at tick, note off at tick + noteDurationTicks
+        // MIDI channel 10 (0-indexed = 9) for drums
+        seq.addEvent (juce::MidiMessage::noteOn  (10, midiNote, static_cast<juce::uint8> (velocity)),
+                      static_cast<double> (tick));
+        seq.addEvent (juce::MidiMessage::noteOff (10, midiNote, static_cast<juce::uint8> (0)),
+                      static_cast<double> (tick + noteDurationTicks));
+    }
+
+    seq.updateMatchedPairs();
+
+    // Create MIDI file (format 0, 480 PPQ)
+    juce::MidiFile mf;
+    mf.setTicksPerQuarterNote (ppq);
+    mf.addTrack (seq);
+
+    // Write to disk (overwrite existing)
+    destFile.deleteFile();
+    juce::FileOutputStream fos (destFile);
+
+    if (fos.failedToOpen())
+    {
+        DBG ("GrooveScoutAnalyzer: failed to open " + destFile.getFullPathName());
+        return false;
+    }
+
+    mf.writeTo (fos, 0);  // Format 0 = single track
+    fos.flush();
+    return true;
+}
+
+//==============================================================================
+// DSP.4 Helper: Write root chord MIDI file
+//==============================================================================
+
+bool GrooveScoutAnalyzer::writeChordMidiFile (const int chordMidi[3],
+                                               float bpm,
+                                               const juce::File& destFile)
+{
+    const int ppq = 480;
+    const int chordDurationTicks = 1920;  // 4 beats at 480 PPQ
+
+    // Tempo meta-event: microseconds per beat = 60,000,000 / BPM
+    const int microsPerBeat = static_cast<int> (60000000.0 / static_cast<double> (bpm));
+
+    juce::MidiMessageSequence seq;
+
+    // Add tempo meta-event at tick 0
+    seq.addEvent (juce::MidiMessage::tempoMetaEvent (microsPerBeat), 0.0);
+
+    // Add 3 simultaneous notes (channel 1, 0-indexed = 0) at tick 0
+    for (int i = 0; i < 3; ++i)
+    {
+        seq.addEvent (juce::MidiMessage::noteOn  (1, chordMidi[i], static_cast<juce::uint8> (100)),
+                      0.0);
+        seq.addEvent (juce::MidiMessage::noteOff (1, chordMidi[i], static_cast<juce::uint8> (0)),
+                      static_cast<double> (chordDurationTicks));
+    }
+
+    seq.updateMatchedPairs();
+
+    // Create MIDI file (format 0, 480 PPQ)
+    juce::MidiFile mf;
+    mf.setTicksPerQuarterNote (ppq);
+    mf.addTrack (seq);
+
+    // Write to disk (overwrite existing)
+    destFile.deleteFile();
+    juce::FileOutputStream fos (destFile);
+
+    if (fos.failedToOpen())
+    {
+        DBG ("GrooveScoutAnalyzer: failed to open " + destFile.getFullPathName());
+        return false;
+    }
+
+    mf.writeTo (fos, 0);  // Format 0 = single track
+    fos.flush();
+    return true;
 }
