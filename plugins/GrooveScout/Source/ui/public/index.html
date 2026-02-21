@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GrooveScout</title>
+
+  <!-- JUCE 8 WebView frontend library (served by resource provider) -->
+  <script type="module" src="js/juce/index.js"></script>
+
+  <style>
+    /* =====================================================================
+       WEBVIEW CONSTRAINTS (REQUIRED)
+       - NO viewport units: 100vh, 100vw, 100dvh, 100svh are FORBIDDEN
+       - REQUIRED: html, body { height: 100%; }
+       - REQUIRED: user-select: none
+       ===================================================================== */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: default;
+      overflow: hidden;
+      background: #0f0f0f;
+      color: #ffffff;
+      font-family: 'Inter', 'DM Sans', 'Helvetica Neue', system-ui, sans-serif;
+    }
+
+    /* =====================================================================
+       CUSTOM PROPERTIES
+       ===================================================================== */
+    :root {
+      --bg:           #0f0f0f;
+      --surface:      #181818;
+      --surface-2:    #1a1a1a;
+      --border:       #222222;
+      --border-card:  #282828;
+      --accent:       #00e5ff;
+      --accent-dim:   #00b8cc;
+      --accent-glow:  0 0 8px rgba(0,229,255,0.55), 0 0 22px rgba(0,229,255,0.18);
+      --accent-glow-strong: 0 0 12px rgba(0,229,255,0.9), 0 0 32px rgba(0,229,255,0.35);
+      --text:         #ffffff;
+      --text-2:       #888888;
+      --text-3:       #555555;
+      --inactive:     #2a2a2a;
+      --warning:      #ff6b6b;
+      --font-mono:    'JetBrains Mono', 'IBM Plex Mono', 'Fira Mono', 'Courier New', monospace;
+      --font-ui:      'Inter', 'DM Sans', 'Helvetica Neue', system-ui, sans-serif;
+      --radius:       4px;
+      --radius-card:  5px;
+    }
+
+    /* =====================================================================
+       PLUGIN SHELL  750 x 560
+       ===================================================================== */
+    .plugin-shell {
+      width: 750px;
+      height: 560px;
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* =====================================================================
+       ROW 1 — TITLE BAR  (y=0, h=36)
+       ===================================================================== */
+    .title-bar {
+      position: absolute;
+      left: 0; top: 0;
+      width: 750px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid #1c1c1c;
+      background: #0f0f0f;
+    }
+
+    .title-text {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.38em;
+      color: var(--accent);
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    .title-version {
+      position: absolute;
+      right: 16px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-3);
+      letter-spacing: 0.1em;
+    }
+
+    /* =====================================================================
+       ROW 2 — ANALYSIS BAR  (y=36, h=80)
+       ===================================================================== */
+    .analysis-bar {
+      position: absolute;
+      left: 0; top: 36px;
+      width: 750px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 24px;
+      border-bottom: 1px solid #161616;
+      background: #0f0f0f;
+    }
+
+    /* --- Analyze / Cancel button --- */
+    .analyze-btn-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .analyze-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 1.5px solid var(--accent);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+      color: var(--accent);
+    }
+
+    .analyze-btn:hover {
+      box-shadow: var(--accent-glow);
+      background: rgba(0,229,255,0.06);
+    }
+
+    .analyze-btn:active {
+      background: rgba(0,229,255,0.12);
+    }
+
+    .analyze-btn svg {
+      width: 26px;
+      height: 26px;
+    }
+
+    .analyze-btn-label {
+      font-family: var(--font-ui);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      color: var(--text-3);
+      text-transform: uppercase;
+    }
+
+    .cancel-btn {
+      border-color: var(--warning);
+      color: var(--warning);
+    }
+    .cancel-btn:hover {
+      box-shadow: 0 0 8px rgba(255,107,107,0.5), 0 0 20px rgba(255,107,107,0.2);
+      background: rgba(255,107,107,0.06);
+    }
+
+    /* --- BPM / KEY results column ---
+       Fix 2: results column fills remaining width; each result-row uses
+       flex with margin-left:auto on toggle wrapper to push it to the right. */
+    .results-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      padding-left: 8px;
+    }
+
+    .result-row {
+      display: flex;
+      align-items: center;
+      height: 38px;
+    }
+
+    .result-label {
+      font-family: var(--font-ui);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      color: var(--text-3);
+      text-transform: uppercase;
+      width: 32px;
+      flex-shrink: 0;
+    }
+
+    .result-value {
+      font-family: var(--font-mono);
+      font-size: 26px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      min-width: 110px;
+      line-height: 1;
+    }
+
+    .result-value.key-value {
+      font-size: 17px;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      min-width: 140px;
+    }
+
+    .result-value.clickable {
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+    .result-value.clickable:hover {
+      color: var(--accent);
+    }
+
+    .result-value.placeholder {
+      color: var(--text-3);
+    }
+
+    .result-value.has-value {
+      color: var(--text);
+    }
+
+    /* BPM multiplier chips */
+    .multiplier-chips {
+      display: flex;
+      gap: 4px;
+      margin-left: 10px;
+    }
+
+    .chip {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      padding: 3px 7px;
+      border-radius: 3px;
+      border: 1px solid var(--border-card);
+      background: var(--surface);
+      color: var(--text-3);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .chip:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent-dim);
+    }
+
+    .chip.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(0,229,255,0.08);
+    }
+
+    /* Toggle switches */
+    .toggle-right-group {
+      display: flex;
+      align-items: center;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .toggle {
+      position: relative;
+      width: 32px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      display: none;
+    }
+
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      background: var(--inactive);
+      border: 1px solid #333;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .toggle input:checked + .toggle-track {
+      background: rgba(0,229,255,0.18);
+      border-color: var(--accent);
+      box-shadow: 0 0 6px rgba(0,229,255,0.3);
+    }
+
+    .toggle-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #555;
+      transition: transform 0.2s ease, background 0.2s ease;
+      pointer-events: none;
+    }
+
+    .toggle input:checked ~ .toggle-thumb {
+      transform: translateX(16px);
+      background: var(--accent);
+    }
+
+    /* =====================================================================
+       ROW 3 — PROGRESS BAR  (y=116, h=4)
+       ===================================================================== */
+    .progress-bar-row {
+      position: absolute;
+      left: 0; top: 116px;
+      width: 750px;
+      height: 4px;
+      background: #161616;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      box-shadow: 0 0 6px rgba(0,229,255,0.8);
+      transition: width 0.15s linear;
+    }
+
+    .progress-bar-row.hidden {
+      opacity: 0;
+    }
+
+    /* =====================================================================
+       ROW 4 — MIDI CLIP ROW  (y=120, h=166)
+       ===================================================================== */
+    .midi-clip-row {
+      position: absolute;
+      left: 0; top: 120px;
+      width: 750px;
+      height: 166px;
+      display: flex;
+      align-items: flex-end;
+      padding: 0 20px 18px;
+      gap: 12px;
+    }
+
+    .midi-clip-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+      flex: 1;
+    }
+
+    .midi-clip-label {
+      font-family: var(--font-ui);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      color: var(--text-3);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      padding-left: 2px;
+    }
+
+    .midi-clip-box {
+      width: 100%;
+      height: 110px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .midi-clip-box .placeholder-roll {
+      position: absolute;
+      inset: 0;
+      opacity: 1;
+      transition: opacity 0.3s ease;
+    }
+
+    .midi-clip-box .active-roll {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .midi-clip-box.active {
+      border-color: var(--accent);
+      box-shadow: var(--accent-glow);
+      cursor: grab;
+    }
+
+    .midi-clip-box.active:active {
+      cursor: grabbing;
+    }
+
+    .midi-clip-box.active .placeholder-roll {
+      opacity: 0;
+    }
+
+    .midi-clip-box.active .active-roll {
+      opacity: 1;
+    }
+
+    @keyframes clip-pulse {
+      0%, 100% { box-shadow: 0 0 4px rgba(0,229,255,0.2); border-color: #333; }
+      50%       { box-shadow: 0 0 14px rgba(0,229,255,0.5); border-color: var(--accent-dim); }
+    }
+
+    .midi-clip-box.analyzing {
+      animation: clip-pulse 1.4s ease-in-out infinite;
+    }
+
+    .drag-handle {
+      position: absolute;
+      bottom: 6px;
+      right: 7px;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      color: var(--accent);
+      pointer-events: none;
+    }
+
+    .midi-clip-box.active:hover .drag-handle {
+      opacity: 0.85;
+    }
+
+    .roll-bg {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* =====================================================================
+       ROW 5 — DETECTION SETTINGS ACCORDION  (y=286, h=274)
+       ===================================================================== */
+    .detection-settings {
+      position: absolute;
+      left: 0; top: 286px;
+      width: 750px;
+      height: 274px;
+      background: var(--bg);
+      border-top: 1px solid #1a1a1a;
+    }
+
+    .accordion-header {
+      width: 100%;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      gap: 10px;
+      background: var(--surface-2);
+      border-bottom: 1px solid #1e1e1e;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .accordion-header:hover {
+      background: #1e1e1e;
+    }
+
+    .accordion-chevron {
+      font-size: 10px;
+      color: var(--text-3);
+      transition: transform 0.22s ease;
+      display: inline-block;
+      line-height: 1;
+    }
+
+    .accordion-header.open .accordion-chevron {
+      transform: rotate(0deg);
+    }
+
+    .accordion-header:not(.open) .accordion-chevron {
+      transform: rotate(-90deg);
+    }
+
+    .accordion-title {
+      font-family: var(--font-ui);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--text-2);
+    }
+
+    .accordion-body {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .accordion-body.open {
+      max-height: 240px;
+    }
+
+    .accordion-cards {
+      display: flex;
+      gap: 12px;
+      padding: 14px 20px 16px;
+    }
+
+    /* Drum cards */
+    .drum-card {
+      flex: 1;
+      background: #141414;
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-card);
+      padding: 10px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+      transition: background 0.2s ease;
+    }
+
+    .drum-card.disabled {
+      background: #111111;
+    }
+
+    .drum-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .drum-card-name {
+      font-family: var(--font-ui);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      transition: opacity 0.2s ease;
+    }
+
+    .drum-card.disabled .drum-card-name {
+      opacity: 0.6;
+    }
+
+    .card-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .card-controls.disabled {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .card-param-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .card-param-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .card-param-label {
+      font-family: var(--font-ui);
+      font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      color: var(--text-3);
+      text-transform: uppercase;
+      width: 30px;
+      flex-shrink: 0;
+    }
+
+    /* Sensitivity slider */
+    .param-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      background: var(--inactive);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .param-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--text-2);
+      border: 1.5px solid #444;
+      transition: background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .param-slider:hover::-webkit-slider-thumb {
+      background: var(--accent);
+      box-shadow: 0 0 5px rgba(0,229,255,0.5);
+    }
+
+    .param-slider::-moz-range-thumb {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--text-2);
+      border: 1.5px solid #444;
+      cursor: pointer;
+    }
+
+    .param-value-display {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      color: var(--text-3);
+      width: 34px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* Dual-handle frequency range sliders */
+    .freq-labels-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .freq-val-low {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      color: var(--text-3);
+      min-width: 44px;
+    }
+
+    .freq-val-spacer {
+      flex: 1;
+    }
+
+    .freq-val-high {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      color: var(--text-3);
+      min-width: 44px;
+      text-align: right;
+    }
+
+    .freq-track-wrap {
+      position: relative;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .freq-track-bg {
+      position: absolute;
+      left: 0; right: 0;
+      height: 3px;
+      background: var(--inactive);
+      border-radius: 2px;
+    }
+
+    .freq-track-fill {
+      position: absolute;
+      height: 3px;
+      background: rgba(0,229,255,0.45);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+
+    .freq-handle {
+      position: absolute;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      border: 1.5px solid rgba(0,229,255,0.5);
+      top: 50%;
+      transform: translate(-50%, -50%);
+      cursor: ew-resize;
+      transition: background 0.12s ease, box-shadow 0.12s ease;
+      z-index: 2;
+    }
+
+    .freq-handle:hover,
+    .freq-handle.dragging {
+      background: var(--accent);
+      box-shadow: 0 0 6px rgba(0,229,255,0.7);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="plugin-shell" id="pluginShell">
+
+    <!-- ROW 1: Title Bar -->
+    <div class="title-bar">
+      <span class="title-text">GrooveScout</span>
+      <span class="title-version">v2.0</span>
+    </div>
+
+    <!-- ROW 2: Analysis Bar -->
+    <div class="analysis-bar">
+
+      <!-- Analyze / Cancel button -->
+      <div class="analyze-btn-wrap">
+        <button class="analyze-btn" id="analyzeBtn" title="Analyze audio">
+          <!-- Spectrum + scan-line icon -->
+          <svg id="analyzeBtnIcon" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2"    y="14" width="2.5" height="8"  rx="1" fill="currentColor" opacity="0.55"/>
+            <rect x="5.5"  y="8"  width="2.5" height="14" rx="1" fill="currentColor" opacity="0.75"/>
+            <rect x="9"    y="12" width="2.5" height="10" rx="1" fill="currentColor" opacity="0.65"/>
+            <rect x="12.5" y="4"  width="2.5" height="18" rx="1" fill="currentColor" opacity="1.0"/>
+            <rect x="16"   y="10" width="2.5" height="12" rx="1" fill="currentColor" opacity="0.70"/>
+            <rect x="19.5" y="16" width="2.5" height="6"  rx="1" fill="currentColor" opacity="0.5"/>
+            <line x1="1" y1="13" x2="25" y2="13"
+                  stroke="currentColor" stroke-width="1.2"
+                  stroke-dasharray="3 2" opacity="0.9"/>
+            <polygon points="22,10 25,13 22,16"
+                     fill="currentColor" opacity="0.85"/>
+          </svg>
+        </button>
+        <span class="analyze-btn-label" id="analyzeBtnLabel">Analyze</span>
+      </div>
+
+      <!-- BPM / KEY results -->
+      <div class="results-col">
+
+        <!-- BPM row -->
+        <div class="result-row">
+          <span class="result-label">BPM</span>
+          <span class="result-value clickable placeholder" id="bpmDisplay"
+                title="Click to set DAW tempo">---</span>
+          <div class="multiplier-chips" id="multiplierChips">
+            <button class="chip" data-mult="0">&#189;x</button>
+            <button class="chip active" data-mult="1">1x</button>
+            <button class="chip" data-mult="2">2x</button>
+          </div>
+          <div class="toggle-right-group" title="Enable BPM analysis">
+            <label class="toggle">
+              <input type="checkbox" id="toggleAnalyzeBPM" checked />
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+        </div>
+
+        <!-- KEY row -->
+        <div class="result-row">
+          <span class="result-label">KEY</span>
+          <span class="result-value key-value placeholder" id="keyDisplay">---</span>
+          <div class="toggle-right-group" title="Enable key analysis">
+            <label class="toggle">
+              <input type="checkbox" id="toggleAnalyzeKey" checked />
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ROW 3: Progress Bar -->
+    <div class="progress-bar-row hidden" id="progressBarRow">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <!-- ROW 4: MIDI Clip Row -->
+    <div class="midi-clip-row">
+
+      <!-- ROOT CHORD clip -->
+      <div class="midi-clip-wrap">
+        <span class="midi-clip-label">Root Chord</span>
+        <div class="midi-clip-box" id="clip-chord" data-clip="chord">
+          <canvas class="roll-bg placeholder-roll" id="canvas-chord-placeholder" width="168" height="110"></canvas>
+          <canvas class="roll-bg active-roll" id="canvas-chord-active" width="168" height="110"></canvas>
+          <div class="drag-handle">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+              <circle cx="4" cy="3" r="1.2"/><circle cx="10" cy="3" r="1.2"/>
+              <circle cx="4" cy="7" r="1.2"/><circle cx="10" cy="7" r="1.2"/>
+              <circle cx="4" cy="11" r="1.2"/><circle cx="10" cy="11" r="1.2"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- KICK clip -->
+      <div class="midi-clip-wrap">
+        <span class="midi-clip-label">Kick</span>
+        <div class="midi-clip-box" id="clip-kick" data-clip="kick">
+          <canvas class="roll-bg placeholder-roll" id="canvas-kick-placeholder" width="168" height="110"></canvas>
+          <canvas class="roll-bg active-roll" id="canvas-kick-active" width="168" height="110"></canvas>
+          <div class="drag-handle">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+              <circle cx="4" cy="3" r="1.2"/><circle cx="10" cy="3" r="1.2"/>
+              <circle cx="4" cy="7" r="1.2"/><circle cx="10" cy="7" r="1.2"/>
+              <circle cx="4" cy="11" r="1.2"/><circle cx="10" cy="11" r="1.2"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- SNARE clip -->
+      <div class="midi-clip-wrap">
+        <span class="midi-clip-label">Snare</span>
+        <div class="midi-clip-box" id="clip-snare" data-clip="snare">
+          <canvas class="roll-bg placeholder-roll" id="canvas-snare-placeholder" width="168" height="110"></canvas>
+          <canvas class="roll-bg active-roll" id="canvas-snare-active" width="168" height="110"></canvas>
+          <div class="drag-handle">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+              <circle cx="4" cy="3" r="1.2"/><circle cx="10" cy="3" r="1.2"/>
+              <circle cx="4" cy="7" r="1.2"/><circle cx="10" cy="7" r="1.2"/>
+              <circle cx="4" cy="11" r="1.2"/><circle cx="10" cy="11" r="1.2"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- HIHAT clip -->
+      <div class="midi-clip-wrap">
+        <span class="midi-clip-label">Hihat</span>
+        <div class="midi-clip-box" id="clip-hihat" data-clip="hihat">
+          <canvas class="roll-bg placeholder-roll" id="canvas-hihat-placeholder" width="168" height="110"></canvas>
+          <canvas class="roll-bg active-roll" id="canvas-hihat-active" width="168" height="110"></canvas>
+          <div class="drag-handle">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+              <circle cx="4" cy="3" r="1.2"/><circle cx="10" cy="3" r="1.2"/>
+              <circle cx="4" cy="7" r="1.2"/><circle cx="10" cy="7" r="1.2"/>
+              <circle cx="4" cy="11" r="1.2"/><circle cx="10" cy="11" r="1.2"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ROW 5: Detection Settings Accordion -->
+    <div class="detection-settings">
+
+      <div class="accordion-header" id="accordionHeader">
+        <span class="accordion-chevron">&#9660;</span>
+        <span class="accordion-title">Detection Settings</span>
+      </div>
+
+      <div class="accordion-body" id="accordionBody">
+        <div class="accordion-cards">
+
+          <!-- KICK card -->
+          <div class="drum-card" id="kickCard">
+            <div class="drum-card-header">
+              <span class="drum-card-name">Kick</span>
+              <label class="toggle" title="Enable kick analysis">
+                <input type="checkbox" id="toggleAnalyzeKick" checked />
+                <div class="toggle-track"></div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </div>
+            <div class="card-controls" id="kickControls">
+              <div class="card-param-row">
+                <span class="card-param-label">Sens</span>
+                <input type="range" class="param-slider" id="sliderKickSensitivity"
+                  min="0" max="1000" value="500" />
+                <span class="param-value-display" id="kickSensitivityVal">0.50</span>
+              </div>
+              <div class="card-param-row" style="flex-direction:column; align-items:stretch; gap:4px;">
+                <div class="freq-labels-row">
+                  <span class="card-param-label">Freq</span>
+                  <span class="freq-val-low" id="kickFreqLowVal">40 Hz</span>
+                  <span class="freq-val-spacer"></span>
+                  <span class="freq-val-high" id="kickFreqHighVal">120 Hz</span>
+                </div>
+                <div class="freq-track-wrap" id="kickFreqTrack">
+                  <div class="freq-track-bg"></div>
+                  <div class="freq-track-fill" id="kickFreqFill"></div>
+                  <div class="freq-handle" id="kickLowHandle" data-role="low" data-inst="kick"></div>
+                  <div class="freq-handle" id="kickHighHandle" data-role="high" data-inst="kick"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SNARE card -->
+          <div class="drum-card" id="snareCard">
+            <div class="drum-card-header">
+              <span class="drum-card-name">Snare</span>
+              <label class="toggle" title="Enable snare analysis">
+                <input type="checkbox" id="toggleAnalyzeSnare" checked />
+                <div class="toggle-track"></div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </div>
+            <div class="card-controls" id="snareControls">
+              <div class="card-param-row">
+                <span class="card-param-label">Sens</span>
+                <input type="range" class="param-slider" id="sliderSnareSensitivity"
+                  min="0" max="1000" value="500" />
+                <span class="param-value-display" id="snareSensitivityVal">0.50</span>
+              </div>
+              <div class="card-param-row" style="flex-direction:column; align-items:stretch; gap:4px;">
+                <div class="freq-labels-row">
+                  <span class="card-param-label">Freq</span>
+                  <span class="freq-val-low" id="snareFreqLowVal">200 Hz</span>
+                  <span class="freq-val-spacer"></span>
+                  <span class="freq-val-high" id="snareFreqHighVal">8.0 kHz</span>
+                </div>
+                <div class="freq-track-wrap" id="snareFreqTrack">
+                  <div class="freq-track-bg"></div>
+                  <div class="freq-track-fill" id="snareFreqFill"></div>
+                  <div class="freq-handle" id="snareLowHandle" data-role="low" data-inst="snare"></div>
+                  <div class="freq-handle" id="snareHighHandle" data-role="high" data-inst="snare"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- HIHAT card -->
+          <div class="drum-card" id="hihatCard">
+            <div class="drum-card-header">
+              <span class="drum-card-name">Hihat</span>
+              <label class="toggle" title="Enable hihat analysis">
+                <input type="checkbox" id="toggleAnalyzeHihat" checked />
+                <div class="toggle-track"></div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </div>
+            <div class="card-controls" id="hihatControls">
+              <div class="card-param-row">
+                <span class="card-param-label">Sens</span>
+                <input type="range" class="param-slider" id="sliderHihatSensitivity"
+                  min="0" max="1000" value="500" />
+                <span class="param-value-display" id="hihatSensitivityVal">0.50</span>
+              </div>
+              <div class="card-param-row" style="flex-direction:column; align-items:stretch; gap:4px;">
+                <div class="freq-labels-row">
+                  <span class="card-param-label">Freq</span>
+                  <span class="freq-val-low" id="hihatFreqLowVal">5.0 kHz</span>
+                  <span class="freq-val-spacer"></span>
+                  <span class="freq-val-high" id="hihatFreqHighVal">16 kHz</span>
+                </div>
+                <div class="freq-track-wrap" id="hihatFreqTrack">
+                  <div class="freq-track-bg"></div>
+                  <div class="freq-track-fill" id="hihatFreqFill"></div>
+                  <div class="freq-handle" id="hihatLowHandle" data-role="low" data-inst="hihat"></div>
+                  <div class="freq-handle" id="hihatHighHandle" data-role="high" data-inst="hihat"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /plugin-shell -->
+
+  <script type="module">
+    // =========================================================================
+    // JUCE 8 PARAMETER IMPORTS
+    // Pattern #21: ES6 module imports required
+    // =========================================================================
+    import {
+      getSliderState,
+      getToggleState,
+      getComboBoxState,
+      getNativeFunction
+    } from './js/juce/index.js';
+
+    // =========================================================================
+    // CONTEXT MENU DISABLED (REQUIRED)
+    // =========================================================================
+    document.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      return false;
+    });
+
+    // =========================================================================
+    // NATIVE FUNCTION HANDLES (non-APVTS actions)
+    // =========================================================================
+    const fn_analyze   = getNativeFunction('analyzeButtonPressed');
+    const fn_cancel    = getNativeFunction('cancelAnalysis');
+    const fn_setBpm    = getNativeFunction('setBpmToDaw');
+    const fn_startDrag = getNativeFunction('startMidiDrag');
+
+    // =========================================================================
+    // APVTS PARAMETER STATES
+    // Pattern #15: valueChangedEvent callbacks take no parameters
+    // Pattern #19: Bool params use getToggleState, not getSliderState
+    // =========================================================================
+
+    // Float sliders
+    const st_kickSensitivity  = getSliderState('kickSensitivity');
+    const st_kickFreqLow      = getSliderState('kickFreqLow');
+    const st_kickFreqHigh     = getSliderState('kickFreqHigh');
+    const st_snareSensitivity = getSliderState('snareSensitivity');
+    const st_snareFreqLow     = getSliderState('snareFreqLow');
+    const st_snareFreqHigh    = getSliderState('snareFreqHigh');
+    const st_hihatSensitivity = getSliderState('hihatSensitivity');
+    const st_hihatFreqLow     = getSliderState('hihatFreqLow');
+    const st_hihatFreqHigh    = getSliderState('hihatFreqHigh');
+
+    // Choice (combo)
+    const st_bpmMultiplier = getComboBoxState('bpmMultiplier');
+
+    // Bool toggles
+    const st_analyzeBPM   = getToggleState('analyzeBPM');
+    const st_analyzeKey   = getToggleState('analyzeKey');
+    const st_analyzeKick  = getToggleState('analyzeKick');
+    const st_analyzeSnare = getToggleState('analyzeSnare');
+    const st_analyzeHihat = getToggleState('analyzeHihat');
+
+    // =========================================================================
+    // PIANO ROLL RENDERING
+    // =========================================================================
+    const ACCENT     = '#00e5ff';
+    const BG_CANVAS  = '#1a1a1a';
+    const GRID_LINE  = '#242424';
+
+    function drawGrid(ctx, w, h, rowCount) {
+      ctx.fillStyle = BG_CANVAS;
+      ctx.fillRect(0, 0, w, h);
+      const rowH = h / rowCount;
+      ctx.strokeStyle = GRID_LINE;
+      ctx.lineWidth = 0.5;
+      for (let i = 1; i < rowCount; i++) {
+        const y = Math.round(i * rowH) + 0.5;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+      ctx.strokeStyle = '#1e1e1e';
+      for (let b = 1; b < 4; b++) {
+        const x = Math.round((b / 4) * w) + 0.5;
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+    }
+
+    function drawNote(ctx, x, y, w, h, color, alpha) {
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = color;
+      const r = 2;
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, r);
+      ctx.fill();
+      ctx.globalAlpha = alpha * 0.5;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + r, y + 0.5, w - r * 2, 1);
+      ctx.globalAlpha = 1;
+    }
+
+    const ROWS = 24;
+
+    function drawPlaceholder(ctx, pattern) {
+      const w = ctx.canvas.width, h = ctx.canvas.height;
+      drawGrid(ctx, w, h, ROWS);
+      const rowH = h / ROWS;
+      for (const n of pattern) {
+        drawNote(ctx, n.beat * w, n.row * rowH + 1, n.dur * w - 2, rowH - 2, '#aaaaaa', 0.18);
+      }
+    }
+
+    function drawActive(ctx, pattern) {
+      const w = ctx.canvas.width, h = ctx.canvas.height;
+      drawGrid(ctx, w, h, ROWS);
+      const rowH = h / ROWS;
+      ctx.shadowColor = ACCENT; ctx.shadowBlur = 4;
+      for (const n of pattern) {
+        drawNote(ctx, n.beat * w, n.row * rowH + 1, n.dur * w - 2, rowH - 2, ACCENT, 0.85);
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    const CHORD_PATTERN     = [{ row:4, beat:0.02, dur:0.46 }, { row:7, beat:0.02, dur:0.46 }, { row:10, beat:0.02, dur:0.46 }];
+    const CHORD_PLACEHOLDER = [{ row:3, beat:0.02, dur:0.60 }, { row:6, beat:0.02, dur:0.60 }, { row:9, beat:0.02, dur:0.60 }, { row:13, beat:0.55, dur:0.42 }];
+    const KICK_PATTERN      = [{ row:20, beat:0.00, dur:0.10 }, { row:20, beat:0.25, dur:0.07 }, { row:20, beat:0.625, dur:0.10 }];
+    const KICK_PLACEHOLDER  = [{ row:19, beat:0.00, dur:0.12 }, { row:20, beat:0.50, dur:0.09 }, { row:21, beat:0.75, dur:0.07 }];
+    const SNARE_PATTERN     = [{ row:13, beat:0.00, dur:0.09 }, { row:12, beat:0.25, dur:0.11 }, { row:12, beat:0.75, dur:0.11 }];
+    const SNARE_PLACEHOLDER = [{ row:12, beat:0.25, dur:0.10 }, { row:13, beat:0.75, dur:0.10 }, { row:14, beat:0.50, dur:0.06 }];
+    const HIHAT_PATTERN     = [{ row:2, beat:0.00, dur:0.10 }, { row:2, beat:0.125, dur:0.10 }, { row:2, beat:0.25, dur:0.10 }, { row:2, beat:0.375, dur:0.10 }, { row:1, beat:0.50, dur:0.10 }, { row:2, beat:0.625, dur:0.10 }, { row:2, beat:0.75, dur:0.10 }, { row:2, beat:0.875, dur:0.10 }];
+    const HIHAT_PLACEHOLDER = [{ row:1, beat:0.00, dur:0.09 }, { row:2, beat:0.25, dur:0.09 }, { row:1, beat:0.50, dur:0.09 }, { row:2, beat:0.75, dur:0.09 }];
+
+    const CLIPS = [
+      { id:'chord', placeholder: CHORD_PLACEHOLDER, active: CHORD_PATTERN },
+      { id:'kick',  placeholder: KICK_PLACEHOLDER,  active: KICK_PATTERN  },
+      { id:'snare', placeholder: SNARE_PLACEHOLDER, active: SNARE_PATTERN },
+      { id:'hihat', placeholder: HIHAT_PLACEHOLDER, active: HIHAT_PATTERN },
+    ];
+
+    function renderAllClips() {
+      for (const clip of CLIPS) {
+        const ph  = document.getElementById(`canvas-${clip.id}-placeholder`);
+        const act = document.getElementById(`canvas-${clip.id}-active`);
+        if (ph)  drawPlaceholder(ph.getContext('2d'), clip.placeholder);
+        if (act) drawActive(act.getContext('2d'), clip.active);
+      }
+    }
+
+    // =========================================================================
+    // FREQUENCY DISPLAY FORMAT
+    // =========================================================================
+    function formatHz(hz) {
+      if (hz >= 1000) return (hz / 1000).toFixed(1).replace(/\.0$/, '') + ' kHz';
+      return Math.round(hz) + ' Hz';
+    }
+
+    // =========================================================================
+    // LOG-SCALE DUAL-HANDLE FREQUENCY RANGE SLIDERS
+    // =========================================================================
+    const FREQ_CONFIGS = {
+      kick:  { minFreq: 20,   maxFreq: 1000,  defaultLow: 40,   defaultHigh: 120,   paramLow: 'kickFreqLow',   paramHigh: 'kickFreqHigh',   stateLow: st_kickFreqLow,   stateHigh: st_kickFreqHigh  },
+      snare: { minFreq: 100,  maxFreq: 20000, defaultLow: 200,  defaultHigh: 8000,  paramLow: 'snareFreqLow',  paramHigh: 'snareFreqHigh',  stateLow: st_snareFreqLow,  stateHigh: st_snareFreqHigh },
+      hihat: { minFreq: 1000, maxFreq: 20000, defaultLow: 5000, defaultHigh: 16000, paramLow: 'hihatFreqLow',  paramHigh: 'hihatFreqHigh',  stateLow: st_hihatFreqLow,  stateHigh: st_hihatFreqHigh },
+    };
+
+    function posToFreq(pos, trackWidth, minFreq, maxFreq) {
+      return minFreq * Math.exp(Math.log(maxFreq / minFreq) * (pos / trackWidth));
+    }
+
+    function freqToPos(freq, trackWidth, minFreq, maxFreq) {
+      return trackWidth * Math.log(freq / minFreq) / Math.log(maxFreq / minFreq);
+    }
+
+    const freqState = {};
+
+    function setupFreqRangeSlider(inst) {
+      const cfg       = FREQ_CONFIGS[inst];
+      const track     = document.getElementById(`${inst}FreqTrack`);
+      const fill      = document.getElementById(`${inst}FreqFill`);
+      const lowHandle = document.getElementById(`${inst}LowHandle`);
+      const highHandle= document.getElementById(`${inst}HighHandle`);
+      const lowLabel  = document.getElementById(`${inst}FreqLowVal`);
+      const highLabel = document.getElementById(`${inst}FreqHighVal`);
+
+      const state = {
+        lowFreq:  cfg.defaultLow,
+        highFreq: cfg.defaultHigh,
+        dragging: null,
+        trackRect: null,
+      };
+      freqState[inst] = state;
+
+      function render() {
+        const trackWidth = track.clientWidth;
+        if (trackWidth === 0) return;
+
+        const lowPos  = freqToPos(state.lowFreq,  trackWidth, cfg.minFreq, cfg.maxFreq);
+        const highPos = freqToPos(state.highFreq, trackWidth, cfg.minFreq, cfg.maxFreq);
+
+        lowHandle.style.left  = lowPos  + 'px';
+        highHandle.style.left = highPos + 'px';
+        fill.style.left  = lowPos  + 'px';
+        fill.style.width = (highPos - lowPos) + 'px';
+
+        lowLabel.textContent  = formatHz(state.lowFreq);
+        highLabel.textContent = formatHz(state.highFreq);
+
+        // Send to JUCE (normalized 0-1 on log scale)
+        const normLow  = Math.log(state.lowFreq  / cfg.minFreq) / Math.log(cfg.maxFreq / cfg.minFreq);
+        const normHigh = Math.log(state.highFreq / cfg.minFreq) / Math.log(cfg.maxFreq / cfg.minFreq);
+        cfg.stateLow.setNormalisedValue(normLow);
+        cfg.stateHigh.setNormalisedValue(normHigh);
+      }
+
+      lowHandle.addEventListener('mousedown', (e) => {
+        state.dragging = 'low';
+        state.trackRect = track.getBoundingClientRect();
+        lowHandle.classList.add('dragging');
+        e.preventDefault();
+      });
+
+      highHandle.addEventListener('mousedown', (e) => {
+        state.dragging = 'high';
+        state.trackRect = track.getBoundingClientRect();
+        highHandle.classList.add('dragging');
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (state.dragging === null) return;
+        const trackWidth = state.trackRect.width;
+        let rawPos = e.clientX - state.trackRect.left;
+        rawPos = Math.max(0, Math.min(trackWidth, rawPos));
+        const MIN_GAP_PX = 10;
+
+        if (state.dragging === 'low') {
+          const highPos = freqToPos(state.highFreq, trackWidth, cfg.minFreq, cfg.maxFreq);
+          const clampedPos = Math.min(rawPos, highPos - MIN_GAP_PX);
+          state.lowFreq = posToFreq(Math.max(0, clampedPos), trackWidth, cfg.minFreq, cfg.maxFreq);
+          state.lowFreq = Math.max(cfg.minFreq, Math.min(state.highFreq * 0.999, state.lowFreq));
+        } else {
+          const lowPos = freqToPos(state.lowFreq, trackWidth, cfg.minFreq, cfg.maxFreq);
+          const clampedPos = Math.max(rawPos, lowPos + MIN_GAP_PX);
+          state.highFreq = posToFreq(Math.min(trackWidth, clampedPos), trackWidth, cfg.minFreq, cfg.maxFreq);
+          state.highFreq = Math.min(cfg.maxFreq, Math.max(state.lowFreq * 1.001, state.highFreq));
+        }
+        render();
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (state.dragging !== null) {
+          lowHandle.classList.remove('dragging');
+          highHandle.classList.remove('dragging');
+          state.dragging = null;
+          state.trackRect = null;
+        }
+      });
+
+      // Sync from JUCE on init — callback reads value from state object (Pattern #15)
+      cfg.stateLow.valueChangedEvent.addListener(() => {
+        const norm = cfg.stateLow.getNormalisedValue();
+        state.lowFreq = posToFreq(norm * track.clientWidth, track.clientWidth, cfg.minFreq, cfg.maxFreq);
+        render();
+      });
+      cfg.stateHigh.valueChangedEvent.addListener(() => {
+        const norm = cfg.stateHigh.getNormalisedValue();
+        state.highFreq = posToFreq(norm * track.clientWidth, track.clientWidth, cfg.minFreq, cfg.maxFreq);
+        render();
+      });
+
+      requestAnimationFrame(render);
+    }
+
+    // =========================================================================
+    // SENSITIVITY SLIDERS
+    // =========================================================================
+    function setupSensitivity(inst, state) {
+      const slider  = document.getElementById(`slider${inst.charAt(0).toUpperCase() + inst.slice(1)}Sensitivity`);
+      const display = document.getElementById(`${inst}SensitivityVal`);
+      if (!slider || !display) return;
+
+      slider.addEventListener('input', () => {
+        const v = slider.value / 1000;
+        display.textContent = v.toFixed(2);
+        state.setNormalisedValue(v);
+      });
+
+      // Sync from JUCE (Pattern #15)
+      state.valueChangedEvent.addListener(() => {
+        const v = state.getNormalisedValue();
+        slider.value = Math.round(v * 1000);
+        display.textContent = v.toFixed(2);
+      });
+    }
+
+    // =========================================================================
+    // BPM MULTIPLIER CHIPS
+    // Linked to bpmMultiplier Choice parameter (index 0=half, 1=1x, 2=2x)
+    // =========================================================================
+    const chips = document.querySelectorAll('.chip');
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        // Choice parameter: setChoiceIndex uses 0-based index (JUCE 8 ComboBoxState API)
+        const idx = parseInt(chip.dataset.mult);
+        st_bpmMultiplier.setChoiceIndex(idx);
+      });
+    });
+
+    // Sync multiplier chips from JUCE
+    st_bpmMultiplier.valueChangedEvent.addListener(() => {
+      const idx = st_bpmMultiplier.getChoiceIndex();
+      chips.forEach(c => c.classList.remove('active'));
+      const targetChip = document.querySelector(`.chip[data-mult="${idx}"]`);
+      if (targetChip) targetChip.classList.add('active');
+    });
+
+    // =========================================================================
+    // ANALYSIS BAR TOGGLE BINDINGS (analyzeBPM, analyzeKey)
+    // Pattern #19: Bool params use getToggleState
+    // =========================================================================
+    function bindAnalysisBarToggle(checkboxId, juceState) {
+      const el = document.getElementById(checkboxId);
+      if (!el) return;
+      el.addEventListener('change', () => {
+        juceState.setValue(el.checked);
+      });
+      juceState.valueChangedEvent.addListener(() => {
+        el.checked = juceState.getValue();
+      });
+    }
+    bindAnalysisBarToggle('toggleAnalyzeBPM', st_analyzeBPM);
+    bindAnalysisBarToggle('toggleAnalyzeKey', st_analyzeKey);
+
+    // =========================================================================
+    // DRUM CARD ENABLE/DISABLE TOGGLES
+    // =========================================================================
+    function setCardEnabled(inst, enabled) {
+      const card     = document.getElementById(`${inst}Card`);
+      const controls = document.getElementById(`${inst}Controls`);
+      if (!card || !controls) return;
+      if (enabled) {
+        card.classList.remove('disabled');
+        controls.classList.remove('disabled');
+      } else {
+        card.classList.add('disabled');
+        controls.classList.add('disabled');
+      }
+    }
+
+    function bindDrumCardToggle(inst, checkboxId, juceState) {
+      const el = document.getElementById(checkboxId);
+      if (!el) return;
+      el.addEventListener('change', () => {
+        juceState.setValue(el.checked);
+        setCardEnabled(inst, el.checked);
+      });
+      juceState.valueChangedEvent.addListener(() => {
+        const v = juceState.getValue();
+        el.checked = v;
+        setCardEnabled(inst, v);
+      });
+    }
+
+    bindDrumCardToggle('kick',  'toggleAnalyzeKick',  st_analyzeKick);
+    bindDrumCardToggle('snare', 'toggleAnalyzeSnare', st_analyzeSnare);
+    bindDrumCardToggle('hihat', 'toggleAnalyzeHihat', st_analyzeHihat);
+
+    // =========================================================================
+    // ACCORDION
+    // =========================================================================
+    const accordionHeader = document.getElementById('accordionHeader');
+    const accordionBody   = document.getElementById('accordionBody');
+
+    accordionHeader.addEventListener('click', () => {
+      const isOpen = accordionBody.classList.contains('open');
+      accordionBody.classList.toggle('open', !isOpen);
+      accordionHeader.classList.toggle('open', !isOpen);
+
+      // Re-render freq sliders after accordion opens (clientWidth was 0 when closed)
+      if (!isOpen) {
+        setTimeout(() => {
+          ['kick', 'snare', 'hihat'].forEach(inst => {
+            if (freqState[inst]) {
+              const track = document.getElementById(`${inst}FreqTrack`);
+              const cfg   = FREQ_CONFIGS[inst];
+              const state = freqState[inst];
+              const fill  = document.getElementById(`${inst}FreqFill`);
+              const lowH  = document.getElementById(`${inst}LowHandle`);
+              const highH = document.getElementById(`${inst}HighHandle`);
+              const lowL  = document.getElementById(`${inst}FreqLowVal`);
+              const highL = document.getElementById(`${inst}FreqHighVal`);
+              const tw    = track.clientWidth;
+              if (tw === 0) return;
+              const lp = freqToPos(state.lowFreq,  tw, cfg.minFreq, cfg.maxFreq);
+              const hp = freqToPos(state.highFreq, tw, cfg.minFreq, cfg.maxFreq);
+              lowH.style.left  = lp + 'px';
+              highH.style.left = hp + 'px';
+              fill.style.left  = lp + 'px';
+              fill.style.width = (hp - lp) + 'px';
+              lowL.textContent  = formatHz(state.lowFreq);
+              highL.textContent = formatHz(state.highFreq);
+            }
+          });
+        }, 50);
+      }
+    });
+
+    // =========================================================================
+    // ANALYZE / CANCEL BUTTON — calls native functions
+    // =========================================================================
+    const ICON_ANALYZE = `
+      <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2"    y="14" width="2.5" height="8"  rx="1" fill="currentColor" opacity="0.55"/>
+        <rect x="5.5"  y="8"  width="2.5" height="14" rx="1" fill="currentColor" opacity="0.75"/>
+        <rect x="9"    y="12" width="2.5" height="10" rx="1" fill="currentColor" opacity="0.65"/>
+        <rect x="12.5" y="4"  width="2.5" height="18" rx="1" fill="currentColor" opacity="1.0"/>
+        <rect x="16"   y="10" width="2.5" height="12" rx="1" fill="currentColor" opacity="0.70"/>
+        <rect x="19.5" y="16" width="2.5" height="6"  rx="1" fill="currentColor" opacity="0.5"/>
+        <line x1="1" y1="13" x2="25" y2="13" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.9"/>
+        <polygon points="22,10 25,13 22,16" fill="currentColor" opacity="0.85"/>
+      </svg>`;
+
+    const ICON_CANCEL = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6"  x2="6"  y2="18"/>
+        <line x1="6"  y1="6"  x2="18" y2="18"/>
+      </svg>`;
+
+    const analyzeBtn      = document.getElementById('analyzeBtn');
+    const analyzeBtnLabel = document.getElementById('analyzeBtnLabel');
+    let isAnalyzing = false;
+
+    analyzeBtn.addEventListener('click', () => {
+      if (isAnalyzing) {
+        fn_cancel();
+      } else {
+        fn_analyze();
+      }
+    });
+
+    // =========================================================================
+    // BPM DISPLAY CLICK — set DAW tempo
+    // =========================================================================
+    document.getElementById('bpmDisplay').addEventListener('click', () => {
+      fn_setBpm();
+    });
+
+    // =========================================================================
+    // MIDI CLIP DRAG — calls native function with clip type
+    // =========================================================================
+    const clipIds = ['chord', 'kick', 'snare', 'hihat'];
+    clipIds.forEach(clipId => {
+      const box = document.getElementById(`clip-${clipId}`);
+      if (!box) return;
+      box.addEventListener('mousedown', (e) => {
+        if (box.classList.contains('active')) {
+          // Small drag threshold check: start drag on significant movement
+          const startX = e.clientX, startY = e.clientY;
+          const onMove = (ev) => {
+            const dx = ev.clientX - startX, dy = ev.clientY - startY;
+            if (Math.sqrt(dx * dx + dy * dy) > 6) {
+              document.removeEventListener('mousemove', onMove);
+              document.removeEventListener('mouseup', onUp);
+              fn_startDrag(clipId);
+            }
+          };
+          const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+          };
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+        }
+      });
+    });
+
+    // =========================================================================
+    // ANALYSIS STATE UPDATE — called by C++ Timer via evaluateJavascript
+    // window.groovescout_updateAnalysisState({ bpm, key, progress, isAnalyzing, isComplete })
+    // =========================================================================
+    window.groovescout_updateAnalysisState = function(data) {
+      const bpmDisplay  = document.getElementById('bpmDisplay');
+      const keyDisplay  = document.getElementById('keyDisplay');
+      const progressRow = document.getElementById('progressBarRow');
+      const progressFill= document.getElementById('progressFill');
+      const clipEls     = clipIds.map(id => document.getElementById(`clip-${id}`));
+
+      isAnalyzing = data.isAnalyzing || false;
+
+      if (data.isAnalyzing) {
+        analyzeBtn.innerHTML = ICON_CANCEL;
+        analyzeBtn.classList.add('cancel-btn');
+        analyzeBtnLabel.textContent = 'Cancel';
+        progressRow.classList.remove('hidden');
+        progressFill.style.width = ((data.progress || 0) * 100) + '%';
+        clipEls.forEach(el => { el.classList.remove('active'); el.classList.add('analyzing'); });
+      } else {
+        analyzeBtn.innerHTML = data.isComplete ? ICON_ANALYZE : ICON_ANALYZE;
+        analyzeBtn.classList.remove('cancel-btn');
+        analyzeBtnLabel.textContent = data.isComplete ? 'Re-Analyze' : 'Analyze';
+        progressRow.classList.add('hidden');
+        progressFill.style.width = '0%';
+        if (data.isComplete) {
+          clipEls.forEach(el => { el.classList.remove('analyzing'); el.classList.add('active'); });
+        } else {
+          clipEls.forEach(el => { el.classList.remove('active', 'analyzing'); });
+        }
+      }
+
+      if (data.bpm !== undefined && data.bpm !== null) {
+        bpmDisplay.textContent = data.bpm.toFixed(1);
+        bpmDisplay.classList.remove('placeholder');
+        bpmDisplay.classList.add('has-value');
+      }
+
+      if (data.key !== undefined && data.key !== null) {
+        keyDisplay.textContent = data.key;
+        keyDisplay.classList.remove('placeholder');
+        keyDisplay.classList.add('has-value');
+      }
+
+      if (!data.isAnalyzing && !data.isComplete) {
+        bpmDisplay.textContent = '---';
+        bpmDisplay.classList.add('placeholder');
+        bpmDisplay.classList.remove('has-value');
+        keyDisplay.textContent = '---';
+        keyDisplay.classList.add('placeholder');
+        keyDisplay.classList.remove('has-value');
+      }
+    };
+
+    // =========================================================================
+    // INIT
+    // =========================================================================
+    renderAllClips();
+
+    setupFreqRangeSlider('kick');
+    setupFreqRangeSlider('snare');
+    setupFreqRangeSlider('hihat');
+
+    setupSensitivity('kick',  st_kickSensitivity);
+    setupSensitivity('snare', st_snareSensitivity);
+    setupSensitivity('hihat', st_hihatSensitivity);
+
+    // Init card state from JUCE toggle states
+    setCardEnabled('kick',  st_analyzeKick.getValue());
+    setCardEnabled('snare', st_analyzeSnare.getValue());
+    setCardEnabled('hihat', st_analyzeHihat.getValue());
+
+  </script>
+</body>
+</html>

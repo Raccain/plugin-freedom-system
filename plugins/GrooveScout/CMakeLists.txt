@@ -54,19 +54,20 @@ target_link_libraries(GrooveScout
 # and BEFORE target_compile_definitions() (JUCE 8 requirement, Pattern 1)
 juce_generate_juce_header(GrooveScout)
 
-# WebView UI Resources — will be populated in Stage 3 (GUI)
-# Uncomment and add files when WebView UI is integrated:
-# juce_add_binary_data(GrooveScout_UIResources
-#     SOURCES
-#         Source/ui/public/index.html
-#         Source/ui/public/js/juce/index.js
-#         Source/ui/public/js/juce/check_native_interop.js
-# )
-#
-# target_link_libraries(GrooveScout
-#     PRIVATE
-#         GrooveScout_UIResources
-# )
+# WebView UI Resources — embedded into plugin binary via juce_add_binary_data
+# Pattern #8: Explicit URL mapping in getResource() bridges BinaryData names to URL paths
+# Pattern #13: check_native_interop.js REQUIRED for native bridge initialization
+juce_add_binary_data(GrooveScout_UIResources
+    SOURCES
+        Source/ui/public/index.html
+        Source/ui/public/js/juce/index.js
+        Source/ui/public/js/juce/check_native_interop.js
+)
+
+target_link_libraries(GrooveScout
+    PRIVATE
+        GrooveScout_UIResources
+)
 
 # Compile definitions
 target_compile_definitions(GrooveScout
