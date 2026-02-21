@@ -1,0 +1,120 @@
+# =============================================================================
+# GrooveScout — CMakeLists.txt WebView Configuration Snippet
+# Version: v2 (implementation scaffolding)
+#
+# INSTRUCTIONS FOR gui-agent (Stage 3 integration):
+#   1. Append this snippet to GrooveScout/CMakeLists.txt after the existing
+#      target_link_libraries() block.
+#   2. Replace ${PRODUCT_NAME} with actual target name if needed (check existing
+#      CMakeLists.txt for the correct target variable).
+#   3. Ensure juce_add_binary_data() lists ALL files copied to Source/ui/public/.
+#   4. Run cmake --preset ... to regenerate build files.
+#
+# IMPORTANT: NEEDS_WEB_BROWSER TRUE must be in juce_add_plugin() call.
+#   Pattern #9: This flag is required for VST3 WebView support.
+#   If GrooveScout was created without it, add it now and rebuild.
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# juce_add_plugin() — add NEEDS_WEB_BROWSER TRUE to existing call
+#
+# Find the existing juce_add_plugin(GrooveScout ...) and add:
+#   NEEDS_WEB_BROWSER TRUE
+#
+# Example of what the juce_add_plugin call should include:
+# -----------------------------------------------------------------------------
+# juce_add_plugin(GrooveScout
+#     ...
+#     NEEDS_WEB_BROWSER TRUE    # Pattern #9: REQUIRED for VST3 WebView
+#     ...
+# )
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# Binary data target — embeds UI files into the plugin binary
+# Pattern #13: check_native_interop.js is REQUIRED
+# -----------------------------------------------------------------------------
+juce_add_binary_data(GrooveScout_UIResources
+    SOURCES
+        Source/ui/public/index.html
+        Source/ui/public/js/juce/index.js
+        Source/ui/public/js/juce/check_native_interop.js
+        # Add any additional assets here if UI adds CSS, images, or fonts:
+        # Source/ui/public/fonts/JetBrainsMono.woff2
+)
+
+# Disable optimizations on binary data (speeds up link time for large HTML/JS)
+set_target_properties(GrooveScout_UIResources PROPERTIES
+    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+)
+
+# -----------------------------------------------------------------------------
+# Link UI resources and required modules to plugin target
+# -----------------------------------------------------------------------------
+target_link_libraries(GrooveScout
+    PRIVATE
+        GrooveScout_UIResources      # Embedded HTML/JS/CSS/fonts
+
+        juce::juce_audio_basics
+        juce::juce_audio_devices
+        juce::juce_audio_formats
+        juce::juce_audio_plugin_client
+        juce::juce_audio_processors
+        juce::juce_audio_utils
+        juce::juce_core
+        juce::juce_data_structures
+        juce::juce_dsp                # For FFT, IIR filters, onset detection
+        juce::juce_events
+        juce::juce_graphics
+        juce::juce_gui_basics
+        juce::juce_gui_extra          # REQUIRED: WebBrowserComponent
+)
+
+# CRITICAL: Generate JuceHeader.h (Pattern #1 — JUCE 8 requirement)
+# Must come AFTER target_link_libraries, BEFORE target_compile_definitions
+juce_generate_juce_header(GrooveScout)
+
+# -----------------------------------------------------------------------------
+# Compile definitions — WebView and JUCE flags
+# -----------------------------------------------------------------------------
+target_compile_definitions(GrooveScout
+    PUBLIC
+        JUCE_WEB_BROWSER=1            # Pattern #3: Enable WebBrowserComponent
+        JUCE_USE_CURL=0               # Disable CURL (not needed for local HTML)
+        JUCE_VST3_CAN_REPLACE_VST2=0
+
+    PRIVATE
+        JUCE_DISPLAY_SPLASH_SCREEN=0
+        JUCE_REPORT_APP_USAGE=0
+)
+
+# =============================================================================
+# NOTES ON GROOVEDSCOUT-SPECIFIC REQUIREMENTS
+#
+# 1. DragAndDropContainer:
+#    GrooveScoutAudioProcessorEditor inherits juce::DragAndDropContainer.
+#    No extra CMake config needed — it is part of juce::juce_gui_basics.
+#
+# 2. performExternalDragDropOfFiles:
+#    macOS: Requires NSServices/NSFilesPromiseProvider entitlement in
+#    entitlements file if sandboxed. For development builds this is usually
+#    not sandboxed.
+#    Windows: No additional config needed.
+#
+# 3. Timer (60ms polling):
+#    Part of juce::juce_events. No extra config needed.
+#
+# 4. juce_dsp module:
+#    Required for FFT (BPM), IIR filters (drum band separation), onset detection.
+#    Already listed in target_link_libraries above.
+#
+# 5. APVTS parameter registration (PluginProcessor.cpp):
+#    15 parameters must be registered in this order:
+#      Float: kickSensitivity, kickFreqLow, kickFreqHigh
+#      Float: snareSensitivity, snareFreqLow, snareFreqHigh
+#      Float: hihatSensitivity, hihatFreqLow, hihatFreqHigh
+#      Choice: bpmMultiplier (choices: "1/2x", "1x", "2x")
+#      Bool: analyzeBPM, analyzeKey, analyzeKick, analyzeSnare, analyzeHihat
+#    See parameter-spec.md for full ranges and defaults.
+# =============================================================================
