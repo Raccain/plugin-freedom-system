@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_core/juce_core.h>
+#include <juce_dsp/juce_dsp.h>   // For juce::dsp::FFT
 
 // Forward declaration — avoids circular include with PluginProcessor.h
 class GrooveScoutAudioProcessor;
