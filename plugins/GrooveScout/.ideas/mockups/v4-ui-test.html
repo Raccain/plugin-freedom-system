@@ -1,0 +1,1968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GrooveScout UI Mockup v4</title>
+  <style>
+    /* ==========================================================================
+       WEBVIEW CONSTRAINTS (REQUIRED)
+       html/body height:100% replaces all forbidden viewport units
+       ========================================================================== */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: default;
+      overflow: hidden;
+      background: #0f0f0f;
+      color: #ffffff;
+      font-family: 'Inter', 'DM Sans', 'Helvetica Neue', system-ui, sans-serif;
+    }
+
+    /* ==========================================================================
+       DESIGN TOKENS
+       ========================================================================== */
+    :root {
+      --bg:            #0f0f0f;
+      --surface:       #181818;
+      --surface-2:     #1a1a1a;
+      --surface-3:     #141414;
+      --border:        #222222;
+      --border-card:   #282828;
+      --accent:        #00e5ff;
+      --accent-dim:    #00b8cc;
+      --accent-glow:   0 0 8px rgba(0,229,255,0.55), 0 0 22px rgba(0,229,255,0.18);
+      --accent-glow-strong: 0 0 12px rgba(0,229,255,0.9), 0 0 32px rgba(0,229,255,0.35);
+      --text:          #ffffff;
+      --text-val:      #e8e8e8;
+      --text-val-muted:#cccccc;
+      --text-2:        #aaaaaa;
+      --text-3:        #666666;
+      --text-4:        #3a3a3a;
+      --inactive:      #2a2a2a;
+      --warning:       #ff6b6b;
+      --warning-glow:  0 0 8px rgba(255,107,107,0.5), 0 0 18px rgba(255,107,107,0.2);
+      --font-mono:     'JetBrains Mono', 'IBM Plex Mono', 'Fira Mono', 'Courier New', monospace;
+      --font-ui:       'Inter', 'DM Sans', 'Helvetica Neue', system-ui, sans-serif;
+      --radius:        4px;
+      --radius-pill:   14px;
+    }
+
+    /* ==========================================================================
+       PAGE CENTERING
+       ========================================================================== */
+    .page-wrap {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #070707;
+      gap: 16px;
+    }
+
+    /* ==========================================================================
+       PLUGIN SHELL  750 x 560
+       ========================================================================== */
+    .plugin-shell {
+      width: 750px;
+      height: 560px;
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #1a1a1a;
+    }
+
+    /* ==========================================================================
+       ROW 1 — TITLE BAR  (y=0, h=36)
+       ========================================================================== */
+    .title-bar {
+      position: absolute;
+      left: 0; top: 0;
+      width: 750px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      border-bottom: 1px solid #1c1c1c;
+      background: var(--bg);
+    }
+
+    .title-text {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.38em;
+      color: var(--accent);
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    .title-version {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-3);
+      letter-spacing: 0.1em;
+    }
+
+    /* ==========================================================================
+       ROW 2 — RECORD CONTROLS  (y=36, h=44)
+       ========================================================================== */
+    .record-controls {
+      position: absolute;
+      left: 0; top: 36px;
+      width: 750px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 10px;
+      background: var(--bg);
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    /* REC + STOP buttons — pill shape */
+    .rec-btn, .stop-btn-rec {
+      height: 28px;
+      padding: 0 14px;
+      border-radius: var(--radius-pill);
+      border: 1.5px solid;
+      background: transparent;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+      transition: box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .rec-btn {
+      border-color: var(--accent);
+      color: var(--accent);
+      min-width: 72px;
+      justify-content: center;
+    }
+
+    .rec-btn:hover {
+      box-shadow: var(--accent-glow);
+      background: rgba(0,229,255,0.07);
+    }
+
+    .rec-btn.recording {
+      background: rgba(0,229,255,0.14);
+      box-shadow: var(--accent-glow-strong);
+      border-color: var(--accent);
+    }
+
+    .rec-btn.disabled-state {
+      opacity: 0.3;
+      pointer-events: none;
+      cursor: default;
+    }
+
+    .stop-btn-rec {
+      border-color: var(--warning);
+      color: var(--warning);
+      min-width: 72px;
+      justify-content: center;
+    }
+
+    .stop-btn-rec:hover {
+      box-shadow: var(--warning-glow);
+      background: rgba(255,107,107,0.07);
+    }
+
+    .stop-btn-rec.hidden { display: none; }
+
+    /* ==========================================================================
+       CAPTURE DURATION ARC DOT-RING KNOB (v4)
+       ========================================================================== */
+    .capture-knob-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0px;
+      margin-left: 6px;
+      /* The SVG knob is 76x76 total (dot ring extends beyond body) */
+    }
+
+    .capture-knob-label {
+      font-family: var(--font-ui);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.20em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      line-height: 1;
+      margin-bottom: 1px;
+    }
+
+    .capture-knob-svg-wrap {
+      position: relative;
+      width: 68px;
+      height: 68px;
+      cursor: ns-resize;
+      flex-shrink: 0;
+    }
+
+    .capture-knob-svg-wrap svg {
+      display: block;
+      overflow: visible;
+    }
+
+    /* Knob body styling handled via SVG attributes */
+
+    /* v4: value displayed below knob — larger and brighter */
+    .capture-knob-value {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 500;
+      color: #ffffff;
+      line-height: 1;
+      margin-top: 3px;
+      letter-spacing: 0.03em;
+    }
+
+    /* Bars hint — v4: 11px, #888888 */
+    .bars-hint {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #888888;
+      white-space: nowrap;
+      padding-left: 4px;
+    }
+
+    .bars-hint.hidden { display: none; }
+
+    /* Buffer status — right aligned */
+    .buffer-status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .buffer-status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #3a3a3a;
+      flex-shrink: 0;
+      transition: background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .buffer-status-dot.active {
+      background: var(--accent);
+      box-shadow: 0 0 5px rgba(0,229,255,0.7);
+    }
+
+    .buffer-status-dot.recording-pulse {
+      background: var(--warning);
+      animation: pulse-dot 0.8s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { box-shadow: 0 0 2px rgba(255,107,107,0.3); opacity: 1; }
+      50% { box-shadow: 0 0 8px rgba(255,107,107,0.9); opacity: 0.7; }
+    }
+
+    /* v4: buffer status text — 11px, #aaaaaa */
+    .buffer-status-text {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.10em;
+      color: #666666;
+      text-transform: uppercase;
+    }
+
+    .buffer-status-text.ready {
+      color: #aaaaaa;
+    }
+
+    /* ==========================================================================
+       ROW 3 — WAVEFORM CANVAS  (y=80, h=56)
+       ========================================================================== */
+    .waveform-row {
+      position: absolute;
+      left: 0; top: 80px;
+      width: 750px;
+      height: 56px;
+      background: #111111;
+      border-bottom: 1px solid #222;
+    }
+
+    #waveformCanvas {
+      display: block;
+      width: 750px;
+      height: 56px;
+    }
+
+    /* ==========================================================================
+       ROW 4 — DRUM DETECTION CARDS  (y=136, h=164)
+       ========================================================================== */
+    .drum-detection-row {
+      position: absolute;
+      left: 0; top: 136px;
+      width: 750px;
+      height: 164px;
+      display: flex;
+      align-items: stretch;
+      padding: 10px 15px;
+      gap: 12px;
+      background: var(--bg);
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    .drum-card {
+      flex: 1;
+      background: var(--surface-3);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    /* v4: card name — 11px, cyan, uppercase */
+    .drum-card-name {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 6px;
+      opacity: 0.85;
+    }
+
+    /* Freq range inside card */
+    .card-freq-section {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-bottom: 7px;
+    }
+
+    .freq-labels-row {
+      display: flex;
+      align-items: center;
+    }
+
+    .freq-label-tag {
+      font-family: var(--font-ui);
+      font-size: 7px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      color: var(--text-3);
+      text-transform: uppercase;
+      width: 26px;
+      flex-shrink: 0;
+    }
+
+    /* v4: freq value labels — 11px, #cccccc */
+    .freq-val-low {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #cccccc;
+      min-width: 42px;
+    }
+
+    .freq-val-spacer { flex: 1; }
+
+    /* v4: freq value labels — 11px, #cccccc */
+    .freq-val-high {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #cccccc;
+      min-width: 42px;
+      text-align: right;
+    }
+
+    .freq-track-wrap {
+      position: relative;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .freq-track-bg {
+      position: absolute;
+      left: 0; right: 0;
+      height: 3px;
+      background: var(--inactive);
+      border-radius: 2px;
+    }
+
+    .freq-track-fill {
+      position: absolute;
+      height: 3px;
+      background: rgba(0,229,255,0.45);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+
+    .freq-handle {
+      position: absolute;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      border: 1.5px solid rgba(0,229,255,0.5);
+      top: 50%;
+      transform: translate(-50%, -50%);
+      cursor: ew-resize;
+      transition: background 0.12s ease, box-shadow 0.12s ease;
+      z-index: 2;
+    }
+
+    .freq-handle:hover,
+    .freq-handle.dragging {
+      background: var(--accent);
+      box-shadow: 0 0 6px rgba(0,229,255,0.7);
+    }
+
+    /* Sensitivity row inside card */
+    .card-sens-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 7px;
+    }
+
+    .card-param-label {
+      font-family: var(--font-ui);
+      font-size: 7px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      color: var(--text-3);
+      text-transform: uppercase;
+      width: 26px;
+      flex-shrink: 0;
+    }
+
+    .param-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      background: var(--inactive);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .param-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--text-2);
+      border: 1.5px solid #444;
+      transition: background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .param-slider:hover::-webkit-slider-thumb {
+      background: var(--accent);
+      box-shadow: 0 0 5px rgba(0,229,255,0.5);
+    }
+
+    .param-slider::-moz-range-thumb {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--text-2);
+      border: 1.5px solid #444;
+      cursor: pointer;
+    }
+
+    /* v4: sensitivity value — 11px, #cccccc */
+    .param-value-display {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #cccccc;
+      width: 32px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* Preview button */
+    .preview-btn {
+      width: 100%;
+      height: 22px;
+      margin-top: auto;
+      border-radius: 3px;
+      border: 1px solid #333;
+      background: transparent;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: var(--text-3);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .preview-btn:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent-dim);
+      background: rgba(0,229,255,0.04);
+    }
+
+    .preview-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(0,229,255,0.1);
+      box-shadow: 0 0 6px rgba(0,229,255,0.25);
+    }
+
+    .preview-btn.disabled-state {
+      opacity: 0.3;
+      pointer-events: none;
+      cursor: default;
+    }
+
+    /* ==========================================================================
+       ROW 5 — ACTION ROW  (y=300, h=44)
+       ========================================================================== */
+    .action-row {
+      position: absolute;
+      left: 0; top: 300px;
+      width: 750px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: var(--bg);
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    .analyze-btn {
+      height: 30px;
+      padding: 0 40px;
+      border-radius: var(--radius);
+      border: 1.5px solid var(--accent);
+      background: var(--accent);
+      cursor: pointer;
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #060606;
+      transition: box-shadow 0.18s ease, opacity 0.18s ease;
+    }
+
+    .analyze-btn:hover {
+      box-shadow: var(--accent-glow-strong);
+    }
+
+    .analyze-btn:active {
+      opacity: 0.85;
+    }
+
+    .analyze-btn.disabled-state {
+      opacity: 0.22;
+      pointer-events: none;
+      cursor: default;
+      background: var(--inactive);
+      border-color: #333;
+      color: var(--text-3);
+    }
+
+    .stop-btn-analyze {
+      height: 30px;
+      padding: 0 14px;
+      border-radius: var(--radius-pill);
+      border: 1.5px solid var(--warning);
+      background: transparent;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--warning);
+      transition: box-shadow 0.18s ease, background 0.18s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+    }
+
+    .stop-btn-analyze:hover {
+      box-shadow: var(--warning-glow);
+      background: rgba(255,107,107,0.07);
+    }
+
+    .stop-btn-analyze.hidden { display: none; }
+
+    /* Progress area — overlaid at bottom of action row into results row */
+    .progress-overlay {
+      position: absolute;
+      left: 0; top: 336px;
+      width: 750px;
+    }
+
+    .progress-bar-track {
+      height: 3px;
+      background: #1c1c1c;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      box-shadow: 0 0 6px rgba(0,229,255,0.8);
+      transition: width 0.12s linear;
+    }
+
+    /* v4: progress step label — 12px, #cccccc */
+    .progress-step-label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #cccccc;
+      text-align: center;
+      padding-top: 3px;
+      letter-spacing: 0.06em;
+    }
+
+    .progress-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       ROW 6 — RESULTS  (y=344, h=56)
+       ========================================================================== */
+    .results-row {
+      position: absolute;
+      left: 0; top: 344px;
+      width: 750px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    .result-half {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      height: 100%;
+    }
+
+    .result-half + .result-half {
+      border-left: 1px solid #1c1c1c;
+    }
+
+    .result-label-tag {
+      font-family: var(--font-ui);
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      width: 28px;
+      flex-shrink: 0;
+    }
+
+    /* v4: BPM value — 32px, #ffffff */
+    .result-value {
+      font-family: var(--font-mono);
+      font-size: 32px;
+      font-weight: 500;
+      color: var(--text-4);
+      letter-spacing: -0.02em;
+      line-height: 1;
+      transition: color 0.25s ease;
+    }
+
+    .result-value.has-value {
+      color: #ffffff;
+    }
+
+    .result-value.failed {
+      color: var(--text-3);
+    }
+
+    /* v4: Key value — 18px, #ffffff */
+    .result-value.key-val {
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+    }
+
+    .result-value.clickable {
+      cursor: pointer;
+    }
+
+    .result-value.clickable:hover {
+      color: var(--accent);
+    }
+
+    .result-value.clickable:hover::after {
+      content: ' \2197';
+      font-size: 14px;
+      color: var(--accent);
+      opacity: 0.65;
+    }
+
+    /* ==========================================================================
+       ROW 7 — MIDI CLIP TILES  (y=400, h=160)
+       ========================================================================== */
+    .midi-tiles-row {
+      position: absolute;
+      left: 0; top: 400px;
+      width: 750px;
+      height: 160px;
+      display: flex;
+      align-items: stretch;
+      padding: 12px 20px;
+      gap: 10px;
+      background: var(--bg);
+    }
+
+    .midi-tile {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border: 1px dashed #2a2a2a;
+      border-radius: var(--radius);
+      background: #111111;
+      overflow: hidden;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      cursor: default;
+    }
+
+    .midi-tile.available {
+      border-style: solid;
+      border-color: var(--border-card);
+      cursor: grab;
+    }
+
+    .midi-tile.available:hover {
+      border-color: var(--accent-dim);
+      box-shadow: 0 0 10px rgba(0,229,255,0.12);
+    }
+
+    .midi-tile.available:active {
+      cursor: grabbing;
+    }
+
+    @keyframes tile-pulse {
+      0%, 100% { border-color: #252525; box-shadow: none; }
+      50% { border-color: var(--accent-dim); box-shadow: 0 0 8px rgba(0,229,255,0.2); }
+    }
+
+    .midi-tile.scanning {
+      border-style: solid;
+      animation: tile-pulse 1.4s ease-in-out infinite;
+    }
+
+    .midi-tile-label {
+      font-family: var(--font-ui);
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      padding: 6px 8px 3px;
+      flex-shrink: 0;
+      transition: color 0.2s ease;
+    }
+
+    .midi-tile.available .midi-tile-label {
+      color: var(--text-2);
+    }
+
+    .midi-tile-canvas-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .midi-tile-canvas-wrap canvas {
+      position: absolute;
+      inset: 0;
+    }
+
+    .midi-tile-footer {
+      padding: 3px 8px 5px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .drag-indicator {
+      font-family: var(--font-mono);
+      font-size: 7px;
+      letter-spacing: 0.08em;
+      color: var(--text-3);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .midi-tile.available .drag-indicator {
+      opacity: 0.7;
+    }
+
+    .midi-tile.available:hover .drag-indicator {
+      opacity: 1;
+      color: var(--accent-dim);
+    }
+
+    /* ==========================================================================
+       STATE TESTER (dev panel — outside plugin shell)
+       ========================================================================== */
+    .state-tester {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      background: #0d0d0d;
+      border: 1px solid #272727;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-family: monospace;
+      font-size: 11px;
+    }
+
+    .state-tester span {
+      color: #444;
+      margin-right: 2px;
+    }
+
+    .state-btn {
+      padding: 3px 10px;
+      border-radius: 3px;
+      border: 1px solid #333;
+      background: #141414;
+      color: #888;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 10px;
+      transition: all 0.15s ease;
+    }
+
+    .state-btn:hover { background: #1e1e1e; color: #ccc; border-color: #555; }
+    .state-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,0.08); }
+  </style>
+</head>
+<body>
+
+  <div class="page-wrap">
+    <div class="plugin-shell" id="pluginShell">
+
+      <!-- ROW 1: Title Bar -->
+      <div class="title-bar">
+        <span class="title-text">GrooveScout</span>
+        <span class="title-version">v1.0.0</span>
+      </div>
+
+      <!-- ROW 2: Record Controls -->
+      <div class="record-controls">
+
+        <!-- REC button -->
+        <button class="rec-btn" id="recBtn" title="Start recording buffer">
+          <span>&#9679;</span><span>REC</span>
+        </button>
+
+        <!-- STOP button (record) -->
+        <button class="stop-btn-rec hidden" id="stopBtnRec" title="Stop current operation">
+          <span>&#9632;</span><span>STOP</span>
+        </button>
+
+        <!-- Capture Duration — Arc Dot-Ring SVG Knob (v4) -->
+        <div class="capture-knob-group" title="Capture duration: 1–30 seconds. Drag up/down to adjust. Double-click to reset.">
+          <span class="capture-knob-label">Duration</span>
+          <div class="capture-knob-svg-wrap" id="captureKnobWrap">
+            <svg id="captureKnobSvg" width="68" height="68" viewBox="0 0 68 68">
+              <!-- Dot ring group — filled by JS -->
+              <g id="dotRingGroup"></g>
+              <!-- Knob body -->
+              <circle id="knobBody" cx="34" cy="34" r="22"
+                fill="url(#knobGrad)"
+                stroke="#333333" stroke-width="1"/>
+              <!-- Knob indicator line -->
+              <line id="knobIndicator"
+                x1="34" y1="15" x2="34" y2="22"
+                stroke="#00b8cc" stroke-width="2" stroke-linecap="round"/>
+              <defs>
+                <radialGradient id="knobGrad" cx="38%" cy="35%" r="65%">
+                  <stop offset="0%" stop-color="#2a2a2a"/>
+                  <stop offset="100%" stop-color="#1a1a1a"/>
+                </radialGradient>
+              </defs>
+            </svg>
+          </div>
+          <span class="capture-knob-value" id="captureDurVal">15s</span>
+        </div>
+
+        <!-- Bars hint — hidden until BPM detected -->
+        <span class="bars-hint hidden" id="barsHint">&#8776; 8 bars</span>
+
+        <!-- Buffer status -->
+        <div class="buffer-status">
+          <div class="buffer-status-dot" id="bufferDot"></div>
+          <span class="buffer-status-text" id="bufferStatusText">BUFFER EMPTY</span>
+        </div>
+
+      </div>
+
+      <!-- ROW 3: Waveform Canvas -->
+      <div class="waveform-row">
+        <canvas id="waveformCanvas" width="750" height="56"></canvas>
+      </div>
+
+      <!-- ROW 4: Drum Detection Cards -->
+      <div class="drum-detection-row">
+
+        <!-- KICK card -->
+        <div class="drum-card">
+          <span class="drum-card-name">Kick</span>
+
+          <!-- Freq range -->
+          <div class="card-freq-section">
+            <div class="freq-labels-row">
+              <span class="freq-label-tag">Freq</span>
+              <span class="freq-val-low" id="kickFreqLowVal">40 Hz</span>
+              <span class="freq-val-spacer"></span>
+              <span class="freq-val-high" id="kickFreqHighVal">120 Hz</span>
+            </div>
+            <div class="freq-track-wrap" id="kickFreqTrack">
+              <div class="freq-track-bg"></div>
+              <div class="freq-track-fill" id="kickFreqFill"></div>
+              <div class="freq-handle" id="kickLowHandle" data-role="low" data-inst="kick"></div>
+              <div class="freq-handle" id="kickHighHandle" data-role="high" data-inst="kick"></div>
+            </div>
+          </div>
+
+          <!-- Sensitivity -->
+          <div class="card-sens-row">
+            <span class="card-param-label">Sens</span>
+            <input type="range" class="param-slider" id="kickSensitivity" min="0" max="100" value="50" />
+            <span class="param-value-display" id="kickSensitivityVal">0.50</span>
+          </div>
+
+          <!-- Preview -->
+          <button class="preview-btn disabled-state" id="previewKick" data-inst="kick">
+            <span>&#9654;</span><span>PREVIEW</span>
+          </button>
+        </div>
+
+        <!-- SNARE card -->
+        <div class="drum-card">
+          <span class="drum-card-name">Snare</span>
+
+          <div class="card-freq-section">
+            <div class="freq-labels-row">
+              <span class="freq-label-tag">Freq</span>
+              <span class="freq-val-low" id="snareFreqLowVal">200 Hz</span>
+              <span class="freq-val-spacer"></span>
+              <span class="freq-val-high" id="snareFreqHighVal">8.0 kHz</span>
+            </div>
+            <div class="freq-track-wrap" id="snareFreqTrack">
+              <div class="freq-track-bg"></div>
+              <div class="freq-track-fill" id="snareFreqFill"></div>
+              <div class="freq-handle" id="snareLowHandle" data-role="low" data-inst="snare"></div>
+              <div class="freq-handle" id="snareHighHandle" data-role="high" data-inst="snare"></div>
+            </div>
+          </div>
+
+          <div class="card-sens-row">
+            <span class="card-param-label">Sens</span>
+            <input type="range" class="param-slider" id="snareSensitivity" min="0" max="100" value="50" />
+            <span class="param-value-display" id="snareSensitivityVal">0.50</span>
+          </div>
+
+          <button class="preview-btn disabled-state" id="previewSnare" data-inst="snare">
+            <span>&#9654;</span><span>PREVIEW</span>
+          </button>
+        </div>
+
+        <!-- HIHAT card -->
+        <div class="drum-card">
+          <span class="drum-card-name">Hihat</span>
+
+          <div class="card-freq-section">
+            <div class="freq-labels-row">
+              <span class="freq-label-tag">Freq</span>
+              <span class="freq-val-low" id="hihatFreqLowVal">5.0 kHz</span>
+              <span class="freq-val-spacer"></span>
+              <span class="freq-val-high" id="hihatFreqHighVal">16 kHz</span>
+            </div>
+            <div class="freq-track-wrap" id="hihatFreqTrack">
+              <div class="freq-track-bg"></div>
+              <div class="freq-track-fill" id="hihatFreqFill"></div>
+              <div class="freq-handle" id="hihatLowHandle" data-role="low" data-inst="hihat"></div>
+              <div class="freq-handle" id="hihatHighHandle" data-role="high" data-inst="hihat"></div>
+            </div>
+          </div>
+
+          <div class="card-sens-row">
+            <span class="card-param-label">Sens</span>
+            <input type="range" class="param-slider" id="hihatSensitivity" min="0" max="100" value="50" />
+            <span class="param-value-display" id="hihatSensitivityVal">0.50</span>
+          </div>
+
+          <button class="preview-btn disabled-state" id="previewHihat" data-inst="hihat">
+            <span>&#9654;</span><span>PREVIEW</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- ROW 5: Action Row -->
+      <div class="action-row">
+        <button class="analyze-btn disabled-state" id="analyzeBtn" title="Analyze buffer">
+          ANALYZE
+        </button>
+        <button class="stop-btn-analyze hidden" id="stopBtnAnalyze" title="Stop analysis">
+          <span>&#9632;</span>&nbsp;STOP
+        </button>
+      </div>
+
+      <!-- Progress overlay -->
+      <div class="progress-overlay hidden" id="progressOverlay">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-step-label" id="progressStepLabel">Detecting BPM...</div>
+      </div>
+
+      <!-- ROW 6: Results -->
+      <div class="results-row">
+
+        <!-- BPM -->
+        <div class="result-half">
+          <span class="result-label-tag">BPM</span>
+          <span class="result-value clickable" id="bpmDisplay" title="Click to set DAW tempo">--</span>
+        </div>
+
+        <!-- KEY -->
+        <div class="result-half">
+          <span class="result-label-tag">Key</span>
+          <span class="result-value key-val" id="keyDisplay">--</span>
+        </div>
+
+      </div>
+
+      <!-- ROW 7: MIDI Clip Tiles -->
+      <div class="midi-tiles-row">
+
+        <!-- ROOT CHORD -->
+        <div class="midi-tile" id="tile-chord" data-clip="chord">
+          <span class="midi-tile-label">Root Chord</span>
+          <div class="midi-tile-canvas-wrap">
+            <canvas id="canvas-chord-ph"></canvas>
+            <canvas id="canvas-chord-active" style="opacity:0;"></canvas>
+          </div>
+          <div class="midi-tile-footer">
+            <span class="drag-indicator">&#8942; drag to DAW</span>
+          </div>
+        </div>
+
+        <!-- KICK -->
+        <div class="midi-tile" id="tile-kick" data-clip="kick">
+          <span class="midi-tile-label">Kick</span>
+          <div class="midi-tile-canvas-wrap">
+            <canvas id="canvas-kick-ph"></canvas>
+            <canvas id="canvas-kick-active" style="opacity:0;"></canvas>
+          </div>
+          <div class="midi-tile-footer">
+            <span class="drag-indicator">&#8942; drag to DAW</span>
+          </div>
+        </div>
+
+        <!-- SNARE -->
+        <div class="midi-tile" id="tile-snare" data-clip="snare">
+          <span class="midi-tile-label">Snare</span>
+          <div class="midi-tile-canvas-wrap">
+            <canvas id="canvas-snare-ph"></canvas>
+            <canvas id="canvas-snare-active" style="opacity:0;"></canvas>
+          </div>
+          <div class="midi-tile-footer">
+            <span class="drag-indicator">&#8942; drag to DAW</span>
+          </div>
+        </div>
+
+        <!-- HIHAT -->
+        <div class="midi-tile" id="tile-hihat" data-clip="hihat">
+          <span class="midi-tile-label">Hihat</span>
+          <div class="midi-tile-canvas-wrap">
+            <canvas id="canvas-hihat-ph"></canvas>
+            <canvas id="canvas-hihat-active" style="opacity:0;"></canvas>
+          </div>
+          <div class="midi-tile-footer">
+            <span class="drag-indicator">&#8942; drag to DAW</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- /plugin-shell -->
+
+    <!-- STATE TESTER (dev panel — sits outside plugin shell) -->
+    <div class="state-tester">
+      <span>State:</span>
+      <button class="state-btn active" onclick="setState('idle')">1 idle</button>
+      <button class="state-btn" onclick="setState('recording')">2 recording</button>
+      <button class="state-btn" onclick="setState('buffer_ready')">3 buffer_ready</button>
+      <button class="state-btn" onclick="setState('analyzing')">4 analyzing</button>
+      <button class="state-btn" onclick="setState('complete')">5 complete</button>
+      <button class="state-btn" onclick="setState('partial')">6 partial</button>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // CONTEXT MENU DISABLED (REQUIRED)
+    // =========================================================================
+    document.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      return false;
+    });
+
+    // =========================================================================
+    // MOCK JUCE BACKEND
+    // =========================================================================
+    window.Juce = {
+      getSliderState: (id) => ({
+        normalisedValue: 0.5,
+        setNormalisedValue: (v) => console.log(`[JUCE] ${id} \u2192 ${v.toFixed(4)}`),
+        valueChangedEvent: { addListener: () => {} }
+      }),
+      getToggleState: (id) => ({
+        value: false,
+        setValue: (v) => console.log(`[JUCE] ${id} \u2192 ${v}`),
+        valueChangedEvent: { addListener: () => {} }
+      }),
+      getComboBoxState: (id) => ({
+        selectedId: 0,
+        setSelectedId: (id) => console.log(`[JUCE] ${id}`),
+        valueChangedEvent: { addListener: () => {} }
+      }),
+      sendEventToBackend: (evt) => console.log('[JUCE] event:', JSON.stringify(evt))
+    };
+
+    // =========================================================================
+    // ARC DOT-RING KNOB (v4)
+    // =========================================================================
+    (function() {
+      const NUM_DOTS    = 22;
+      const START_DEG   = 135;   // 7 o'clock position
+      const SWEEP_DEG   = 270;   // total arc
+      const END_DEG     = START_DEG + SWEEP_DEG;
+      const CENTER_X    = 34;
+      const CENTER_Y    = 34;
+      const DOT_RING_R  = 30;    // radius from center to dot center
+      const DOT_RADIUS  = 3;     // normal dot radius
+      const TIP_RADIUS  = 4;     // tip dot radius (slightly larger)
+      const KNOB_BODY_R = 22;    // knob body radius
+      const INDICATOR_L1 = 13;   // indicator line inner point (from center)
+      const INDICATOR_L2 = 20;   // indicator line outer point (from center)
+
+      const MIN_VAL = 1;
+      const MAX_VAL = 30;
+      const DEFAULT_VAL = 15;
+
+      let captureDur = DEFAULT_VAL;
+      let knobDragStart = null;
+
+      const svg        = document.getElementById('captureKnobSvg');
+      const dotGroup   = document.getElementById('dotRingGroup');
+      const indicator  = document.getElementById('knobIndicator');
+      const valueLabel = document.getElementById('captureDurVal');
+      const knobWrap   = document.getElementById('captureKnobWrap');
+
+      // Build dot elements
+      const dotEls = [];
+      for (let i = 0; i < NUM_DOTS; i++) {
+        const angleDeg = START_DEG + SWEEP_DEG * (i / (NUM_DOTS - 1));
+        const rad = angleDeg * Math.PI / 180;
+        const cx = CENTER_X + DOT_RING_R * Math.cos(rad);
+        const cy = CENTER_Y + DOT_RING_R * Math.sin(rad);
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', cx.toFixed(2));
+        circle.setAttribute('cy', cy.toFixed(2));
+        circle.setAttribute('r', DOT_RADIUS);
+        circle.setAttribute('fill', '#333333');
+        dotGroup.appendChild(circle);
+        dotEls.push(circle);
+      }
+
+      function updateKnob(val) {
+        captureDur = val;
+        const norm = (val - MIN_VAL) / (MAX_VAL - MIN_VAL); // 0.0–1.0
+        const activeDotCount = Math.round(norm * (NUM_DOTS - 1));
+
+        // Update dots
+        for (let i = 0; i < NUM_DOTS; i++) {
+          const isActive = i <= activeDotCount;
+          const isTip    = i === activeDotCount;
+
+          if (isActive) {
+            dotEls[i].setAttribute('r', isTip ? TIP_RADIUS : DOT_RADIUS);
+            dotEls[i].setAttribute('fill', '#00e5ff');
+            // Glow via filter — use a simple brightness approach
+            if (isTip) {
+              dotEls[i].setAttribute('filter', 'url(#dotGlow)');
+            } else {
+              dotEls[i].setAttribute('filter', 'url(#dotGlowDim)');
+            }
+          } else {
+            dotEls[i].setAttribute('r', DOT_RADIUS);
+            dotEls[i].setAttribute('fill', '#333333');
+            dotEls[i].removeAttribute('filter');
+          }
+        }
+
+        // Rotate indicator line
+        // Indicator points straight up at full CCW; we rotate based on norm
+        const indicatorAngleDeg = START_DEG + norm * SWEEP_DEG;
+        // Convert: we want the line to point OUTWARD from center at indicatorAngleDeg
+        // The line is defined as pointing from center upward (straight up = 270deg in SVG coords)
+        // We rotate the entire line around center by: indicatorAngleDeg - 270
+        const rotateDeg = indicatorAngleDeg - 270;
+
+        // Recompute line endpoints from center outward
+        const rad = indicatorAngleDeg * Math.PI / 180;
+        const x1 = CENTER_X + INDICATOR_L1 * Math.cos(rad);
+        const y1 = CENTER_Y + INDICATOR_L1 * Math.sin(rad);
+        const x2 = CENTER_X + INDICATOR_L2 * Math.cos(rad);
+        const y2 = CENTER_Y + INDICATOR_L2 * Math.sin(rad);
+        indicator.setAttribute('x1', x1.toFixed(2));
+        indicator.setAttribute('y1', y1.toFixed(2));
+        indicator.setAttribute('x2', x2.toFixed(2));
+        indicator.setAttribute('y2', y2.toFixed(2));
+
+        // Update value label
+        valueLabel.textContent = val + 's';
+
+        // Notify mock backend
+        Juce.getSliderState('capture_duration').setNormalisedValue((val - MIN_VAL) / (MAX_VAL - MIN_VAL));
+      }
+
+      // Add SVG filter definitions for dot glow
+      const defs = svg.querySelector('defs') || (() => {
+        const d = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        svg.appendChild(d);
+        return d;
+      })();
+
+      // Tip dot glow filter
+      const filterGlow = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+      filterGlow.setAttribute('id', 'dotGlow');
+      filterGlow.setAttribute('x', '-100%'); filterGlow.setAttribute('y', '-100%');
+      filterGlow.setAttribute('width', '300%'); filterGlow.setAttribute('height', '300%');
+      const feGlow = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+      feGlow.setAttribute('stdDeviation', '2.5');
+      feGlow.setAttribute('result', 'blur');
+      const feMerge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+      const feMergeNode1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+      feMergeNode1.setAttribute('in', 'blur');
+      const feMergeNode2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+      feMergeNode2.setAttribute('in', 'SourceGraphic');
+      feMerge.appendChild(feMergeNode1);
+      feMerge.appendChild(feMergeNode2);
+      filterGlow.appendChild(feGlow);
+      filterGlow.appendChild(feMerge);
+      defs.appendChild(filterGlow);
+
+      // Dim glow filter for active (non-tip) dots
+      const filterGlowDim = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+      filterGlowDim.setAttribute('id', 'dotGlowDim');
+      filterGlowDim.setAttribute('x', '-80%'); filterGlowDim.setAttribute('y', '-80%');
+      filterGlowDim.setAttribute('width', '260%'); filterGlowDim.setAttribute('height', '260%');
+      const feGlowDim = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+      feGlowDim.setAttribute('stdDeviation', '1.2');
+      feGlowDim.setAttribute('result', 'blurDim');
+      const feMergeDim = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+      const feMergeNodeD1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+      feMergeNodeD1.setAttribute('in', 'blurDim');
+      const feMergeNodeD2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+      feMergeNodeD2.setAttribute('in', 'SourceGraphic');
+      feMergeDim.appendChild(feMergeNodeD1);
+      feMergeDim.appendChild(feMergeNodeD2);
+      filterGlowDim.appendChild(feGlowDim);
+      filterGlowDim.appendChild(feMergeDim);
+      defs.appendChild(filterGlowDim);
+
+      // Drag interaction — vertical drag on knob SVG wrap
+      knobWrap.addEventListener('mousedown', (e) => {
+        knobDragStart = { y: e.clientY, val: captureDur };
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (knobDragStart === null) return;
+        const delta = knobDragStart.y - e.clientY; // drag up = positive
+        const newVal = Math.max(MIN_VAL, Math.min(MAX_VAL,
+          Math.round(knobDragStart.val + delta * 0.3)
+        ));
+        if (newVal !== captureDur) {
+          updateKnob(newVal);
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        knobDragStart = null;
+      });
+
+      // Double-click to reset
+      knobWrap.addEventListener('dblclick', () => {
+        updateKnob(DEFAULT_VAL);
+      });
+
+      // Initial render
+      updateKnob(DEFAULT_VAL);
+    })();
+
+    // =========================================================================
+    // WAVEFORM CANVAS
+    // =========================================================================
+    const waveformCanvas = document.getElementById('waveformCanvas');
+    const waveCtx = waveformCanvas.getContext('2d');
+    let waveformFillPct = 0;
+    let waveformBars = [];
+    let waveAnimId = null;
+
+    function seededRandBars(count) {
+      const bars = [];
+      let s = 0xdeadbeef;
+      for (let i = 0; i < count; i++) {
+        s = (s * 1664525 + 1013904223) & 0xffffffff;
+        bars.push(0.15 + 0.7 * ((s >>> 0) / 0xffffffff));
+      }
+      return bars;
+    }
+
+    function drawWaveform(fillPct, state) {
+      const W = waveformCanvas.width;
+      const H = waveformCanvas.height;
+      const cx = H / 2;
+      waveCtx.clearRect(0, 0, W, H);
+
+      waveCtx.fillStyle = '#111111';
+      waveCtx.fillRect(0, 0, W, H);
+
+      const BAR_W = 2;
+      const BAR_GAP = 1;
+      const STEP = BAR_W + BAR_GAP;
+      const BAR_COUNT = Math.floor(W / STEP);
+
+      if (waveformBars.length !== BAR_COUNT) {
+        waveformBars = seededRandBars(BAR_COUNT);
+      }
+
+      const filledBars = Math.floor(fillPct * BAR_COUNT);
+
+      if (state === 'idle' || fillPct === 0) {
+        waveCtx.strokeStyle = '#282828';
+        waveCtx.lineWidth = 1;
+        waveCtx.beginPath();
+        waveCtx.moveTo(0, cx);
+        waveCtx.lineTo(W, cx);
+        waveCtx.stroke();
+
+        waveCtx.font = '9px "Inter", system-ui, sans-serif';
+        waveCtx.fillStyle = '#2e2e2e';
+        waveCtx.textAlign = 'center';
+        waveCtx.fillText('Press REC then play your track', W / 2, cx + 3);
+        return;
+      }
+
+      for (let i = 0; i < BAR_COUNT; i++) {
+        const x = i * STEP;
+        const amp = waveformBars[i];
+        const maxHalf = cx - 4;
+        const half = amp * maxHalf;
+
+        if (i < filledBars) {
+          const isLeading = (i === filledBars - 1);
+          const alpha = isLeading ? 0.85 : 0.38;
+          waveCtx.fillStyle = `rgba(0,229,255,${alpha})`;
+          waveCtx.fillRect(x, cx - half, BAR_W, half * 2);
+
+          if (isLeading) {
+            waveCtx.fillStyle = 'rgba(0,229,255,0.95)';
+            waveCtx.fillRect(x, cx - half, BAR_W, 1);
+            waveCtx.fillRect(x, cx + half - 1, BAR_W, 1);
+          }
+        } else {
+          if (state === 'buffer_ready' || state === 'analyzing' || state === 'complete' || state === 'partial') {
+            waveCtx.fillStyle = 'rgba(0,229,255,0.38)';
+            waveCtx.fillRect(x, cx - half, BAR_W, half * 2);
+          }
+        }
+      }
+
+      waveCtx.strokeStyle = 'rgba(255,255,255,0.06)';
+      waveCtx.lineWidth = 1;
+      waveCtx.beginPath();
+      waveCtx.moveTo(0, cx);
+      waveCtx.lineTo(W, cx);
+      waveCtx.stroke();
+    }
+
+    // =========================================================================
+    // PIANO ROLL RENDERING (MIDI TILES)
+    // =========================================================================
+    const ACCENT     = '#00e5ff';
+    const ACCENT_DIM = '#00b8cc';
+    const ROLL_BG    = '#111111';
+    const GRID_LINE  = '#1c1c1c';
+    const ROWS = 20;
+
+    function sizeCanvas(cvs) {
+      const wrap = cvs.parentElement;
+      const W = wrap.offsetWidth;
+      const H = wrap.offsetHeight;
+      if (W > 0 && H > 0) {
+        cvs.width = W;
+        cvs.height = H;
+      }
+    }
+
+    function drawGrid(ctx, w, h) {
+      ctx.fillStyle = ROLL_BG;
+      ctx.fillRect(0, 0, w, h);
+      const rowH = h / ROWS;
+      ctx.strokeStyle = GRID_LINE;
+      ctx.lineWidth = 0.5;
+      for (let i = 1; i < ROWS; i++) {
+        const y = Math.round(i * rowH) + 0.5;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+      ctx.strokeStyle = '#161616';
+      for (let b = 1; b < 4; b++) {
+        const x = Math.round((b / 4) * w) + 0.5;
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+    }
+
+    function drawNote(ctx, x, y, w, h, color, alpha) {
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = color;
+      const r = 2;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+      else ctx.rect(x, y, w, h);
+      ctx.fill();
+      ctx.globalAlpha = alpha * 0.4;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + r, y + 0.5, w - r * 2, 1);
+      ctx.globalAlpha = 1;
+    }
+
+    function drawRollPattern(ctx, pattern, color, alpha) {
+      const W = ctx.canvas.width, H = ctx.canvas.height;
+      drawGrid(ctx, W, H);
+      const rowH = H / ROWS;
+      if (color === ACCENT) {
+        ctx.shadowColor = ACCENT;
+        ctx.shadowBlur = 3;
+      }
+      for (const n of pattern) {
+        drawNote(ctx, n.beat * W, n.row * rowH + 0.5, n.dur * W - 1.5, rowH - 1, color, alpha);
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    const PATTERNS = {
+      chord: {
+        ph:  [{ row:3, beat:0.02, dur:0.46 }, { row:7, beat:0.02, dur:0.46 }, { row:11, beat:0.02, dur:0.46 }],
+        act: [{ row:3, beat:0.02, dur:0.44 }, { row:7, beat:0.02, dur:0.44 }, { row:11, beat:0.02, dur:0.44 }]
+      },
+      kick: {
+        ph:  [{ row:17, beat:0.00, dur:0.12 }, { row:18, beat:0.50, dur:0.09 }, { row:17, beat:0.75, dur:0.07 }],
+        act: [{ row:17, beat:0.00, dur:0.10 }, { row:17, beat:0.25, dur:0.07 }, { row:17, beat:0.625, dur:0.10 }]
+      },
+      snare: {
+        ph:  [{ row:11, beat:0.25, dur:0.10 }, { row:12, beat:0.75, dur:0.10 }, { row:13, beat:0.50, dur:0.06 }],
+        act: [{ row:11, beat:0.00, dur:0.09 }, { row:10, beat:0.25, dur:0.11 }, { row:10, beat:0.75, dur:0.11 }]
+      },
+      hihat: {
+        ph:  [{ row:1, beat:0.00, dur:0.09 }, { row:2, beat:0.25, dur:0.09 }, { row:1, beat:0.50, dur:0.09 }, { row:2, beat:0.75, dur:0.09 }],
+        act: [{ row:1, beat:0.00, dur:0.09 }, { row:1, beat:0.125, dur:0.09 }, { row:1, beat:0.25, dur:0.09 }, { row:1, beat:0.375, dur:0.09 },
+              { row:2, beat:0.50, dur:0.09 }, { row:1, beat:0.625, dur:0.09 }, { row:1, beat:0.75, dur:0.09 }, { row:1, beat:0.875, dur:0.09 }]
+      }
+    };
+
+    function renderMidiTiles(active) {
+      for (const clip of ['chord', 'kick', 'snare', 'hihat']) {
+        const ph  = document.getElementById(`canvas-${clip}-ph`);
+        const act = document.getElementById(`canvas-${clip}-active`);
+        if (!ph || !act) continue;
+        sizeCanvas(ph);
+        sizeCanvas(act);
+        if (ph.width === 0 || ph.height === 0) continue;
+        drawRollPattern(ph.getContext('2d'), PATTERNS[clip].ph, '#666666', 0.2);
+        drawRollPattern(act.getContext('2d'), PATTERNS[clip].act, ACCENT, 0.88);
+        ph.style.opacity  = active ? '0' : '1';
+        act.style.opacity = active ? '1' : '0';
+      }
+    }
+
+    // =========================================================================
+    // FREQUENCY DISPLAY FORMAT
+    // =========================================================================
+    function formatHz(hz) {
+      if (hz >= 1000) return (hz / 1000).toFixed(1).replace(/\.0$/, '') + ' kHz';
+      return Math.round(hz) + ' Hz';
+    }
+
+    // =========================================================================
+    // LOG-SCALE DUAL-HANDLE FREQUENCY RANGE SLIDERS (preserved from v2/v3)
+    // =========================================================================
+    const FREQ_CONFIGS = {
+      kick:  { minFreq: 20,   maxFreq: 1000,  defaultLow: 40,   defaultHigh: 120   },
+      snare: { minFreq: 100,  maxFreq: 20000, defaultLow: 200,  defaultHigh: 8000  },
+      hihat: { minFreq: 1000, maxFreq: 20000, defaultLow: 5000, defaultHigh: 16000 },
+    };
+
+    function posToFreq(pos, trackWidth, minFreq, maxFreq) {
+      return minFreq * Math.exp(Math.log(maxFreq / minFreq) * (pos / trackWidth));
+    }
+
+    function freqToPos(freq, trackWidth, minFreq, maxFreq) {
+      return trackWidth * Math.log(freq / minFreq) / Math.log(maxFreq / minFreq);
+    }
+
+    const freqState = {};
+
+    function setupFreqRangeSlider(inst) {
+      const cfg        = FREQ_CONFIGS[inst];
+      const track      = document.getElementById(`${inst}FreqTrack`);
+      const fill       = document.getElementById(`${inst}FreqFill`);
+      const lowHandle  = document.getElementById(`${inst}LowHandle`);
+      const highHandle = document.getElementById(`${inst}HighHandle`);
+      const lowLabel   = document.getElementById(`${inst}FreqLowVal`);
+      const highLabel  = document.getElementById(`${inst}FreqHighVal`);
+
+      const state = {
+        lowFreq:  cfg.defaultLow,
+        highFreq: cfg.defaultHigh,
+        dragging: null,
+        trackRect: null,
+      };
+      freqState[inst] = state;
+
+      function render() {
+        const trackWidth = track.clientWidth;
+        if (trackWidth === 0) return;
+
+        const lowPos  = freqToPos(state.lowFreq,  trackWidth, cfg.minFreq, cfg.maxFreq);
+        const highPos = freqToPos(state.highFreq, trackWidth, cfg.minFreq, cfg.maxFreq);
+
+        lowHandle.style.left  = lowPos  + 'px';
+        highHandle.style.left = highPos + 'px';
+        fill.style.left  = lowPos  + 'px';
+        fill.style.width = (highPos - lowPos) + 'px';
+
+        lowLabel.textContent  = formatHz(state.lowFreq);
+        highLabel.textContent = formatHz(state.highFreq);
+
+        const normLow  = Math.log(state.lowFreq  / cfg.minFreq) / Math.log(cfg.maxFreq / cfg.minFreq);
+        const normHigh = Math.log(state.highFreq / cfg.minFreq) / Math.log(cfg.maxFreq / cfg.minFreq);
+        Juce.getSliderState(`${inst}_freq_low`).setNormalisedValue(normLow);
+        Juce.getSliderState(`${inst}_freq_high`).setNormalisedValue(normHigh);
+      }
+
+      freqState[inst].render = render;
+
+      lowHandle.addEventListener('mousedown', (e) => {
+        state.dragging = 'low';
+        state.trackRect = track.getBoundingClientRect();
+        lowHandle.classList.add('dragging');
+        e.preventDefault();
+      });
+
+      highHandle.addEventListener('mousedown', (e) => {
+        state.dragging = 'high';
+        state.trackRect = track.getBoundingClientRect();
+        highHandle.classList.add('dragging');
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (state.dragging === null) return;
+        const trackWidth = state.trackRect.width;
+        let rawPos = Math.max(0, Math.min(trackWidth, e.clientX - state.trackRect.left));
+        const MIN_GAP = 10;
+
+        if (state.dragging === 'low') {
+          const highPos = freqToPos(state.highFreq, trackWidth, cfg.minFreq, cfg.maxFreq);
+          const clamped = Math.min(rawPos, highPos - MIN_GAP);
+          state.lowFreq = Math.max(cfg.minFreq, posToFreq(Math.max(0, clamped), trackWidth, cfg.minFreq, cfg.maxFreq));
+        } else {
+          const lowPos  = freqToPos(state.lowFreq, trackWidth, cfg.minFreq, cfg.maxFreq);
+          const clamped = Math.max(rawPos, lowPos + MIN_GAP);
+          state.highFreq = Math.min(cfg.maxFreq, posToFreq(Math.min(trackWidth, clamped), trackWidth, cfg.minFreq, cfg.maxFreq));
+        }
+        render();
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (state.dragging !== null) {
+          lowHandle.classList.remove('dragging');
+          highHandle.classList.remove('dragging');
+          state.dragging = null;
+          state.trackRect = null;
+        }
+      });
+
+      requestAnimationFrame(render);
+    }
+
+    // =========================================================================
+    // SENSITIVITY SLIDERS
+    // =========================================================================
+    function setupSensitivity(inst) {
+      const slider  = document.getElementById(`${inst}Sensitivity`);
+      const display = document.getElementById(`${inst}SensitivityVal`);
+      if (!slider || !display) return;
+      slider.addEventListener('input', () => {
+        const v = slider.value / 100;
+        display.textContent = v.toFixed(2);
+        Juce.getSliderState(`${inst}_sensitivity`).setNormalisedValue(v);
+      });
+    }
+
+    // =========================================================================
+    // PREVIEW BUTTONS
+    // =========================================================================
+    const previewState = { kick: false, snare: false, hihat: false };
+
+    ['kick', 'snare', 'hihat'].forEach(inst => {
+      const btn = document.getElementById(`preview${inst.charAt(0).toUpperCase() + inst.slice(1)}`);
+      btn.addEventListener('click', () => {
+        if (btn.classList.contains('disabled-state')) return;
+        const active = !previewState[inst];
+        ['kick', 'snare', 'hihat'].forEach(other => {
+          if (other !== inst && previewState[other]) {
+            previewState[other] = false;
+            updatePreviewBtn(other, false);
+          }
+        });
+        previewState[inst] = active;
+        updatePreviewBtn(inst, active);
+        Juce.sendEventToBackend({ type: 'togglePreview', inst, active });
+      });
+    });
+
+    function updatePreviewBtn(inst, active) {
+      const btn = document.getElementById(`preview${inst.charAt(0).toUpperCase() + inst.slice(1)}`);
+      if (active) {
+        btn.innerHTML = '<span>&#9632;</span><span>STOP PREVIEW</span>';
+        btn.classList.add('active');
+      } else {
+        btn.innerHTML = '<span>&#9654;</span><span>PREVIEW</span>';
+        btn.classList.remove('active');
+      }
+    }
+
+    function setPreviewsEnabled(enabled) {
+      ['kick', 'snare', 'hihat'].forEach(inst => {
+        const btn = document.getElementById(`preview${inst.charAt(0).toUpperCase() + inst.slice(1)}`);
+        if (enabled) {
+          btn.classList.remove('disabled-state');
+        } else {
+          btn.classList.add('disabled-state');
+          if (previewState[inst]) {
+            previewState[inst] = false;
+            updatePreviewBtn(inst, false);
+          }
+        }
+      });
+    }
+
+    // =========================================================================
+    // BPM DISPLAY CLICK
+    // =========================================================================
+    document.getElementById('bpmDisplay').addEventListener('click', () => {
+      if (currentState === 'complete') {
+        console.log('[UI] Set DAW tempo to 124.0 BPM');
+        Juce.sendEventToBackend({ type: 'setDawTempo', bpm: 124.0 });
+      }
+    });
+
+    // =========================================================================
+    // WAVEFORM ANIMATION (recording state)
+    // =========================================================================
+    let recordingFill = 0;
+    let recordingAnimId = null;
+
+    function animateRecording() {
+      if (currentState !== 'recording') return;
+      recordingFill = Math.min(1.0, recordingFill + 0.003);
+      drawWaveform(recordingFill, 'recording');
+      recordingAnimId = requestAnimationFrame(animateRecording);
+    }
+
+    // =========================================================================
+    // STATE MACHINE
+    // =========================================================================
+    let currentState = 'idle';
+    let progressInterval = null;
+
+    const STEPS = ['Detecting BPM...', 'Detecting key...', 'Detecting drums...', 'Writing MIDI...'];
+
+    function setState(state) {
+      currentState = state;
+
+      document.querySelectorAll('.state-btn').forEach((b, i) => {
+        const states = ['idle','recording','buffer_ready','analyzing','complete','partial'];
+        b.classList.toggle('active', states[i] === state);
+      });
+
+      if (recordingAnimId) { cancelAnimationFrame(recordingAnimId); recordingAnimId = null; }
+      if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+
+      const recBtn         = document.getElementById('recBtn');
+      const stopBtnRec     = document.getElementById('stopBtnRec');
+      const analyzeBtn     = document.getElementById('analyzeBtn');
+      const stopBtnAnalyze = document.getElementById('stopBtnAnalyze');
+      const bpmDisplay     = document.getElementById('bpmDisplay');
+      const keyDisplay     = document.getElementById('keyDisplay');
+      const progressOverlay= document.getElementById('progressOverlay');
+      const progressFill   = document.getElementById('progressFill');
+      const progressStep   = document.getElementById('progressStepLabel');
+      const bufferDot      = document.getElementById('bufferDot');
+      const bufferText     = document.getElementById('bufferStatusText');
+      const barsHint       = document.getElementById('barsHint');
+      const tiles          = ['chord','kick','snare','hihat'].map(id => document.getElementById(`tile-${id}`));
+
+      recBtn.classList.remove('recording', 'disabled-state');
+      stopBtnRec.classList.add('hidden');
+      stopBtnAnalyze.classList.add('hidden');
+      analyzeBtn.classList.remove('disabled-state');
+      progressOverlay.classList.add('hidden');
+      bufferDot.classList.remove('active', 'recording-pulse');
+      bufferText.classList.remove('ready');
+      tiles.forEach(t => t.classList.remove('available', 'scanning'));
+
+      if (state === 'idle') {
+        recBtn.classList.remove('disabled-state');
+        analyzeBtn.classList.add('disabled-state');
+        bpmDisplay.textContent = '--';
+        bpmDisplay.classList.remove('has-value', 'failed');
+        keyDisplay.textContent = '--';
+        keyDisplay.classList.remove('has-value', 'failed');
+        bufferDot.style.background = '';
+        bufferText.textContent = 'BUFFER EMPTY';
+        barsHint.classList.add('hidden');
+        drawWaveform(0, 'idle');
+        setPreviewsEnabled(false);
+        renderMidiTiles(false);
+        recordingFill = 0;
+
+      } else if (state === 'recording') {
+        recBtn.classList.add('recording');
+        stopBtnRec.classList.remove('hidden');
+        analyzeBtn.classList.add('disabled-state');
+        bpmDisplay.textContent = '--';
+        bpmDisplay.classList.remove('has-value', 'failed');
+        keyDisplay.textContent = '--';
+        keyDisplay.classList.remove('has-value', 'failed');
+        bufferDot.classList.add('recording-pulse');
+        bufferText.textContent = 'RECORDING...';
+        barsHint.classList.add('hidden');
+        recordingFill = 0;
+        animateRecording();
+        setPreviewsEnabled(false);
+        renderMidiTiles(false);
+
+      } else if (state === 'buffer_ready') {
+        stopBtnRec.classList.add('hidden');
+        recBtn.classList.remove('recording');
+        bufferDot.classList.add('active');
+        bufferText.textContent = 'BUFFER READY  12.4s';
+        bufferText.classList.add('ready');
+        barsHint.classList.add('hidden');
+        recordingFill = 1.0;
+        drawWaveform(1.0, 'buffer_ready');
+        bpmDisplay.textContent = '--';
+        bpmDisplay.classList.remove('has-value', 'failed');
+        keyDisplay.textContent = '--';
+        keyDisplay.classList.remove('has-value', 'failed');
+        setPreviewsEnabled(true);
+        renderMidiTiles(false);
+
+      } else if (state === 'analyzing') {
+        recBtn.classList.add('disabled-state');
+        stopBtnAnalyze.classList.remove('hidden');
+        analyzeBtn.classList.add('disabled-state');
+        bufferDot.classList.add('active');
+        bufferText.textContent = 'BUFFER READY  12.4s';
+        bufferText.classList.add('ready');
+        barsHint.classList.add('hidden');
+        drawWaveform(1.0, 'analyzing');
+        progressOverlay.classList.remove('hidden');
+        progressFill.style.width = '0%';
+        progressStep.textContent = STEPS[0];
+        setPreviewsEnabled(false);
+        tiles.forEach(t => t.classList.add('scanning'));
+        bpmDisplay.textContent = '--';
+        bpmDisplay.classList.remove('has-value', 'failed');
+        keyDisplay.textContent = '--';
+        keyDisplay.classList.remove('has-value', 'failed');
+        renderMidiTiles(false);
+
+        let prog = 0;
+        progressInterval = setInterval(() => {
+          prog += 0.9;
+          if (prog > 100) prog = 100;
+          progressFill.style.width = prog + '%';
+          if (prog < 30) progressStep.textContent = STEPS[0];
+          else if (prog < 55) progressStep.textContent = STEPS[1];
+          else if (prog < 80) progressStep.textContent = STEPS[2];
+          else progressStep.textContent = STEPS[3];
+
+          if (prog >= 30 && bpmDisplay.textContent === '--') {
+            bpmDisplay.textContent = '124.0';
+            bpmDisplay.classList.add('has-value');
+          }
+          if (prog >= 50 && keyDisplay.textContent === '--') {
+            keyDisplay.textContent = 'F\u266f minor';
+            keyDisplay.classList.add('has-value');
+          }
+          if (prog >= 60) document.getElementById('tile-chord').classList.replace('scanning', 'available') || document.getElementById('tile-chord').classList.remove('scanning');
+          if (prog >= 70) document.getElementById('tile-kick').classList.replace('scanning', 'available')  || document.getElementById('tile-kick').classList.remove('scanning');
+          if (prog >= 82) document.getElementById('tile-snare').classList.replace('scanning', 'available') || document.getElementById('tile-snare').classList.remove('scanning');
+          if (prog >= 94) document.getElementById('tile-hihat').classList.replace('scanning', 'available') || document.getElementById('tile-hihat').classList.remove('scanning');
+          if (prog >= 100) {
+            clearInterval(progressInterval);
+            progressInterval = null;
+            setTimeout(() => setState('complete'), 350);
+          }
+        }, 36);
+
+      } else if (state === 'complete') {
+        bufferDot.classList.add('active');
+        bufferText.textContent = 'BUFFER READY  12.4s';
+        bufferText.classList.add('ready');
+        drawWaveform(1.0, 'complete');
+        bpmDisplay.textContent = '124.0';
+        bpmDisplay.classList.add('has-value');
+        keyDisplay.textContent = 'F\u266f minor';
+        keyDisplay.classList.add('has-value');
+        barsHint.classList.remove('hidden');
+        tiles.forEach(t => t.classList.add('available'));
+        setPreviewsEnabled(true);
+        renderMidiTiles(true);
+
+      } else if (state === 'partial') {
+        bufferDot.classList.add('active');
+        bufferText.textContent = 'BUFFER READY  12.4s';
+        bufferText.classList.add('ready');
+        drawWaveform(1.0, 'partial');
+        bpmDisplay.textContent = '124.0';
+        bpmDisplay.classList.add('has-value');
+        keyDisplay.textContent = '?';
+        keyDisplay.classList.add('failed');
+        barsHint.classList.add('hidden');
+        document.getElementById('tile-chord').classList.add('available');
+        document.getElementById('tile-kick').classList.add('available');
+        setPreviewsEnabled(true);
+        renderMidiTiles(false);
+        ['chord','kick'].forEach(clip => {
+          const act = document.getElementById(`canvas-${clip}-active`);
+          if (act) {
+            sizeCanvas(act);
+            drawRollPattern(act.getContext('2d'), PATTERNS[clip].act, ACCENT, 0.88);
+            act.style.opacity = '1';
+            const ph = document.getElementById(`canvas-${clip}-ph`);
+            if (ph) ph.style.opacity = '0';
+          }
+        });
+      }
+    }
+
+    // =========================================================================
+    // BUTTON WIRING
+    // =========================================================================
+    document.getElementById('recBtn').addEventListener('click', () => {
+      if (currentState === 'idle' || currentState === 'buffer_ready' || currentState === 'complete' || currentState === 'partial') {
+        Juce.sendEventToBackend({ type: 'startRecording' });
+        setState('recording');
+      }
+    });
+
+    document.getElementById('stopBtnRec').addEventListener('click', () => {
+      if (currentState === 'recording') {
+        Juce.sendEventToBackend({ type: 'stopCurrentOperation' });
+        setState('buffer_ready');
+      }
+    });
+
+    document.getElementById('analyzeBtn').addEventListener('click', () => {
+      if (currentState === 'buffer_ready' || currentState === 'complete' || currentState === 'partial') {
+        Juce.sendEventToBackend({ type: 'startAnalysis' });
+        setState('analyzing');
+      }
+    });
+
+    document.getElementById('stopBtnAnalyze').addEventListener('click', () => {
+      if (currentState === 'analyzing') {
+        Juce.sendEventToBackend({ type: 'stopCurrentOperation' });
+        setState('partial');
+      }
+    });
+
+    // =========================================================================
+    // INIT
+    // =========================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+      setupFreqRangeSlider('kick');
+      setupFreqRangeSlider('snare');
+      setupFreqRangeSlider('hihat');
+
+      setupSensitivity('kick');
+      setupSensitivity('snare');
+      setupSensitivity('hihat');
+
+      setState('idle');
+
+      setTimeout(() => {
+        ['kick', 'snare', 'hihat'].forEach(inst => {
+          if (freqState[inst] && freqState[inst].render) {
+            freqState[inst].render();
+          }
+        });
+        renderMidiTiles(false);
+      }, 80);
+    });
+  </script>
+</body>
+</html>
