@@ -118,6 +118,13 @@ public:
     float          detectedBpm { 0.0f };
     juce::String   detectedKey {};
 
+    // Root chord MIDI notes derived from key detection (DSP.3)
+    // Major key: root, +4, +7 semitones (major triad)
+    // Minor key: root, +3, +7 semitones (minor triad)
+    // Stored as MIDI note numbers in octave 4 (C4 = 60)
+    int            rootChordMidi[3] { 0, 0, 0 };
+    bool           rootChordValid { false };
+
     // Recording buffer — pre-allocated in prepareToPlay()
     // Written by audio thread ONLY during isCapturing==true.
     // Read by background thread ONLY after isCapturing==false.
