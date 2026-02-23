@@ -109,10 +109,52 @@ GrooveScoutAudioProcessorEditor::GrooveScoutAudioProcessorEditor (GrooveScoutAud
                     if (args.size() > 0)
                         clipType = args[0].toString();
 
-                    DBG ("GrooveScout: startMidiDrag(" + clipType + ") — stub");
-                    // Full MIDI drag implementation in GUI.2 (requires temp MIDI file
-                    // written by the analyzer thread before drag is initiated).
-                    juce::ignoreUnused (this, clipType);
+                    // Resolve temp MIDI file path and clip-available flag
+                    const juce::File tempDir = juce::File::getSpecialLocation (
+                        juce::File::SpecialLocationType::tempDirectory).getChildFile ("GrooveScout");
+
+                    juce::File  midiFile;
+                    bool        clipAvailable = false;
+
+                    if (clipType == "chord")
+                    {
+                        midiFile      = tempDir.getChildFile ("groovescout_chord.mid");
+                        clipAvailable = processorRef.chordClipAvailable.load();
+                    }
+                    else if (clipType == "kick")
+                    {
+                        midiFile      = tempDir.getChildFile ("groovescout_kick.mid");
+                        clipAvailable = processorRef.kickClipAvailable.load();
+                    }
+                    else if (clipType == "snare")
+                    {
+                        midiFile      = tempDir.getChildFile ("groovescout_snare.mid");
+                        clipAvailable = processorRef.snareClipAvailable.load();
+                    }
+                    else if (clipType == "hihat")
+                    {
+                        midiFile      = tempDir.getChildFile ("groovescout_hihat.mid");
+                        clipAvailable = processorRef.hihatClipAvailable.load();
+                    }
+                    else
+                    {
+                        DBG ("GrooveScout: startMidiDrag — unknown clip type: " + clipType);
+                        complete (juce::var {});
+                        return;
+                    }
+
+                    if (clipAvailable && midiFile.existsAsFile())
+                    {
+                        DBG ("GrooveScout: startMidiDrag — dragging " + midiFile.getFullPathName());
+                        juce::DragAndDropContainer::performExternalDragDropOfFiles (
+                            juce::StringArray { midiFile.getFullPathName() },
+                            false /* canMoveFiles */);
+                    }
+                    else
+                    {
+                        DBG ("GrooveScout: startMidiDrag — clip not ready: " + clipType);
+                    }
+
                     complete (juce::var {});
                 })
     );

@@ -24,6 +24,7 @@
  * to the WebView via evaluateJavascript().
  */
 class GrooveScoutAudioProcessorEditor : public juce::AudioProcessorEditor,
+                                        public juce::DragAndDropContainer,
                                         public juce::Timer
 {
 public:
