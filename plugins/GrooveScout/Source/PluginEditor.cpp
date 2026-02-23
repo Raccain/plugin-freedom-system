@@ -73,6 +73,76 @@ GrooveScoutAudioProcessorEditor::GrooveScoutAudioProcessorEditor (GrooveScoutAud
 
             // Native functions called from JavaScript via getNativeFunction('name')
             // Called on the message thread — safe to call processor methods directly
+
+            // REC / STOP — wiring that was missing from Stage 3 GUI.1
+            .withNativeFunction (
+                juce::Identifier ("setCaptureDuration"),
+                [this] (const juce::Array<juce::var>& args, auto complete)
+                {
+                    // args[0] = duration in seconds (1–30)
+                    if (args.size() > 0)
+                    {
+                        const float secs = juce::jlimit (1.0f, 30.0f,
+                            static_cast<float> (static_cast<double> (args[0])));
+
+                        if (auto* p = dynamic_cast<juce::AudioParameterFloat*> (
+                                processorRef.parameters.getParameter ("captureDuration")))
+                        {
+                            *p = secs;
+                            DBG ("GrooveScout: setCaptureDuration(" + juce::String (secs, 1) + ")");
+                        }
+                    }
+                    complete (juce::var {});
+                })
+
+            .withNativeFunction (
+                juce::Identifier ("startRecording"),
+                [this] (const juce::Array<juce::var>&, auto complete)
+                {
+                    processorRef.startRecording();
+                    complete (juce::var {});
+                })
+
+            .withNativeFunction (
+                juce::Identifier ("stopCurrentOperation"),
+                [this] (const juce::Array<juce::var>&, auto complete)
+                {
+                    processorRef.stopCurrentOperation();
+                    complete (juce::var {});
+                })
+
+            // Audition preview: separate start/stop so switching bands works cleanly
+            .withNativeFunction (
+                juce::Identifier ("startPreview"),
+                [this] (const juce::Array<juce::var>& args, auto complete)
+                {
+                    juce::String band;
+                    if (args.size() > 0)
+                        band = args[0].toString();
+
+                    int bandIndex = 0;
+                    if (band == "snare") bandIndex = 1;
+                    else if (band == "hihat") bandIndex = 2;
+
+                    // Stop any existing preview, then start new band
+                    processorRef.isPreviewActive.store (false);
+                    processorRef.previewBand.store (bandIndex);
+                    processorRef.previewPlayhead.store (0);
+                    processorRef.isPreviewActive.store (true);
+                    DBG ("GrooveScout: startPreview(" + band + ")");
+                    complete (juce::var {});
+                })
+
+            .withNativeFunction (
+                juce::Identifier ("stopPreview"),
+                [this] (const juce::Array<juce::var>&, auto complete)
+                {
+                    processorRef.isPreviewActive.store (false);
+                    processorRef.previewPlayhead.store (0);
+                    DBG ("GrooveScout: stopPreview()");
+                    complete (juce::var {});
+                })
+
             .withNativeFunction (
                 juce::Identifier ("analyzeButtonPressed"),
                 [this] (const juce::Array<juce::var>&, auto complete)
@@ -146,9 +216,12 @@ GrooveScoutAudioProcessorEditor::GrooveScoutAudioProcessorEditor (GrooveScoutAud
                     if (clipAvailable && midiFile.existsAsFile())
                     {
                         DBG ("GrooveScout: startMidiDrag — dragging " + midiFile.getFullPathName());
+                        // Pass 'this' as source component so JUCE can find the correct
+                        // NSView for the OS-level drag operation on macOS.
                         juce::DragAndDropContainer::performExternalDragDropOfFiles (
                             juce::StringArray { midiFile.getFullPathName() },
-                            false /* canMoveFiles */);
+                            false /* canMoveFiles */,
+                            this);
                     }
                     else
                     {
@@ -303,6 +376,12 @@ void GrooveScoutAudioProcessorEditor::timerCallback()
     if (webView == nullptr)
         return;
 
+    // Pre-compute recording state used in both JSON payloads below
+    const int   nRecordedSamples = processorRef.recordedSamples.load();
+    const float recSecs          = static_cast<float> (nRecordedSamples)
+                                   / static_cast<float> (processorRef.currentSampleRate);
+    const bool  recComplete      = processorRef.recordingComplete.load();
+
     // Read current analysis state from processor atomics (message-thread safe)
     const bool   isAnalyzing  = processorRef.analyzeTriggered.load()
                                 && !processorRef.analysisComplete.load()
@@ -324,9 +403,19 @@ void GrooveScoutAudioProcessorEditor::timerCallback()
         json += "\"bpm\":null,";
 
     if (isComplete && key.isNotEmpty())
-        json += "\"key\":\"" + key.replace ("\"", "\\\"") + "\"";
+        json += "\"key\":\"" + key.replace ("\"", "\\\"") + "\",";
     else
-        json += "\"key\":null";
+        json += "\"key\":null,";
+
+    // Clip availability — JS uses these to make only real tiles draggable
+    json += "\"kickAvail\":"  + juce::String (processorRef.kickClipAvailable.load()  ? "true" : "false") + ",";
+    json += "\"snareAvail\":" + juce::String (processorRef.snareClipAvailable.load() ? "true" : "false") + ",";
+    json += "\"hihatAvail\":" + juce::String (processorRef.hihatClipAvailable.load() ? "true" : "false") + ",";
+    json += "\"chordAvail\":" + juce::String (processorRef.chordClipAvailable.load() ? "true" : "false") + ",";
+
+    // Recording state — JS uses these to auto-stop recording UI and show duration
+    json += "\"recordingComplete\":" + juce::String (recComplete ? "true" : "false") + ",";
+    json += "\"recordedSecs\":"      + juce::String (recSecs, 1);
 
     json += "}";
 
@@ -336,6 +425,75 @@ void GrooveScoutAudioProcessorEditor::timerCallback()
                                 + json + ");}";
 
     webView->evaluateJavascript (script, [] (juce::WebBrowserComponent::EvaluationResult) {});
+
+    // -------------------------------------------------------------------------
+    // Waveform data push — sends real RMS peak data + time-based fill fraction
+    // to JS so the waveform canvas shows recording progress even for silence.
+    // Sent whenever recordedSamples changes (recording in progress or complete).
+    // -------------------------------------------------------------------------
+    const int nSamples = nRecordedSamples;  // use pre-computed value from above
+
+    if (nSamples > 0 && (processorRef.waveformDirty.load() || nSamples != lastSentWaveformSamples))
+    {
+        processorRef.waveformDirty.store (false);
+        lastSentWaveformSamples = nSamples;
+
+        constexpr int BAR_COUNT = 250;
+
+        // Read pointers — safe: audio thread only writes to positions >= nSamples.
+        // We captured nSamples first, so 0..nSamples-1 are fully written.
+        const float* L = processorRef.recordingBuffer.getReadPointer (0);
+        const float* R = processorRef.recordingBuffer.getReadPointer (1);
+
+        juce::String rmsJson = "[";
+
+        for (int bar = 0; bar < BAR_COUNT; ++bar)
+        {
+            const int start = (int) ((int64_t) bar       * nSamples / BAR_COUNT);
+            const int end   = (int) ((int64_t) (bar + 1) * nSamples / BAR_COUNT);
+
+            float peak = 0.0f;
+            if (start < nSamples && start < end)
+            {
+                // Sample at most ~10 points per bucket to keep CPU light
+                const int step = std::max (1, (end - start) / 10);
+                for (int i = start; i < end && i < nSamples; i += step)
+                {
+                    const float s = std::abs ((L[i] + R[i]) * 0.5f);
+                    if (s > peak) peak = s;
+                }
+            }
+
+            rmsJson += juce::String (peak, 4);
+            if (bar < BAR_COUNT - 1) rmsJson += ",";
+        }
+
+        rmsJson += "]";
+
+        // Time-based fill fraction: shows waveform progress even for silent recordings.
+        // fillFrac = recordedSamples / capacitySamples (clamped 0-1).
+        const float durSecs = processorRef.getCaptureDurationSeconds();
+        const int capacitySamples = static_cast<int> (durSecs * processorRef.currentSampleRate);
+        const float fillFrac = (capacitySamples > 0)
+            ? juce::jmin (1.0f, static_cast<float> (nSamples) / static_cast<float> (capacitySamples))
+            : 0.0f;
+
+        // Send as object {bars, fill, secs} so JS has all info it needs
+        const juce::String waveScript =
+            "if(window.groovescout_updateWaveform){"
+            "window.groovescout_updateWaveform({"
+            "\"bars\":" + rmsJson + ","
+            "\"fill\":" + juce::String (fillFrac, 3) + ","
+            "\"secs\":" + juce::String (recSecs, 1)
+            + "});}";
+
+        webView->evaluateJavascript (waveScript, [] (juce::WebBrowserComponent::EvaluationResult) {});
+    }
+    else if (nSamples == 0 && lastSentWaveformSamples != 0)
+    {
+        // Buffer was cleared (new recording started) — reset tracker
+        lastSentWaveformSamples = 0;
+    }
 }
 
 //==============================================================================

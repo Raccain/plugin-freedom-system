@@ -265,7 +265,14 @@ void GrooveScoutAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     {
         const int currentHead    = recordedSamples.load();
         const int bufferCapacity = recordingBuffer.getNumSamples();
-        const int samplesAvailable = bufferCapacity - currentHead;
+
+        // Apply captureDuration limit (user-set, 1–30 s).
+        // getRawParameterValue returns an atomic<float>* — safe to call in audio thread.
+        const float durSecs = getCaptureDurationSeconds();
+        const int durationLimitSamples = static_cast<int> (durSecs * currentSampleRate);
+        const int effectiveCapacity    = juce::jmin (bufferCapacity, durationLimitSamples);
+
+        const int samplesAvailable = effectiveCapacity - currentHead;
 
         if (samplesAvailable > 0)
         {
@@ -277,17 +284,46 @@ void GrooveScoutAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
             recordedSamples.store (currentHead + samplesToCopy);
 
-            // Signal waveform update — UI Timer polls waveformDirty at ~60ms
-            // (actual RMS value push happens in a Timer callback, not here)
+            // Signal waveform update — Timer callback pushes RMS data to JS
             waveformDirty.store (true);
 
             if (samplesAvailable <= numSamples)
             {
-                // Buffer full — auto-stop capture
+                // Duration limit reached (or buffer full) — auto-stop capture
                 isCapturing.store (false);
                 recordingComplete.store (true);
-                DBG ("GrooveScout: recording buffer full, auto-stopped");
+                DBG ("GrooveScout: recording auto-stopped (duration limit reached)");
             }
+        }
+        else
+        {
+            // Already at or past limit (e.g. duration was reduced mid-recording)
+            isCapturing.store (false);
+            recordingComplete.store (true);
+        }
+    }
+
+    // Preview playback — replaces passthrough audio with the recorded buffer
+    // when the user activates an Audition button.
+    if (isPreviewActive.load())
+    {
+        const int nRecorded = recordedSamples.load();
+        if (nRecorded > 0)
+        {
+            const int head   = previewPlayhead.load();
+            const int numCh  = juce::jmin (buffer.getNumChannels(),
+                                            recordingBuffer.getNumChannels());
+
+            for (int ch = 0; ch < numCh; ++ch)
+            {
+                for (int i = 0; i < numSamples; ++i)
+                {
+                    const int readPos = (head + i) % nRecorded;
+                    buffer.setSample (ch, i, recordingBuffer.getSample (ch, readPos));
+                }
+            }
+
+            previewPlayhead.store ((head + numSamples) % nRecorded);
         }
     }
 
@@ -413,9 +449,8 @@ void GrooveScoutAudioProcessor::cancelAnalysis()
 
 void GrooveScoutAudioProcessor::togglePreview (const juce::String& band)
 {
-    // Phase DSP.1: stub — preview playback implemented in a future phase
-    // when we have IIR filter for band-isolation.
-    DBG ("GrooveScout: togglePreview(" + band + ") — stub");
+    // Kept for compatibility — editor now calls startPreview/stopPreview
+    // native functions directly which set the atomics without going through here.
     juce::ignoreUnused (band);
 }
 

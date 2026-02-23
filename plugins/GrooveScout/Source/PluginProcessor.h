@@ -133,6 +133,10 @@ public:
     // Current sample rate — needed by GrooveScoutAnalyzer
     double currentSampleRate = 44100.0;
 
+    // Waveform dirty flag — set by audio thread when new samples are recorded,
+    // cleared by Timer callback in the editor after sending RMS data to JS.
+    std::atomic<bool>      waveformDirty { false };
+
     //==============================================================================
     // Public action methods — called from UI thread (message thread).
     //==============================================================================
@@ -162,10 +166,8 @@ private:
     // Background analysis thread
     std::unique_ptr<GrooveScoutAnalyzer> analyzerThread;
 
-    // Waveform RMS data — accessed by Timer callback on message thread only
-    // (waveformLock protects against race if Timer and processBlock both touch it)
+    // Waveform RMS data — kept private (no longer used; editor computes RMS inline)
     std::vector<float>     waveformRms;
-    std::atomic<bool>      waveformDirty { false };
     juce::CriticalSection  waveformLock;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GrooveScoutAudioProcessor)

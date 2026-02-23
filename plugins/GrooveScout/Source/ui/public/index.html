@@ -833,7 +833,7 @@
     <!-- ROW 1: Title Bar -->
     <div class="title-bar">
       <span class="title-text">GrooveScout</span>
-      <span class="title-version">v1.0.1β</span>
+      <span class="title-version">v1.0.4β</span>
     </div>
 
     <!-- ROW 2: Record Controls (84px — knob group has breathing room) -->
@@ -1086,12 +1086,15 @@
     // =========================================================================
     // NATIVE FUNCTION HANDLES (non-APVTS actions)
     // =========================================================================
-    const fn_startRec  = getNativeFunction('startRecording');
-    const fn_stopOp    = getNativeFunction('stopCurrentOperation');
-    const fn_analyze   = getNativeFunction('analyzeButtonPressed');
-    const fn_cancel    = getNativeFunction('cancelAnalysis');
-    const fn_setBpm    = getNativeFunction('setBpmToDaw');
-    const fn_startDrag = getNativeFunction('startMidiDrag');
+    const fn_startRec           = getNativeFunction('startRecording');
+    const fn_stopOp             = getNativeFunction('stopCurrentOperation');
+    const fn_analyze            = getNativeFunction('analyzeButtonPressed');
+    const fn_cancel             = getNativeFunction('cancelAnalysis');
+    const fn_setBpm             = getNativeFunction('setBpmToDaw');
+    const fn_startDrag          = getNativeFunction('startMidiDrag');
+    const fn_startPreview       = getNativeFunction('startPreview');
+    const fn_stopPreview        = getNativeFunction('stopPreview');
+    const fn_setCaptureDuration = getNativeFunction('setCaptureDuration');
 
     // =========================================================================
     // APVTS PARAMETER STATES — 9 sliders
@@ -1234,6 +1237,7 @@
         indicator.setAttribute('y2', y2.toFixed(2));
 
         valueLabel.textContent = val + 's';
+        fn_setCaptureDuration(val);  // sync to C++ APVTS captureDuration parameter
       }
 
       knobWrap.addEventListener('mousedown', (e) => {
@@ -1364,7 +1368,7 @@
       for (let i = 0; i < BAR_COUNT; i++) {
         const x = i * STEP;
         const amp = waveformBars[i];
-        const half = amp * maxHalf;
+        const half = Math.max(1, amp * maxHalf); // min 1px so silent recordings are visible
 
         if (i < filledBars) {
           const isLeading = (i === filledBars - 1);
@@ -1711,7 +1715,7 @@
         if (btn.classList.contains('disabled-state')) return;
         const active = !previewState[inst];
 
-        // Stop other active previews
+        // Stop other active previews (JS visual + C++ audio)
         ['kick', 'snare', 'hihat'].forEach(other => {
           if (other !== inst && previewState[other]) {
             previewState[other] = false;
@@ -1722,10 +1726,11 @@
         previewState[inst] = active;
         updatePreviewBtn(inst, active);
 
-        // Hook into playhead animation
         if (active) {
+          fn_startPreview(inst);   // C++ starts looping recorded audio
           startPreviewPlayhead();
         } else {
+          fn_stopPreview();        // C++ stops audio
           stopPreviewPlayhead();
           drawWaveform(1.0, 'ready', null);
         }
@@ -1744,6 +1749,7 @@
     }
 
     function setPreviewsEnabled(enabled) {
+      let wasActive = false;
       ['kick', 'snare', 'hihat'].forEach(inst => {
         const btn = document.getElementById(`preview${inst.charAt(0).toUpperCase() + inst.slice(1)}`);
         if (enabled) {
@@ -1753,10 +1759,12 @@
           if (previewState[inst]) {
             previewState[inst] = false;
             updatePreviewBtn(inst, false);
+            wasActive = true;
           }
         }
       });
       if (!enabled) {
+        if (wasActive) fn_stopPreview();  // tell C++ to stop audio
         stopPreviewPlayhead();
       }
     }
@@ -1772,15 +1780,18 @@
 
     // =========================================================================
     // WAVEFORM ANIMATION (recording state)
+    // recordingFill is now driven by actual buffer data via groovescout_updateWaveform
+    // rather than a fake animation. animateRecording() just draws the initial empty frame.
     // =========================================================================
     let recordingFill = 0;
     let recordingAnimId = null;
+    let lastRecordedSecs = 0;  // Updated by C++ state callbacks; used for buffer status display
+    let lastDetectedBpm  = 0;  // Updated when analysis completes; used for bars hint
 
     function animateRecording() {
-      if (currentState !== 'recording') return;
-      recordingFill = Math.min(1.0, recordingFill + 0.003);
-      drawWaveform(recordingFill, 'recording', null);
-      recordingAnimId = requestAnimationFrame(animateRecording);
+      // Draw initial empty waveform — subsequent updates come from real RMS data
+      drawWaveform(0, 'recording', null);
+      recordingAnimId = null;  // no animation loop; waveform updates driven by C++ timer
     }
 
     // =========================================================================
@@ -1865,7 +1876,8 @@
         stopBtnRec.classList.add('disabled-state');
         recBtn.classList.remove('recording');
         bufferDot.classList.add('active');
-        bufferText.textContent = 'BUFFER READY';
+        const secsLabel = lastRecordedSecs > 0 ? ' \u2022 ' + lastRecordedSecs.toFixed(1) + 's' : '';
+        bufferText.textContent = 'READY' + secsLabel;
         bufferText.classList.add('ready');
         barsHint.classList.add('hidden');
         recordingFill = 1.0;
@@ -1882,7 +1894,8 @@
         stopBtnAnalyze.classList.remove('hidden');
         analyzeBtn.classList.add('disabled-state');
         bufferDot.classList.add('active');
-        bufferText.textContent = 'BUFFER READY';
+        { const secsLabel = lastRecordedSecs > 0 ? ' \u2022 ' + lastRecordedSecs.toFixed(1) + 's' : '';
+          bufferText.textContent = 'BUFFER READY' + secsLabel; }
         bufferText.classList.add('ready');
         barsHint.classList.add('hidden');
         progressOverlay.classList.remove('hidden');
@@ -1901,27 +1914,29 @@
       } else if (state === 'complete') {
         stopPreviewPlayhead();
         bufferDot.classList.add('active');
-        bufferText.textContent = 'BUFFER READY';
+        { const secsLabel = lastRecordedSecs > 0 ? ' \u2022 ' + lastRecordedSecs.toFixed(1) + 's' : '';
+          bufferText.textContent = 'BUFFER READY' + secsLabel; }
         bufferText.classList.add('ready');
         drawWaveform(1.0, 'ready', null);
         // BPM/key values already set by groovescout_updateAnalysisState
         // Calculate bars hint from detected BPM and capture duration
-        const bpm = parseFloat(bpmDisplay.textContent);
-        if (!isNaN(bpm) && bpm > 0) {
-          const bars = Math.round(captureDur * bpm / (4 * 60));
+        if (lastDetectedBpm > 0) {
+          const bars = Math.round(captureDur * lastDetectedBpm / (4 * 60));
           barsHint.textContent = '\u2248 ' + bars + ' bars';
           barsHint.classList.remove('hidden');
         } else {
           barsHint.classList.add('hidden');
         }
-        tiles.forEach(t => t.classList.add('available'));
+        // Tile 'available' class is set per-clip by groovescout_updateAnalysisState
+        // using real clip availability flags — NOT a blanket enable here.
         setPreviewsEnabled(true);
         renderMidiTiles(true);
 
       } else if (state === 'partial') {
         stopPreviewPlayhead();
         bufferDot.classList.add('active');
-        bufferText.textContent = 'BUFFER READY';
+        { const secsLabel = lastRecordedSecs > 0 ? ' \u2022 ' + lastRecordedSecs.toFixed(1) + 's' : '';
+          bufferText.textContent = 'BUFFER READY' + secsLabel; }
         bufferText.classList.add('ready');
         drawWaveform(1.0, 'ready', null);
         // Partial results: BPM/key may already be set or show '--'
@@ -2000,6 +2015,10 @@
       const progressFill   = document.getElementById('progressFill');
       const progressStep   = document.getElementById('progressStepLabel');
 
+      // Always update recorded-seconds tracker (used by setState('buffer_ready') for status text)
+      if (typeof data.recordedSecs === 'number' && data.recordedSecs > 0)
+        lastRecordedSecs = data.recordedSecs;
+
       // Entering analysis
       if (data.isAnalyzing && !analysisActive) {
         analysisActive = true;
@@ -2020,7 +2039,8 @@
 
         // Incremental BPM/key (if C++ provides them during analysis)
         if (data.bpm != null && data.bpm > 0) {
-          bpmDisplay.textContent = data.bpm.toFixed(1);
+          lastDetectedBpm = data.bpm;
+          bpmDisplay.textContent = Math.floor(data.bpm) + ' (' + data.bpm.toFixed(1) + ')';
           bpmDisplay.classList.add('has-value');
         }
         if (data.key != null && data.key !== '') {
@@ -2028,12 +2048,29 @@
           keyDisplay.classList.add('has-value');
         }
 
-        // Tile transitions based on progress
-        const pctTiles = pct;
-        if (pctTiles >= 60) { const t = document.getElementById('tile-chord'); if (t) { t.classList.remove('scanning'); t.classList.add('available'); }}
-        if (pctTiles >= 70) { const t = document.getElementById('tile-kick');  if (t) { t.classList.remove('scanning'); t.classList.add('available'); }}
-        if (pctTiles >= 82) { const t = document.getElementById('tile-snare'); if (t) { t.classList.remove('scanning'); t.classList.add('available'); }}
-        if (pctTiles >= 94) { const t = document.getElementById('tile-hihat'); if (t) { t.classList.remove('scanning'); t.classList.add('available'); }}
+        // Note: tile 'available' class is set ONLY at completion based on real clip flags,
+        // not during analysis progress — avoids tiles appearing draggable before clips exist.
+      }
+
+      // Helper: apply per-clip tile availability from clip flags in data payload
+      function applyClipAvailability(d) {
+        ['chord', 'kick', 'snare', 'hihat'].forEach(clip => {
+          const tile = document.getElementById(`tile-${clip}`);
+          if (!tile) return;
+          const avail = d[clip + 'Avail'];
+          const act = document.getElementById(`canvas-${clip}-active`);
+          const ph  = document.getElementById(`canvas-${clip}-ph`);
+          if (avail) {
+            tile.classList.add('available');
+            if (act) act.style.opacity = '1';
+            if (ph)  ph.style.opacity  = '0';
+          } else {
+            tile.classList.remove('available');
+            // Reset to placeholder so tiles without real clips don't show as active
+            if (act) act.style.opacity = '0';
+            if (ph)  ph.style.opacity  = '1';
+          }
+        });
       }
 
       // Leaving analysis — normal path (saw isAnalyzing=true at least once)
@@ -2042,7 +2079,8 @@
       if (data.isComplete && !analysisActive && currentState === 'analyzing') {
         analysisActive = false;
         if (data.bpm != null && data.bpm > 0) {
-          document.getElementById('bpmDisplay').textContent = data.bpm.toFixed(1);
+          lastDetectedBpm = data.bpm;
+          document.getElementById('bpmDisplay').textContent = Math.floor(data.bpm) + ' (' + data.bpm.toFixed(1) + ')';
           document.getElementById('bpmDisplay').classList.add('has-value');
         }
         if (data.key != null && data.key !== '') {
@@ -2050,6 +2088,7 @@
           document.getElementById('keyDisplay').classList.add('has-value');
         }
         setState('complete');
+        applyClipAvailability(data);
       }
 
       if (!data.isAnalyzing && analysisActive) {
@@ -2058,7 +2097,8 @@
         if (data.isComplete) {
           // Set final values before setState
           if (data.bpm != null && data.bpm > 0) {
-            bpmDisplay.textContent = data.bpm.toFixed(1);
+            lastDetectedBpm = data.bpm;
+            bpmDisplay.textContent = Math.floor(data.bpm) + ' (' + data.bpm.toFixed(1) + ')';
             bpmDisplay.classList.add('has-value');
           }
           if (data.key != null && data.key !== '') {
@@ -2069,10 +2109,16 @@
             keyDisplay.classList.add('failed');
           }
           setState('complete');
+          applyClipAvailability(data);
         } else {
           // Cancelled or failed
           setState('partial');
         }
+      }
+
+      // Auto-stop: C++ duration limit reached — transition recording → buffer_ready
+      if (data.recordingComplete && currentState === 'recording') {
+        setState('buffer_ready');
       }
     };
 
@@ -2081,13 +2127,42 @@
     //   Called via: evaluateJavascript("window.groovescout_updateWaveform([...])")
     //   Payload: array of normalized RMS values (0-1)
     // =========================================================================
-    window.groovescout_updateWaveform = function(rmsData) {
+    window.groovescout_updateWaveform = function(data) {
+      // Accept both legacy array format and new object format {bars, fill, secs}
+      let rmsData, fillFraction, waveformSecs;
+      if (Array.isArray(data)) {
+        rmsData = data; fillFraction = null; waveformSecs = null;
+      } else {
+        rmsData      = data.bars || [];
+        fillFraction = (typeof data.fill === 'number') ? data.fill : null;
+        waveformSecs = (typeof data.secs === 'number') ? data.secs : null;
+      }
       if (!rmsData || !Array.isArray(rmsData) || rmsData.length === 0) return;
-      // Replace default seeded-random bars with actual waveform data
+
+      // Replace seeded-random bars with actual RMS peak data from recording buffer
       waveformBars = rmsData;
-      // Redraw in current visual mode
+
+      // Update recorded-seconds tracker
+      if (waveformSecs !== null && waveformSecs > 0) lastRecordedSecs = waveformSecs;
+
       if (currentState === 'recording') {
+        // Use time-based fill (shows progress even for silent recordings)
+        if (fillFraction !== null) {
+          recordingFill = fillFraction;
+        } else {
+          // Fallback: content-based fill (last non-zero bar index)
+          let lastNonZero = 0;
+          for (let i = rmsData.length - 1; i >= 0; i--) {
+            if (rmsData[i] > 0.0001) { lastNonZero = i + 1; break; }
+          }
+          recordingFill = lastNonZero / rmsData.length;
+        }
         drawWaveform(recordingFill, 'recording', null);
+        // Live recording time counter in buffer status
+        if (waveformSecs !== null && waveformSecs > 0) {
+          const bufText = document.getElementById('bufferStatusText');
+          if (bufText) bufText.textContent = 'REC \u2022 ' + waveformSecs.toFixed(1) + 's';
+        }
       } else if (currentState === 'buffer_ready' || currentState === 'complete' || currentState === 'partial') {
         if (!anyPreviewActive()) {
           drawWaveform(1.0, 'ready', null);

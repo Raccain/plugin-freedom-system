@@ -107,5 +107,9 @@ private:
     // -------------------------------------------------------------------------
     std::optional<juce::WebBrowserComponent::Resource> getResource (const juce::String& url);
 
+    // Last sample count for which waveform data was sent to JS
+    // Used to avoid redundant waveform updates when nothing has changed
+    int lastSentWaveformSamples = 0;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GrooveScoutAudioProcessorEditor)
 };
