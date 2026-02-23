@@ -1584,7 +1584,9 @@
       };
       freqState[inst] = state;
 
-      function render() {
+      // renderVisuals: update CSS positions and labels only (no JUCE writes)
+      // Called from valueChangedEvent listeners to avoid feedback loop.
+      function renderVisuals() {
         const trackWidth = track.clientWidth;
         if (trackWidth === 0) return;
         const lowPos  = freqToPos(state.lowFreq,  trackWidth, cfg.minFreq, cfg.maxFreq);
@@ -1595,6 +1597,11 @@
         fill.style.width = (highPos - lowPos) + 'px';
         lowLabel.textContent  = formatHz(state.lowFreq);
         highLabel.textContent = formatHz(state.highFreq);
+      }
+
+      // render: update visuals AND sync values to JUCE (called from drag handlers only)
+      function render() {
+        renderVisuals();
         const normLow  = Math.log(state.lowFreq  / cfg.minFreq) / Math.log(cfg.maxFreq / cfg.minFreq);
         const normHigh = Math.log(state.highFreq / cfg.minFreq) / Math.log(cfg.maxFreq / cfg.minFreq);
         cfg.stateLow.setNormalisedValue(normLow);
@@ -1643,20 +1650,22 @@
         }
       });
 
-      // Listen for JUCE relay value changes (host automation, preset recall)
+      // Listen for JUCE relay value changes (host automation, preset recall).
+      // Use renderVisuals() — NOT render() — to avoid the feedback loop where
+      // setNormalisedValue() triggers valueChangedEvent which calls render() again.
       cfg.stateLow.valueChangedEvent.addListener(() => {
         const norm = cfg.stateLow.getNormalisedValue();
         state.lowFreq = cfg.minFreq * Math.pow(cfg.maxFreq / cfg.minFreq, norm);
-        render();
+        renderVisuals();
       });
 
       cfg.stateHigh.valueChangedEvent.addListener(() => {
         const norm = cfg.stateHigh.getNormalisedValue();
         state.highFreq = cfg.minFreq * Math.pow(cfg.maxFreq / cfg.minFreq, norm);
-        render();
+        renderVisuals();
       });
 
-      requestAnimationFrame(render);
+      requestAnimationFrame(renderVisuals);
     }
 
     // =========================================================================

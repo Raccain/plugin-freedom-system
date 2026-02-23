@@ -378,6 +378,7 @@ void GrooveScoutAudioProcessor::startAnalysis()
     isPreviewActive.store (false);
 
     // Reset analysis state
+    analyzeTriggered.store (true);
     analysisComplete.store (false);
     analysisCancelled.store (false);
     analysisError.store (0);
