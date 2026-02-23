@@ -1548,21 +1548,34 @@
     // =========================================================================
     // LOG-SCALE DUAL-HANDLE FREQUENCY RANGE SLIDERS
     // =========================================================================
+    // APVTS parameters use NormalisableRange with skew factor (power-law).
+    // skew matches the C++ NormalisableRange fourth argument exactly.
+    // This ensures setNormalisedValue() / getNormalisedValue() round-trips cleanly.
     const FREQ_CONFIGS = {
-      kick:  { minFreq: 20,   maxFreq: 1000,  defaultLow: 40,   defaultHigh: 120,
+      kick:  { min: 20,   max: 1000,  skew: 0.4,  defaultLow: 40,   defaultHigh: 120,
                stateLow: st_kickFreqLow,  stateHigh: st_kickFreqHigh  },
-      snare: { minFreq: 100,  maxFreq: 20000, defaultLow: 200,  defaultHigh: 8000,
+      snare: { min: 100,  max: 20000, skew: 0.25, defaultLow: 200,  defaultHigh: 8000,
                stateLow: st_snareFreqLow, stateHigh: st_snareFreqHigh },
-      hihat: { minFreq: 1000, maxFreq: 20000, defaultLow: 5000, defaultHigh: 16000,
+      hihat: { min: 1000, max: 20000, skew: 0.4,  defaultLow: 5000, defaultHigh: 16000,
                stateLow: st_hihatFreqLow, stateHigh: st_hihatFreqHigh },
     };
 
-    function posToFreq(pos, trackWidth, minFreq, maxFreq) {
-      return minFreq * Math.exp(Math.log(maxFreq / minFreq) * (pos / trackWidth));
+    // Convert frequency → JUCE normalised value (matches JUCE NormalisableRange skew)
+    function freqToNorm(freq, min, max, skew) {
+      const t = Math.max(0, Math.min(1, (freq - min) / (max - min)));
+      return Math.pow(t, skew);
     }
-
-    function freqToPos(freq, trackWidth, minFreq, maxFreq) {
-      return trackWidth * Math.log(freq / minFreq) / Math.log(maxFreq / minFreq);
+    // Convert JUCE normalised value → frequency
+    function normToFreq(norm, min, max, skew) {
+      const t = Math.pow(Math.max(0, Math.min(1, norm)), 1 / skew);
+      return min + (max - min) * t;
+    }
+    // Visual track position helpers (position IS norm * trackWidth)
+    function freqToPos(freq, trackWidth, min, max, skew) {
+      return freqToNorm(freq, min, max, skew) * trackWidth;
+    }
+    function posToFreq(pos, trackWidth, min, max, skew) {
+      return normToFreq(pos / trackWidth, min, max, skew);
     }
 
     const freqState = {};
@@ -1584,13 +1597,12 @@
       };
       freqState[inst] = state;
 
-      // renderVisuals: update CSS positions and labels only (no JUCE writes)
-      // Called from valueChangedEvent listeners to avoid feedback loop.
+      // renderVisuals: CSS positions + labels only — no JUCE writes
       function renderVisuals() {
         const trackWidth = track.clientWidth;
         if (trackWidth === 0) return;
-        const lowPos  = freqToPos(state.lowFreq,  trackWidth, cfg.minFreq, cfg.maxFreq);
-        const highPos = freqToPos(state.highFreq, trackWidth, cfg.minFreq, cfg.maxFreq);
+        const lowPos  = freqToPos(state.lowFreq,  trackWidth, cfg.min, cfg.max, cfg.skew);
+        const highPos = freqToPos(state.highFreq, trackWidth, cfg.min, cfg.max, cfg.skew);
         lowHandle.style.left  = lowPos  + 'px';
         highHandle.style.left = highPos + 'px';
         fill.style.left  = lowPos  + 'px';
@@ -1599,13 +1611,11 @@
         highLabel.textContent = formatHz(state.highFreq);
       }
 
-      // render: update visuals AND sync values to JUCE (called from drag handlers only)
+      // render: visuals + sync to JUCE (drag handlers only — not from valueChangedEvent)
       function render() {
         renderVisuals();
-        const normLow  = Math.log(state.lowFreq  / cfg.minFreq) / Math.log(cfg.maxFreq / cfg.minFreq);
-        const normHigh = Math.log(state.highFreq / cfg.minFreq) / Math.log(cfg.maxFreq / cfg.minFreq);
-        cfg.stateLow.setNormalisedValue(normLow);
-        cfg.stateHigh.setNormalisedValue(normHigh);
+        cfg.stateLow.setNormalisedValue(freqToNorm(state.lowFreq,  cfg.min, cfg.max, cfg.skew));
+        cfg.stateHigh.setNormalisedValue(freqToNorm(state.highFreq, cfg.min, cfg.max, cfg.skew));
       }
 
       freqState[inst].render = render;
@@ -1630,13 +1640,13 @@
         let rawPos = Math.max(0, Math.min(trackWidth, e.clientX - state.trackRect.left));
         const MIN_GAP = 10;
         if (state.dragging === 'low') {
-          const highPos = freqToPos(state.highFreq, trackWidth, cfg.minFreq, cfg.maxFreq);
+          const highPos = freqToPos(state.highFreq, trackWidth, cfg.min, cfg.max, cfg.skew);
           const clamped = Math.min(rawPos, highPos - MIN_GAP);
-          state.lowFreq = Math.max(cfg.minFreq, posToFreq(Math.max(0, clamped), trackWidth, cfg.minFreq, cfg.maxFreq));
+          state.lowFreq = Math.max(cfg.min, posToFreq(Math.max(0, clamped), trackWidth, cfg.min, cfg.max, cfg.skew));
         } else {
-          const lowPos  = freqToPos(state.lowFreq, trackWidth, cfg.minFreq, cfg.maxFreq);
+          const lowPos  = freqToPos(state.lowFreq, trackWidth, cfg.min, cfg.max, cfg.skew);
           const clamped = Math.max(rawPos, lowPos + MIN_GAP);
-          state.highFreq = Math.min(cfg.maxFreq, posToFreq(Math.min(trackWidth, clamped), trackWidth, cfg.minFreq, cfg.maxFreq));
+          state.highFreq = Math.min(cfg.max, posToFreq(Math.min(trackWidth, clamped), trackWidth, cfg.min, cfg.max, cfg.skew));
         }
         render();
       });
@@ -1650,18 +1660,16 @@
         }
       });
 
-      // Listen for JUCE relay value changes (host automation, preset recall).
-      // Use renderVisuals() — NOT render() — to avoid the feedback loop where
-      // setNormalisedValue() triggers valueChangedEvent which calls render() again.
+      // JUCE relay → visual (preset recall / host automation).
+      // Use normToFreq with skew to match JUCE NormalisableRange exactly.
+      // Call renderVisuals() NOT render() to avoid feedback loop.
       cfg.stateLow.valueChangedEvent.addListener(() => {
-        const norm = cfg.stateLow.getNormalisedValue();
-        state.lowFreq = cfg.minFreq * Math.pow(cfg.maxFreq / cfg.minFreq, norm);
+        state.lowFreq = normToFreq(cfg.stateLow.getNormalisedValue(), cfg.min, cfg.max, cfg.skew);
         renderVisuals();
       });
 
       cfg.stateHigh.valueChangedEvent.addListener(() => {
-        const norm = cfg.stateHigh.getNormalisedValue();
-        state.highFreq = cfg.minFreq * Math.pow(cfg.maxFreq / cfg.minFreq, norm);
+        state.highFreq = normToFreq(cfg.stateHigh.getNormalisedValue(), cfg.min, cfg.max, cfg.skew);
         renderVisuals();
       });
 
@@ -2028,7 +2036,22 @@
         if (pctTiles >= 94) { const t = document.getElementById('tile-hihat'); if (t) { t.classList.remove('scanning'); t.classList.add('available'); }}
       }
 
-      // Leaving analysis
+      // Leaving analysis — normal path (saw isAnalyzing=true at least once)
+      // Fast-complete path: analysis finished before JS ever saw isAnalyzing=true
+      // (race condition when analysis takes < one timer tick ~100ms)
+      if (data.isComplete && !analysisActive && currentState === 'analyzing') {
+        analysisActive = false;
+        if (data.bpm != null && data.bpm > 0) {
+          document.getElementById('bpmDisplay').textContent = data.bpm.toFixed(1);
+          document.getElementById('bpmDisplay').classList.add('has-value');
+        }
+        if (data.key != null && data.key !== '') {
+          document.getElementById('keyDisplay').textContent = data.key;
+          document.getElementById('keyDisplay').classList.add('has-value');
+        }
+        setState('complete');
+      }
+
       if (!data.isAnalyzing && analysisActive) {
         analysisActive = false;
 
