@@ -2,18 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GrooveScout</title>
 
   <!-- JUCE 8 WebView frontend library (served by resource provider) -->
   <script type="module" src="js/juce/index.js"></script>
 
   <style>
-    /* =====================================================================
+    /* ==========================================================================
        WEBVIEW CONSTRAINTS (REQUIRED)
-       - NO viewport units: 100vh, 100vw, 100dvh, 100svh are FORBIDDEN
-       - REQUIRED: html, body { height: 100%; }
-       - REQUIRED: user-select: none
-       ===================================================================== */
+       html/body height:100% replaces all forbidden viewport units
+       ========================================================================== */
     html, body {
       height: 100%;
       margin: 0;
@@ -34,44 +33,51 @@
       font-family: 'Inter', 'DM Sans', 'Helvetica Neue', system-ui, sans-serif;
     }
 
-    /* =====================================================================
-       CUSTOM PROPERTIES
-       ===================================================================== */
+    /* ==========================================================================
+       DESIGN TOKENS
+       ========================================================================== */
     :root {
-      --bg:           #0f0f0f;
-      --surface:      #181818;
-      --surface-2:    #1a1a1a;
-      --border:       #222222;
-      --border-card:  #282828;
-      --accent:       #00e5ff;
-      --accent-dim:   #00b8cc;
-      --accent-glow:  0 0 8px rgba(0,229,255,0.55), 0 0 22px rgba(0,229,255,0.18);
-      --accent-glow-strong: 0 0 12px rgba(0,229,255,0.9), 0 0 32px rgba(0,229,255,0.35);
-      --text:         #ffffff;
-      --text-2:       #888888;
-      --text-3:       #555555;
-      --inactive:     #2a2a2a;
-      --warning:      #ff6b6b;
-      --font-mono:    'JetBrains Mono', 'IBM Plex Mono', 'Fira Mono', 'Courier New', monospace;
-      --font-ui:      'Inter', 'DM Sans', 'Helvetica Neue', system-ui, sans-serif;
-      --radius:       4px;
-      --radius-card:  5px;
+      --bg:            #0e0e12;
+      --surface:       #181824;
+      --surface-2:     #1a1a26;
+      --surface-3:     #14141e;
+      --surface-output:#17120a;
+      --border:        #222222;
+      --border-card:   #28282e;
+      --accent:        #ff9500;
+      --accent-dim:    #cc7700;
+      --accent-glow:   0 0 8px rgba(255,149,0,0.55), 0 0 22px rgba(255,149,0,0.18);
+      --accent-glow-strong: 0 0 12px rgba(255,149,0,0.9), 0 0 32px rgba(255,149,0,0.35);
+      --text:          #ffffff;
+      --text-val:      #e8e8e8;
+      --text-val-muted:#cccccc;
+      --text-2:        #aaaaaa;
+      --text-3:        #666666;
+      --text-4:        #3a3a3a;
+      --inactive:      #2a2a2a;
+      --warning:       #ff6b6b;
+      --warning-glow:  0 0 8px rgba(255,107,107,0.5), 0 0 18px rgba(255,107,107,0.2);
+      --font-mono:     'JetBrains Mono', 'IBM Plex Mono', 'Fira Mono', 'Courier New', monospace;
+      --font-ui:       'Inter', 'DM Sans', 'Helvetica Neue', system-ui, sans-serif;
+      --radius:        4px;
+      --radius-pill:   14px;
     }
 
-    /* =====================================================================
+    /* ==========================================================================
        PLUGIN SHELL  750 x 560
-       ===================================================================== */
+       ========================================================================== */
     .plugin-shell {
       width: 750px;
       height: 560px;
       background: var(--bg);
       position: relative;
       overflow: hidden;
+      border: 1px solid #1a1a1a;
     }
 
-    /* =====================================================================
+    /* ==========================================================================
        ROW 1 — TITLE BAR  (y=0, h=36)
-       ===================================================================== */
+       ========================================================================== */
     .title-bar {
       position: absolute;
       left: 0; top: 0;
@@ -79,9 +85,9 @@
       height: 36px;
       display: flex;
       align-items: center;
-      justify-content: center;
+      padding: 0 16px;
       border-bottom: 1px solid #1c1c1c;
-      background: #0f0f0f;
+      background: var(--bg);
     }
 
     .title-text {
@@ -95,507 +101,354 @@
     }
 
     .title-version {
-      position: absolute;
-      right: 16px;
+      margin-left: auto;
       font-family: var(--font-mono);
       font-size: 9px;
       color: var(--text-3);
       letter-spacing: 0.1em;
     }
 
-    /* =====================================================================
-       ROW 2 — ANALYSIS BAR  (y=36, h=80)
-       ===================================================================== */
-    .analysis-bar {
+    /* ==========================================================================
+       ROW 2 — RECORD CONTROLS  (y=36, h=84)
+       ========================================================================== */
+    .record-controls {
       position: absolute;
       left: 0; top: 36px;
       width: 750px;
-      height: 80px;
+      height: 84px;
       display: flex;
       align-items: center;
       padding: 0 20px;
-      gap: 24px;
-      border-bottom: 1px solid #161616;
-      background: #0f0f0f;
+      gap: 10px;
+      background: var(--surface);
+      border-bottom: 1px solid #1c1c28;
     }
 
-    /* --- Analyze / Cancel button --- */
-    .analyze-btn-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 5px;
-      flex-shrink: 0;
-    }
-
-    .analyze-btn {
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      border: 1.5px solid var(--accent);
+    /* REC + STOP buttons — pill shape */
+    .rec-btn, .stop-btn-rec {
+      height: 28px;
+      padding: 0 14px;
+      border-radius: var(--radius-pill);
+      border: 1.5px solid;
       background: transparent;
       cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+      transition: box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
       display: flex;
       align-items: center;
-      justify-content: center;
-      transition: box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+      gap: 5px;
+    }
+
+    .rec-btn {
+      border-color: var(--accent);
       color: var(--accent);
+      min-width: 72px;
+      justify-content: center;
     }
 
-    .analyze-btn:hover {
+    .rec-btn:hover {
       box-shadow: var(--accent-glow);
-      background: rgba(0,229,255,0.06);
+      background: rgba(255,149,0,0.07);
     }
 
-    .analyze-btn:active {
-      background: rgba(0,229,255,0.12);
+    .rec-btn.recording {
+      background: rgba(255,149,0,0.14);
+      box-shadow: var(--accent-glow-strong);
+      border-color: var(--accent);
     }
 
-    .analyze-btn svg {
-      width: 26px;
-      height: 26px;
+    .rec-btn.disabled-state {
+      opacity: 0.3;
+      pointer-events: none;
+      cursor: default;
     }
 
-    .analyze-btn-label {
-      font-family: var(--font-ui);
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 0.18em;
-      color: var(--text-3);
-      text-transform: uppercase;
-    }
-
-    .cancel-btn {
+    .stop-btn-rec {
       border-color: var(--warning);
       color: var(--warning);
-    }
-    .cancel-btn:hover {
-      box-shadow: 0 0 8px rgba(255,107,107,0.5), 0 0 20px rgba(255,107,107,0.2);
-      background: rgba(255,107,107,0.06);
+      min-width: 72px;
+      justify-content: center;
     }
 
-    /* --- BPM / KEY results column ---
-       Fix 2: results column fills remaining width; each result-row uses
-       flex with margin-left:auto on toggle wrapper to push it to the right. */
-    .results-col {
-      flex: 1;
+    .stop-btn-rec:hover {
+      box-shadow: var(--warning-glow);
+      background: rgba(255,107,107,0.07);
+    }
+
+    .stop-btn-rec.disabled-state {
+      opacity: 0.22;
+      pointer-events: none;
+      cursor: default;
+    }
+
+    /* ==========================================================================
+       CAPTURE DURATION ARC DOT-RING KNOB (44x44 SVG, compact)
+       ========================================================================== */
+    .capture-knob-group {
       display: flex;
       flex-direction: column;
-      gap: 0;
-      padding-left: 8px;
-    }
-
-    .result-row {
-      display: flex;
       align-items: center;
-      height: 38px;
+      gap: 0px;
+      margin-left: 6px;
+      flex-shrink: 0;
     }
 
-    .result-label {
+    .capture-knob-label {
       font-family: var(--font-ui);
       font-size: 9px;
       font-weight: 600;
-      letter-spacing: 0.22em;
-      color: var(--text-3);
+      letter-spacing: 0.20em;
       text-transform: uppercase;
-      width: 32px;
+      color: var(--text-3);
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+
+    .capture-knob-svg-wrap {
+      position: relative;
+      width: 44px;
+      height: 44px;
+      cursor: ns-resize;
       flex-shrink: 0;
     }
 
-    .result-value {
+    .capture-knob-svg-wrap svg {
+      display: block;
+      overflow: visible;
+    }
+
+    .capture-knob-value {
       font-family: var(--font-mono);
-      font-size: 26px;
-      font-weight: 500;
-      color: var(--text);
-      letter-spacing: -0.02em;
-      min-width: 110px;
-      line-height: 1;
-    }
-
-    .result-value.key-value {
-      font-size: 17px;
-      font-weight: 400;
-      letter-spacing: 0.04em;
-      min-width: 140px;
-    }
-
-    .result-value.clickable {
-      cursor: pointer;
-      transition: color 0.15s ease;
-    }
-    .result-value.clickable:hover {
-      color: var(--accent);
-    }
-
-    .result-value.placeholder {
-      color: var(--text-3);
-    }
-
-    .result-value.has-value {
-      color: var(--text);
-    }
-
-    /* BPM multiplier chips */
-    .multiplier-chips {
-      display: flex;
-      gap: 4px;
-      margin-left: 10px;
-    }
-
-    .chip {
-      font-family: var(--font-mono);
-      font-size: 9px;
+      font-size: 14px;
       font-weight: 600;
-      letter-spacing: 0.05em;
-      padding: 3px 7px;
-      border-radius: 3px;
-      border: 1px solid var(--border-card);
-      background: var(--surface);
-      color: var(--text-3);
-      cursor: pointer;
-      transition: all 0.15s ease;
+      color: #ffffff;
+      line-height: 1;
+      margin-top: 3px;
+      letter-spacing: 0.03em;
+      text-align: center;
     }
 
-    .chip:hover {
-      border-color: var(--accent-dim);
-      color: var(--accent-dim);
+    /* Bars hint */
+    .bars-hint {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #888888;
+      white-space: nowrap;
+      padding-left: 4px;
     }
 
-    .chip.active {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: rgba(0,229,255,0.08);
-    }
+    .bars-hint.hidden { display: none; }
 
-    /* Toggle switches */
-    .toggle-right-group {
+    /* Buffer status — right aligned */
+    .buffer-status {
+      margin-left: auto;
       display: flex;
       align-items: center;
-      margin-left: auto;
-      flex-shrink: 0;
+      gap: 7px;
     }
 
-    .toggle {
-      position: relative;
-      width: 32px;
-      height: 16px;
-      flex-shrink: 0;
-    }
-
-    .toggle input {
-      display: none;
-    }
-
-    .toggle-track {
-      position: absolute;
-      inset: 0;
-      border-radius: 8px;
-      background: var(--inactive);
-      border: 1px solid #333;
-      cursor: pointer;
-      transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .toggle input:checked + .toggle-track {
-      background: rgba(0,229,255,0.18);
-      border-color: var(--accent);
-      box-shadow: 0 0 6px rgba(0,229,255,0.3);
-    }
-
-    .toggle-thumb {
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 10px;
-      height: 10px;
+    .buffer-status-dot {
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
-      background: #555;
-      transition: transform 0.2s ease, background 0.2s ease;
-      pointer-events: none;
+      background: #3a3a3a;
+      flex-shrink: 0;
+      transition: background 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .toggle input:checked ~ .toggle-thumb {
-      transform: translateX(16px);
+    .buffer-status-dot.active {
       background: var(--accent);
+      box-shadow: 0 0 5px rgba(255,149,0,0.7);
     }
 
-    /* =====================================================================
-       ROW 3 — PROGRESS BAR  (y=116, h=4)
-       ===================================================================== */
-    .progress-bar-row {
+    .buffer-status-dot.recording-pulse {
+      background: var(--warning);
+      animation: pulse-dot 0.8s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { box-shadow: 0 0 2px rgba(255,107,107,0.3); opacity: 1; }
+      50% { box-shadow: 0 0 8px rgba(255,107,107,0.9); opacity: 0.7; }
+    }
+
+    .buffer-status-text {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.10em;
+      color: #666666;
+      text-transform: uppercase;
+    }
+
+    .buffer-status-text.ready {
+      color: #aaaaaa;
+    }
+
+    /* ==========================================================================
+       ROW 5 — WAVEFORM CANVAS  (y=320, h=28)
+       ========================================================================== */
+    .waveform-row {
       position: absolute;
-      left: 0; top: 116px;
+      left: 0; top: 320px;
       width: 750px;
-      height: 4px;
-      background: #161616;
-      overflow: hidden;
+      height: 28px;
+      background: #111111;
+      border-top: 1px solid #1e1e1e;
+      border-bottom: 1px solid #1e1e1e;
     }
 
-    .progress-fill {
-      height: 100%;
-      width: 0%;
-      background: var(--accent);
-      box-shadow: 0 0 6px rgba(0,229,255,0.8);
-      transition: width 0.15s linear;
+    #waveformCanvas {
+      display: block;
+      width: 750px;
+      height: 28px;
     }
 
-    .progress-bar-row.hidden {
-      opacity: 0;
-    }
-
-    /* =====================================================================
-       ROW 4 — MIDI CLIP ROW  (y=120, h=166)
-       ===================================================================== */
-    .midi-clip-row {
+    /* ==========================================================================
+       ROW 3 — DRUM DETECTION CARDS  (y=120, h=156)
+       ========================================================================== */
+    .drum-detection-row {
       position: absolute;
       left: 0; top: 120px;
       width: 750px;
-      height: 166px;
+      height: 156px;
       display: flex;
-      align-items: flex-end;
-      padding: 0 20px 18px;
+      align-items: stretch;
+      padding: 10px 15px;
       gap: 12px;
+      background: var(--surface);
+      border-bottom: 1px solid #1c1c28;
     }
 
-    .midi-clip-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0;
+    .drum-card {
       flex: 1;
-    }
-
-    .midi-clip-label {
-      font-family: var(--font-ui);
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 0.22em;
-      color: var(--text-3);
-      text-transform: uppercase;
-      margin-bottom: 8px;
-      padding-left: 2px;
-    }
-
-    .midi-clip-box {
-      width: 100%;
-      height: 110px;
       background: var(--surface-2);
       border: 1px solid var(--border-card);
       border-radius: var(--radius);
-      position: relative;
-      overflow: hidden;
-      transition: border-color 0.25s ease, box-shadow 0.25s ease;
-    }
-
-    .midi-clip-box .placeholder-roll {
-      position: absolute;
-      inset: 0;
-      opacity: 1;
-      transition: opacity 0.3s ease;
-    }
-
-    .midi-clip-box .active-roll {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      transition: opacity 0.4s ease;
-    }
-
-    .midi-clip-box.active {
-      border-color: var(--accent);
-      box-shadow: var(--accent-glow);
-      cursor: grab;
-    }
-
-    .midi-clip-box.active:active {
-      cursor: grabbing;
-    }
-
-    .midi-clip-box.active .placeholder-roll {
-      opacity: 0;
-    }
-
-    .midi-clip-box.active .active-roll {
-      opacity: 1;
-    }
-
-    @keyframes clip-pulse {
-      0%, 100% { box-shadow: 0 0 4px rgba(0,229,255,0.2); border-color: #333; }
-      50%       { box-shadow: 0 0 14px rgba(0,229,255,0.5); border-color: var(--accent-dim); }
-    }
-
-    .midi-clip-box.analyzing {
-      animation: clip-pulse 1.4s ease-in-out infinite;
-    }
-
-    .drag-handle {
-      position: absolute;
-      bottom: 6px;
-      right: 7px;
-      width: 18px;
-      height: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: opacity 0.15s ease;
-      color: var(--accent);
-      pointer-events: none;
-    }
-
-    .midi-clip-box.active:hover .drag-handle {
-      opacity: 0.85;
-    }
-
-    .roll-bg {
-      position: absolute;
-      inset: 0;
-    }
-
-    /* =====================================================================
-       ROW 5 — DETECTION SETTINGS ACCORDION  (y=286, h=274)
-       ===================================================================== */
-    .detection-settings {
-      position: absolute;
-      left: 0; top: 286px;
-      width: 750px;
-      height: 274px;
-      background: var(--bg);
-      border-top: 1px solid #1a1a1a;
-    }
-
-    .accordion-header {
-      width: 100%;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      padding: 0 18px;
-      gap: 10px;
-      background: var(--surface-2);
-      border-bottom: 1px solid #1e1e1e;
-      cursor: pointer;
-      transition: background 0.15s ease;
-    }
-
-    .accordion-header:hover {
-      background: #1e1e1e;
-    }
-
-    .accordion-chevron {
-      font-size: 10px;
-      color: var(--text-3);
-      transition: transform 0.22s ease;
-      display: inline-block;
-      line-height: 1;
-    }
-
-    .accordion-header.open .accordion-chevron {
-      transform: rotate(0deg);
-    }
-
-    .accordion-header:not(.open) .accordion-chevron {
-      transform: rotate(-90deg);
-    }
-
-    .accordion-title {
-      font-family: var(--font-ui);
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 0.24em;
-      text-transform: uppercase;
-      color: var(--text-2);
-    }
-
-    .accordion-body {
-      overflow: hidden;
-      max-height: 0;
-      transition: max-height 0.26s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .accordion-body.open {
-      max-height: 240px;
-    }
-
-    .accordion-cards {
-      display: flex;
-      gap: 12px;
-      padding: 14px 20px 16px;
-    }
-
-    /* Drum cards */
-    .drum-card {
-      flex: 1;
-      background: #141414;
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-card);
-      padding: 10px 12px 12px;
+      padding: 8px 10px;
       display: flex;
       flex-direction: column;
       gap: 0;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
-      transition: background 0.2s ease;
-    }
-
-    .drum-card.disabled {
-      background: #111111;
-    }
-
-    .drum-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
     }
 
     .drum-card-name {
       font-family: var(--font-ui);
-      font-size: 9px;
+      font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.24em;
+      letter-spacing: 0.28em;
       text-transform: uppercase;
-      color: var(--text-2);
-      transition: opacity 0.2s ease;
+      color: var(--accent);
+      margin-bottom: 6px;
+      opacity: 0.85;
     }
 
-    .drum-card.disabled .drum-card-name {
-      opacity: 0.6;
-    }
-
-    .card-controls {
+    .card-freq-section {
       display: flex;
       flex-direction: column;
-      gap: 0;
-      transition: opacity 0.2s ease;
+      gap: 3px;
+      margin-bottom: 7px;
     }
 
-    .card-controls.disabled {
-      opacity: 0.35;
-      pointer-events: none;
-    }
-
-    .card-param-row {
+    .freq-labels-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
     }
 
-    .card-param-row:last-child {
-      margin-bottom: 0;
-    }
-
-    .card-param-label {
+    .freq-label-tag {
       font-family: var(--font-ui);
-      font-size: 8px;
+      font-size: 7px;
       font-weight: 600;
       letter-spacing: 0.18em;
       color: var(--text-3);
       text-transform: uppercase;
-      width: 30px;
+      width: 26px;
       flex-shrink: 0;
     }
 
-    /* Sensitivity slider */
+    .freq-val-low {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #cccccc;
+      min-width: 42px;
+    }
+
+    .freq-val-spacer { flex: 1; }
+
+    .freq-val-high {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #cccccc;
+      min-width: 42px;
+      text-align: right;
+    }
+
+    .freq-track-wrap {
+      position: relative;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .freq-track-bg {
+      position: absolute;
+      left: 0; right: 0;
+      height: 3px;
+      background: var(--inactive);
+      border-radius: 2px;
+    }
+
+    .freq-track-fill {
+      position: absolute;
+      height: 3px;
+      background: rgba(255,149,0,0.45);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+
+    .freq-handle {
+      position: absolute;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      border: 1.5px solid rgba(255,149,0,0.5);
+      top: 50%;
+      transform: translate(-50%, -50%);
+      cursor: ew-resize;
+      transition: background 0.12s ease, box-shadow 0.12s ease;
+      z-index: 2;
+    }
+
+    .freq-handle:hover,
+    .freq-handle.dragging {
+      background: var(--accent);
+      box-shadow: 0 0 6px rgba(255,149,0,0.7);
+    }
+
+    .card-sens-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 7px;
+    }
+
+    .card-param-label {
+      font-family: var(--font-ui);
+      font-size: 7px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      color: var(--text-3);
+      text-transform: uppercase;
+      width: 26px;
+      flex-shrink: 0;
+    }
+
     .param-slider {
       flex: 1;
       -webkit-appearance: none;
@@ -620,7 +473,7 @@
 
     .param-slider:hover::-webkit-slider-thumb {
       background: var(--accent);
-      box-shadow: 0 0 5px rgba(0,229,255,0.5);
+      box-shadow: 0 0 5px rgba(255,149,0,0.5);
     }
 
     .param-slider::-moz-range-thumb {
@@ -634,83 +487,342 @@
 
     .param-value-display {
       font-family: var(--font-mono);
-      font-size: 8px;
-      color: var(--text-3);
-      width: 34px;
+      font-size: 11px;
+      color: #cccccc;
+      width: 32px;
       text-align: right;
       flex-shrink: 0;
     }
 
-    /* Dual-handle frequency range sliders */
-    .freq-labels-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .preview-btn {
       width: 100%;
-    }
-
-    .freq-val-low {
+      height: 22px;
+      margin-top: auto;
+      border-radius: 3px;
+      border: 1px solid #333;
+      background: transparent;
+      cursor: pointer;
       font-family: var(--font-mono);
       font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
       color: var(--text-3);
-      min-width: 44px;
-    }
-
-    .freq-val-spacer {
-      flex: 1;
-    }
-
-    .freq-val-high {
-      font-family: var(--font-mono);
-      font-size: 8px;
-      color: var(--text-3);
-      min-width: 44px;
-      text-align: right;
-    }
-
-    .freq-track-wrap {
-      position: relative;
-      height: 18px;
+      text-transform: uppercase;
       display: flex;
       align-items: center;
-      user-select: none;
-      -webkit-user-select: none;
+      justify-content: center;
+      gap: 5px;
+      transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
     }
 
-    .freq-track-bg {
+    .preview-btn:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent-dim);
+      background: rgba(255,149,0,0.04);
+    }
+
+    .preview-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(255,149,0,0.1);
+      box-shadow: 0 0 6px rgba(255,149,0,0.25);
+    }
+
+    .preview-btn.disabled-state {
+      opacity: 0.3;
+      pointer-events: none;
+      cursor: default;
+    }
+
+    /* ==========================================================================
+       ROW 4 — ACTION ROW  (y=276, h=44)
+       ========================================================================== */
+    .action-row {
       position: absolute;
-      left: 0; right: 0;
-      height: 3px;
+      left: 0; top: 276px;
+      width: 750px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: var(--surface);
+      border-bottom: 1px solid #1c1c28;
+    }
+
+    .analyze-btn {
+      height: 30px;
+      padding: 0 40px;
+      border-radius: var(--radius);
+      border: 1.5px solid var(--accent);
+      background: var(--accent);
+      cursor: pointer;
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #060606;
+      transition: box-shadow 0.18s ease, opacity 0.18s ease;
+    }
+
+    .analyze-btn:hover {
+      box-shadow: var(--accent-glow-strong);
+    }
+
+    .analyze-btn:active {
+      opacity: 0.85;
+    }
+
+    .analyze-btn.disabled-state {
+      opacity: 0.22;
+      pointer-events: none;
+      cursor: default;
       background: var(--inactive);
-      border-radius: 2px;
+      border-color: #333;
+      color: var(--text-3);
     }
 
-    .freq-track-fill {
+    .stop-btn-analyze {
+      height: 30px;
+      padding: 0 14px;
+      border-radius: var(--radius-pill);
+      border: 1.5px solid var(--warning);
+      background: transparent;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--warning);
+      transition: box-shadow 0.18s ease, background 0.18s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+    }
+
+    .stop-btn-analyze:hover {
+      box-shadow: var(--warning-glow);
+      background: rgba(255,107,107,0.07);
+    }
+
+    .stop-btn-analyze.hidden { display: none; }
+
+    /* Progress area */
+    .progress-overlay {
       position: absolute;
+      left: 0; top: 348px;
+      width: 750px;
+    }
+
+    .progress-bar-track {
       height: 3px;
-      background: rgba(0,229,255,0.45);
-      border-radius: 2px;
+      background: #1c1c1c;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      box-shadow: 0 0 6px rgba(255,149,0,0.8);
+      transition: width 0.12s linear;
+    }
+
+    .progress-step-label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #cccccc;
+      text-align: center;
+      padding-top: 3px;
+      letter-spacing: 0.06em;
+    }
+
+    .progress-overlay.hidden {
+      opacity: 0;
       pointer-events: none;
     }
 
-    .freq-handle {
+    /* ==========================================================================
+       ROW 6 — RESULTS  (y=348, h=52)
+       ========================================================================== */
+    .results-row {
       position: absolute;
-      width: 13px;
-      height: 13px;
-      border-radius: 50%;
-      background: var(--accent-dim);
-      border: 1.5px solid rgba(0,229,255,0.5);
-      top: 50%;
-      transform: translate(-50%, -50%);
-      cursor: ew-resize;
-      transition: background 0.12s ease, box-shadow 0.12s ease;
-      z-index: 2;
+      left: 0; top: 348px;
+      width: 750px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      background: var(--surface-output);
+      border-bottom: 1px solid #24240e;
     }
 
-    .freq-handle:hover,
-    .freq-handle.dragging {
-      background: var(--accent);
-      box-shadow: 0 0 6px rgba(0,229,255,0.7);
+    .result-half {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      height: 100%;
+    }
+
+    .result-half + .result-half {
+      border-left: 1px solid #1c1c1c;
+    }
+
+    .result-label-tag {
+      font-family: var(--font-ui);
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      width: 28px;
+      flex-shrink: 0;
+    }
+
+    .result-value {
+      font-family: var(--font-mono);
+      font-size: 32px;
+      font-weight: 500;
+      color: var(--text-4);
+      letter-spacing: -0.02em;
+      line-height: 1;
+      transition: color 0.25s ease;
+    }
+
+    .result-value.has-value {
+      color: #ffffff;
+    }
+
+    .result-value.failed {
+      color: var(--text-3);
+    }
+
+    .result-value.key-val {
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+    }
+
+    .result-value.clickable {
+      cursor: pointer;
+    }
+
+    .result-value.clickable:hover {
+      color: var(--accent);
+    }
+
+    .result-value.clickable:hover::after {
+      content: ' \2197';
+      font-size: 14px;
+      color: var(--accent);
+      opacity: 0.65;
+    }
+
+    /* ==========================================================================
+       ROW 7 — MIDI CLIP TILES  (y=400, h=160)
+       ========================================================================== */
+    .midi-tiles-row {
+      position: absolute;
+      left: 0; top: 400px;
+      width: 750px;
+      height: 160px;
+      display: flex;
+      align-items: stretch;
+      padding: 12px 20px;
+      gap: 10px;
+      background: var(--surface-output);
+    }
+
+    .midi-tile {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border: 1px dashed #2a2a20;
+      border-radius: var(--radius);
+      background: #130f08;
+      overflow: hidden;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      cursor: default;
+    }
+
+    .midi-tile.available {
+      border-style: solid;
+      border-color: var(--border-card);
+      cursor: grab;
+    }
+
+    .midi-tile.available:hover {
+      border-color: var(--accent-dim);
+      box-shadow: 0 0 10px rgba(255,149,0,0.12);
+    }
+
+    .midi-tile.available:active {
+      cursor: grabbing;
+    }
+
+    @keyframes tile-pulse {
+      0%, 100% { border-color: #252525; box-shadow: none; }
+      50% { border-color: var(--accent-dim); box-shadow: 0 0 8px rgba(255,149,0,0.2); }
+    }
+
+    .midi-tile.scanning {
+      border-style: solid;
+      animation: tile-pulse 1.4s ease-in-out infinite;
+    }
+
+    .midi-tile-label {
+      font-family: var(--font-ui);
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      padding: 6px 8px 3px;
+      flex-shrink: 0;
+      transition: color 0.2s ease;
+    }
+
+    .midi-tile.available .midi-tile-label {
+      color: var(--text-2);
+    }
+
+    .midi-tile-canvas-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .midi-tile-canvas-wrap canvas {
+      position: absolute;
+      inset: 0;
+    }
+
+    .midi-tile-footer {
+      padding: 3px 8px 5px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .drag-indicator {
+      font-family: var(--font-mono);
+      font-size: 7px;
+      letter-spacing: 0.08em;
+      color: var(--text-3);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .midi-tile.available .drag-indicator {
+      opacity: 0.7;
+    }
+
+    .midi-tile.available:hover .drag-indicator {
+      opacity: 1;
+      color: var(--accent-dim);
     }
   </style>
 </head>
@@ -721,258 +833,230 @@
     <!-- ROW 1: Title Bar -->
     <div class="title-bar">
       <span class="title-text">GrooveScout</span>
-      <span class="title-version">v2.0</span>
+      <span class="title-version">v1.0.0</span>
     </div>
 
-    <!-- ROW 2: Analysis Bar -->
-    <div class="analysis-bar">
+    <!-- ROW 2: Record Controls (84px — knob group has breathing room) -->
+    <div class="record-controls">
 
-      <!-- Analyze / Cancel button -->
-      <div class="analyze-btn-wrap">
-        <button class="analyze-btn" id="analyzeBtn" title="Analyze audio">
-          <!-- Spectrum + scan-line icon -->
-          <svg id="analyzeBtnIcon" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="2"    y="14" width="2.5" height="8"  rx="1" fill="currentColor" opacity="0.55"/>
-            <rect x="5.5"  y="8"  width="2.5" height="14" rx="1" fill="currentColor" opacity="0.75"/>
-            <rect x="9"    y="12" width="2.5" height="10" rx="1" fill="currentColor" opacity="0.65"/>
-            <rect x="12.5" y="4"  width="2.5" height="18" rx="1" fill="currentColor" opacity="1.0"/>
-            <rect x="16"   y="10" width="2.5" height="12" rx="1" fill="currentColor" opacity="0.70"/>
-            <rect x="19.5" y="16" width="2.5" height="6"  rx="1" fill="currentColor" opacity="0.5"/>
-            <line x1="1" y1="13" x2="25" y2="13"
-                  stroke="currentColor" stroke-width="1.2"
-                  stroke-dasharray="3 2" opacity="0.9"/>
-            <polygon points="22,10 25,13 22,16"
-                     fill="currentColor" opacity="0.85"/>
+      <!-- REC button -->
+      <button class="rec-btn" id="recBtn" title="Start recording buffer">
+        <span>&#9679;</span><span>REC</span>
+      </button>
+
+      <!-- STOP button (record) — always visible; disabled when not recording -->
+      <button class="stop-btn-rec disabled-state" id="stopBtnRec" title="Stop recording">
+        <span>&#9632;</span><span>STOP</span>
+      </button>
+
+      <!-- Capture Duration — Arc Dot-Ring SVG Knob (44x44, compact) -->
+      <div class="capture-knob-group" title="Capture duration: 1-30 seconds. Drag up/down to adjust. Double-click to reset.">
+        <span class="capture-knob-label">Duration</span>
+        <div class="capture-knob-svg-wrap" id="captureKnobWrap">
+          <svg id="captureKnobSvg" width="44" height="44" viewBox="0 0 44 44">
+            <g id="dotRingGroup"></g>
+            <circle id="knobBody" cx="22" cy="22" r="12"
+              fill="url(#knobGrad)"
+              stroke="#2e2e2e" stroke-width="1"/>
+            <line id="knobIndicator"
+              x1="22" y1="10" x2="22" y2="15"
+              stroke="#cc7700" stroke-width="1.5" stroke-linecap="round"/>
+            <defs>
+              <radialGradient id="knobGrad" cx="38%" cy="35%" r="65%">
+                <stop offset="0%" stop-color="#282828"/>
+                <stop offset="100%" stop-color="#191919"/>
+              </radialGradient>
+            </defs>
           </svg>
+        </div>
+        <span class="capture-knob-value" id="captureDurVal">15s</span>
+      </div>
+
+      <!-- Bars hint — hidden until BPM detected -->
+      <span class="bars-hint hidden" id="barsHint">&#8776; 8 bars</span>
+
+      <!-- Buffer status -->
+      <div class="buffer-status">
+        <div class="buffer-status-dot" id="bufferDot"></div>
+        <span class="buffer-status-text" id="bufferStatusText">BUFFER EMPTY</span>
+      </div>
+
+    </div>
+
+    <!-- ROW 5: Waveform Canvas (y=320, h=28) -->
+    <div class="waveform-row">
+      <canvas id="waveformCanvas" width="750" height="28"></canvas>
+    </div>
+
+    <!-- ROW 3: Drum Detection Cards -->
+    <div class="drum-detection-row">
+
+      <!-- KICK card -->
+      <div class="drum-card">
+        <span class="drum-card-name">Kick</span>
+
+        <div class="card-freq-section">
+          <div class="freq-labels-row">
+            <span class="freq-label-tag">Freq</span>
+            <span class="freq-val-low" id="kickFreqLowVal">40 Hz</span>
+            <span class="freq-val-spacer"></span>
+            <span class="freq-val-high" id="kickFreqHighVal">120 Hz</span>
+          </div>
+          <div class="freq-track-wrap" id="kickFreqTrack">
+            <div class="freq-track-bg"></div>
+            <div class="freq-track-fill" id="kickFreqFill"></div>
+            <div class="freq-handle" id="kickLowHandle" data-role="low" data-inst="kick"></div>
+            <div class="freq-handle" id="kickHighHandle" data-role="high" data-inst="kick"></div>
+          </div>
+        </div>
+
+        <div class="card-sens-row">
+          <span class="card-param-label">Sens</span>
+          <input type="range" class="param-slider" id="kickSensitivity" min="0" max="100" value="50" />
+          <span class="param-value-display" id="kickSensitivityVal">0.50</span>
+        </div>
+
+        <button class="preview-btn disabled-state" id="previewKick" data-inst="kick">
+          <span>&#9654;</span><span>AUDITION</span>
         </button>
-        <span class="analyze-btn-label" id="analyzeBtnLabel">Analyze</span>
       </div>
 
-      <!-- BPM / KEY results -->
-      <div class="results-col">
+      <!-- SNARE card -->
+      <div class="drum-card">
+        <span class="drum-card-name">Snare</span>
 
-        <!-- BPM row -->
-        <div class="result-row">
-          <span class="result-label">BPM</span>
-          <span class="result-value clickable placeholder" id="bpmDisplay"
-                title="Click to set DAW tempo">---</span>
-          <div class="multiplier-chips" id="multiplierChips">
-            <button class="chip" data-mult="0">&#189;x</button>
-            <button class="chip active" data-mult="1">1x</button>
-            <button class="chip" data-mult="2">2x</button>
+        <div class="card-freq-section">
+          <div class="freq-labels-row">
+            <span class="freq-label-tag">Freq</span>
+            <span class="freq-val-low" id="snareFreqLowVal">200 Hz</span>
+            <span class="freq-val-spacer"></span>
+            <span class="freq-val-high" id="snareFreqHighVal">8.0 kHz</span>
           </div>
-          <div class="toggle-right-group" title="Enable BPM analysis">
-            <label class="toggle">
-              <input type="checkbox" id="toggleAnalyzeBPM" checked />
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div>
-            </label>
+          <div class="freq-track-wrap" id="snareFreqTrack">
+            <div class="freq-track-bg"></div>
+            <div class="freq-track-fill" id="snareFreqFill"></div>
+            <div class="freq-handle" id="snareLowHandle" data-role="low" data-inst="snare"></div>
+            <div class="freq-handle" id="snareHighHandle" data-role="high" data-inst="snare"></div>
           </div>
         </div>
 
-        <!-- KEY row -->
-        <div class="result-row">
-          <span class="result-label">KEY</span>
-          <span class="result-value key-value placeholder" id="keyDisplay">---</span>
-          <div class="toggle-right-group" title="Enable key analysis">
-            <label class="toggle">
-              <input type="checkbox" id="toggleAnalyzeKey" checked />
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div>
-            </label>
-          </div>
+        <div class="card-sens-row">
+          <span class="card-param-label">Sens</span>
+          <input type="range" class="param-slider" id="snareSensitivity" min="0" max="100" value="50" />
+          <span class="param-value-display" id="snareSensitivityVal">0.50</span>
         </div>
 
-      </div>
-    </div>
-
-    <!-- ROW 3: Progress Bar -->
-    <div class="progress-bar-row hidden" id="progressBarRow">
-      <div class="progress-fill" id="progressFill"></div>
-    </div>
-
-    <!-- ROW 4: MIDI Clip Row -->
-    <div class="midi-clip-row">
-
-      <!-- ROOT CHORD clip -->
-      <div class="midi-clip-wrap">
-        <span class="midi-clip-label">Root Chord</span>
-        <div class="midi-clip-box" id="clip-chord" data-clip="chord">
-          <canvas class="roll-bg placeholder-roll" id="canvas-chord-placeholder" width="168" height="110"></canvas>
-          <canvas class="roll-bg active-roll" id="canvas-chord-active" width="168" height="110"></canvas>
-          <div class="drag-handle">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-              <circle cx="4" cy="3" r="1.2"/><circle cx="10" cy="3" r="1.2"/>
-              <circle cx="4" cy="7" r="1.2"/><circle cx="10" cy="7" r="1.2"/>
-              <circle cx="4" cy="11" r="1.2"/><circle cx="10" cy="11" r="1.2"/>
-            </svg>
-          </div>
-        </div>
+        <button class="preview-btn disabled-state" id="previewSnare" data-inst="snare">
+          <span>&#9654;</span><span>AUDITION</span>
+        </button>
       </div>
 
-      <!-- KICK clip -->
-      <div class="midi-clip-wrap">
-        <span class="midi-clip-label">Kick</span>
-        <div class="midi-clip-box" id="clip-kick" data-clip="kick">
-          <canvas class="roll-bg placeholder-roll" id="canvas-kick-placeholder" width="168" height="110"></canvas>
-          <canvas class="roll-bg active-roll" id="canvas-kick-active" width="168" height="110"></canvas>
-          <div class="drag-handle">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-              <circle cx="4" cy="3" r="1.2"/><circle cx="10" cy="3" r="1.2"/>
-              <circle cx="4" cy="7" r="1.2"/><circle cx="10" cy="7" r="1.2"/>
-              <circle cx="4" cy="11" r="1.2"/><circle cx="10" cy="11" r="1.2"/>
-            </svg>
-          </div>
-        </div>
-      </div>
+      <!-- HIHAT card -->
+      <div class="drum-card">
+        <span class="drum-card-name">Hihats</span>
 
-      <!-- SNARE clip -->
-      <div class="midi-clip-wrap">
-        <span class="midi-clip-label">Snare</span>
-        <div class="midi-clip-box" id="clip-snare" data-clip="snare">
-          <canvas class="roll-bg placeholder-roll" id="canvas-snare-placeholder" width="168" height="110"></canvas>
-          <canvas class="roll-bg active-roll" id="canvas-snare-active" width="168" height="110"></canvas>
-          <div class="drag-handle">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-              <circle cx="4" cy="3" r="1.2"/><circle cx="10" cy="3" r="1.2"/>
-              <circle cx="4" cy="7" r="1.2"/><circle cx="10" cy="7" r="1.2"/>
-              <circle cx="4" cy="11" r="1.2"/><circle cx="10" cy="11" r="1.2"/>
-            </svg>
+        <div class="card-freq-section">
+          <div class="freq-labels-row">
+            <span class="freq-label-tag">Freq</span>
+            <span class="freq-val-low" id="hihatFreqLowVal">5.0 kHz</span>
+            <span class="freq-val-spacer"></span>
+            <span class="freq-val-high" id="hihatFreqHighVal">16 kHz</span>
+          </div>
+          <div class="freq-track-wrap" id="hihatFreqTrack">
+            <div class="freq-track-bg"></div>
+            <div class="freq-track-fill" id="hihatFreqFill"></div>
+            <div class="freq-handle" id="hihatLowHandle" data-role="low" data-inst="hihat"></div>
+            <div class="freq-handle" id="hihatHighHandle" data-role="high" data-inst="hihat"></div>
           </div>
         </div>
-      </div>
 
-      <!-- HIHAT clip -->
-      <div class="midi-clip-wrap">
-        <span class="midi-clip-label">Hihat</span>
-        <div class="midi-clip-box" id="clip-hihat" data-clip="hihat">
-          <canvas class="roll-bg placeholder-roll" id="canvas-hihat-placeholder" width="168" height="110"></canvas>
-          <canvas class="roll-bg active-roll" id="canvas-hihat-active" width="168" height="110"></canvas>
-          <div class="drag-handle">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-              <circle cx="4" cy="3" r="1.2"/><circle cx="10" cy="3" r="1.2"/>
-              <circle cx="4" cy="7" r="1.2"/><circle cx="10" cy="7" r="1.2"/>
-              <circle cx="4" cy="11" r="1.2"/><circle cx="10" cy="11" r="1.2"/>
-            </svg>
-          </div>
+        <div class="card-sens-row">
+          <span class="card-param-label">Sens</span>
+          <input type="range" class="param-slider" id="hihatSensitivity" min="0" max="100" value="50" />
+          <span class="param-value-display" id="hihatSensitivityVal">0.50</span>
         </div>
+
+        <button class="preview-btn disabled-state" id="previewHihat" data-inst="hihat">
+          <span>&#9654;</span><span>AUDITION</span>
+        </button>
       </div>
 
     </div>
 
-    <!-- ROW 5: Detection Settings Accordion -->
-    <div class="detection-settings">
+    <!-- ROW 4: Action Row -->
+    <div class="action-row">
+      <button class="analyze-btn disabled-state" id="analyzeBtn" title="Analyze buffer">
+        ANALYZE
+      </button>
+      <button class="stop-btn-analyze hidden" id="stopBtnAnalyze" title="Stop analysis">
+        <span>&#9632;</span>&nbsp;STOP
+      </button>
+    </div>
 
-      <div class="accordion-header" id="accordionHeader">
-        <span class="accordion-chevron">&#9660;</span>
-        <span class="accordion-title">Detection Settings</span>
+    <!-- Progress overlay -->
+    <div class="progress-overlay hidden" id="progressOverlay">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-step-label" id="progressStepLabel">Detecting BPM...</div>
+    </div>
+
+    <!-- ROW 6: Results -->
+    <div class="results-row">
+      <div class="result-half">
+        <span class="result-label-tag">BPM</span>
+        <span class="result-value clickable" id="bpmDisplay" title="Click to set DAW tempo">--</span>
+      </div>
+      <div class="result-half">
+        <span class="result-label-tag">Key</span>
+        <span class="result-value key-val" id="keyDisplay">--</span>
+      </div>
+    </div>
+
+    <!-- ROW 7: MIDI Clip Tiles -->
+    <div class="midi-tiles-row">
+
+      <div class="midi-tile" id="tile-chord" data-clip="chord">
+        <span class="midi-tile-label">Root Chord</span>
+        <div class="midi-tile-canvas-wrap">
+          <canvas id="canvas-chord-ph"></canvas>
+          <canvas id="canvas-chord-active" style="opacity:0;"></canvas>
+        </div>
+        <div class="midi-tile-footer">
+          <span class="drag-indicator">&#8942; drag to DAW</span>
+        </div>
       </div>
 
-      <div class="accordion-body" id="accordionBody">
-        <div class="accordion-cards">
+      <div class="midi-tile" id="tile-kick" data-clip="kick">
+        <span class="midi-tile-label">Kick</span>
+        <div class="midi-tile-canvas-wrap">
+          <canvas id="canvas-kick-ph"></canvas>
+          <canvas id="canvas-kick-active" style="opacity:0;"></canvas>
+        </div>
+        <div class="midi-tile-footer">
+          <span class="drag-indicator">&#8942; drag to DAW</span>
+        </div>
+      </div>
 
-          <!-- KICK card -->
-          <div class="drum-card" id="kickCard">
-            <div class="drum-card-header">
-              <span class="drum-card-name">Kick</span>
-              <label class="toggle" title="Enable kick analysis">
-                <input type="checkbox" id="toggleAnalyzeKick" checked />
-                <div class="toggle-track"></div>
-                <div class="toggle-thumb"></div>
-              </label>
-            </div>
-            <div class="card-controls" id="kickControls">
-              <div class="card-param-row">
-                <span class="card-param-label">Sens</span>
-                <input type="range" class="param-slider" id="sliderKickSensitivity"
-                  min="0" max="1000" value="500" />
-                <span class="param-value-display" id="kickSensitivityVal">0.50</span>
-              </div>
-              <div class="card-param-row" style="flex-direction:column; align-items:stretch; gap:4px;">
-                <div class="freq-labels-row">
-                  <span class="card-param-label">Freq</span>
-                  <span class="freq-val-low" id="kickFreqLowVal">40 Hz</span>
-                  <span class="freq-val-spacer"></span>
-                  <span class="freq-val-high" id="kickFreqHighVal">120 Hz</span>
-                </div>
-                <div class="freq-track-wrap" id="kickFreqTrack">
-                  <div class="freq-track-bg"></div>
-                  <div class="freq-track-fill" id="kickFreqFill"></div>
-                  <div class="freq-handle" id="kickLowHandle" data-role="low" data-inst="kick"></div>
-                  <div class="freq-handle" id="kickHighHandle" data-role="high" data-inst="kick"></div>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div class="midi-tile" id="tile-snare" data-clip="snare">
+        <span class="midi-tile-label">Snare</span>
+        <div class="midi-tile-canvas-wrap">
+          <canvas id="canvas-snare-ph"></canvas>
+          <canvas id="canvas-snare-active" style="opacity:0;"></canvas>
+        </div>
+        <div class="midi-tile-footer">
+          <span class="drag-indicator">&#8942; drag to DAW</span>
+        </div>
+      </div>
 
-          <!-- SNARE card -->
-          <div class="drum-card" id="snareCard">
-            <div class="drum-card-header">
-              <span class="drum-card-name">Snare</span>
-              <label class="toggle" title="Enable snare analysis">
-                <input type="checkbox" id="toggleAnalyzeSnare" checked />
-                <div class="toggle-track"></div>
-                <div class="toggle-thumb"></div>
-              </label>
-            </div>
-            <div class="card-controls" id="snareControls">
-              <div class="card-param-row">
-                <span class="card-param-label">Sens</span>
-                <input type="range" class="param-slider" id="sliderSnareSensitivity"
-                  min="0" max="1000" value="500" />
-                <span class="param-value-display" id="snareSensitivityVal">0.50</span>
-              </div>
-              <div class="card-param-row" style="flex-direction:column; align-items:stretch; gap:4px;">
-                <div class="freq-labels-row">
-                  <span class="card-param-label">Freq</span>
-                  <span class="freq-val-low" id="snareFreqLowVal">200 Hz</span>
-                  <span class="freq-val-spacer"></span>
-                  <span class="freq-val-high" id="snareFreqHighVal">8.0 kHz</span>
-                </div>
-                <div class="freq-track-wrap" id="snareFreqTrack">
-                  <div class="freq-track-bg"></div>
-                  <div class="freq-track-fill" id="snareFreqFill"></div>
-                  <div class="freq-handle" id="snareLowHandle" data-role="low" data-inst="snare"></div>
-                  <div class="freq-handle" id="snareHighHandle" data-role="high" data-inst="snare"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- HIHAT card -->
-          <div class="drum-card" id="hihatCard">
-            <div class="drum-card-header">
-              <span class="drum-card-name">Hihat</span>
-              <label class="toggle" title="Enable hihat analysis">
-                <input type="checkbox" id="toggleAnalyzeHihat" checked />
-                <div class="toggle-track"></div>
-                <div class="toggle-thumb"></div>
-              </label>
-            </div>
-            <div class="card-controls" id="hihatControls">
-              <div class="card-param-row">
-                <span class="card-param-label">Sens</span>
-                <input type="range" class="param-slider" id="sliderHihatSensitivity"
-                  min="0" max="1000" value="500" />
-                <span class="param-value-display" id="hihatSensitivityVal">0.50</span>
-              </div>
-              <div class="card-param-row" style="flex-direction:column; align-items:stretch; gap:4px;">
-                <div class="freq-labels-row">
-                  <span class="card-param-label">Freq</span>
-                  <span class="freq-val-low" id="hihatFreqLowVal">5.0 kHz</span>
-                  <span class="freq-val-spacer"></span>
-                  <span class="freq-val-high" id="hihatFreqHighVal">16 kHz</span>
-                </div>
-                <div class="freq-track-wrap" id="hihatFreqTrack">
-                  <div class="freq-track-bg"></div>
-                  <div class="freq-track-fill" id="hihatFreqFill"></div>
-                  <div class="freq-handle" id="hihatLowHandle" data-role="low" data-inst="hihat"></div>
-                  <div class="freq-handle" id="hihatHighHandle" data-role="high" data-inst="hihat"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
+      <div class="midi-tile" id="tile-hihat" data-clip="hihat">
+        <span class="midi-tile-label">Hihats</span>
+        <div class="midi-tile-canvas-wrap">
+          <canvas id="canvas-hihat-ph"></canvas>
+          <canvas id="canvas-hihat-active" style="opacity:0;"></canvas>
+        </div>
+        <div class="midi-tile-footer">
+          <span class="drag-indicator">&#8942; drag to DAW</span>
         </div>
       </div>
 
@@ -983,7 +1067,6 @@
   <script type="module">
     // =========================================================================
     // JUCE 8 PARAMETER IMPORTS
-    // Pattern #21: ES6 module imports required
     // =========================================================================
     import {
       getSliderState,
@@ -1003,18 +1086,16 @@
     // =========================================================================
     // NATIVE FUNCTION HANDLES (non-APVTS actions)
     // =========================================================================
+    const fn_startRec  = getNativeFunction('startRecording');
+    const fn_stopOp    = getNativeFunction('stopCurrentOperation');
     const fn_analyze   = getNativeFunction('analyzeButtonPressed');
     const fn_cancel    = getNativeFunction('cancelAnalysis');
     const fn_setBpm    = getNativeFunction('setBpmToDaw');
     const fn_startDrag = getNativeFunction('startMidiDrag');
 
     // =========================================================================
-    // APVTS PARAMETER STATES
-    // Pattern #15: valueChangedEvent callbacks take no parameters
-    // Pattern #19: Bool params use getToggleState, not getSliderState
+    // APVTS PARAMETER STATES — 9 sliders
     // =========================================================================
-
-    // Float sliders
     const st_kickSensitivity  = getSliderState('kickSensitivity');
     const st_kickFreqLow      = getSliderState('kickFreqLow');
     const st_kickFreqHigh     = getSliderState('kickFreqHigh');
@@ -1025,10 +1106,10 @@
     const st_hihatFreqLow     = getSliderState('hihatFreqLow');
     const st_hihatFreqHigh    = getSliderState('hihatFreqHigh');
 
-    // Choice (combo)
+    // APVTS PARAMETER STATES — 1 combo (hidden, no UI control)
     const st_bpmMultiplier = getComboBoxState('bpmMultiplier');
 
-    // Bool toggles
+    // APVTS PARAMETER STATES — 5 toggles (hidden, no UI controls, default: all true)
     const st_analyzeBPM   = getToggleState('analyzeBPM');
     const st_analyzeKey   = getToggleState('analyzeKey');
     const st_analyzeKick  = getToggleState('analyzeKick');
@@ -1036,23 +1117,361 @@
     const st_analyzeHihat = getToggleState('analyzeHihat');
 
     // =========================================================================
-    // PIANO ROLL RENDERING
+    // ARC DOT-RING KNOB (44x44 SVG, compact geometry)
     // =========================================================================
-    const ACCENT     = '#00e5ff';
-    const BG_CANVAS  = '#1a1a1a';
-    const GRID_LINE  = '#242424';
+    let captureDur = 15; // exposed at module scope for bars hint calculation
 
-    function drawGrid(ctx, w, h, rowCount) {
-      ctx.fillStyle = BG_CANVAS;
+    {
+      const NUM_DOTS    = 20;
+      const START_DEG   = 135;
+      const SWEEP_DEG   = 270;
+      const CENTER_X    = 22;
+      const CENTER_Y    = 22;
+      const DOT_RING_R  = 19;
+      const DOT_RADIUS  = 2;
+      const TIP_RADIUS  = 2.5;
+      const IND_INNER   = 7;
+      const IND_OUTER   = 12;
+
+      const MIN_VAL = 1;
+      const MAX_VAL = 30;
+      const DEFAULT_VAL = 15;
+
+      let knobDragStart = null;
+
+      const svg        = document.getElementById('captureKnobSvg');
+      const dotGroup   = document.getElementById('dotRingGroup');
+      const indicator  = document.getElementById('knobIndicator');
+      const valueLabel = document.getElementById('captureDurVal');
+      const knobWrap   = document.getElementById('captureKnobWrap');
+
+      // Build dot elements
+      const dotEls = [];
+      for (let i = 0; i < NUM_DOTS; i++) {
+        const angleDeg = START_DEG + SWEEP_DEG * (i / (NUM_DOTS - 1));
+        const rad = angleDeg * Math.PI / 180;
+        const cx = CENTER_X + DOT_RING_R * Math.cos(rad);
+        const cy = CENTER_Y + DOT_RING_R * Math.sin(rad);
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', cx.toFixed(2));
+        circle.setAttribute('cy', cy.toFixed(2));
+        circle.setAttribute('r', DOT_RADIUS);
+        circle.setAttribute('fill', '#333333');
+        dotGroup.appendChild(circle);
+        dotEls.push(circle);
+      }
+
+      // Add SVG filter definitions for dot glow
+      const defs = svg.querySelector('defs') || (() => {
+        const d = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        svg.appendChild(d);
+        return d;
+      })();
+
+      const filterGlow = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+      filterGlow.setAttribute('id', 'dotGlow');
+      filterGlow.setAttribute('x', '-100%'); filterGlow.setAttribute('y', '-100%');
+      filterGlow.setAttribute('width', '300%'); filterGlow.setAttribute('height', '300%');
+      const feGlow = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+      feGlow.setAttribute('stdDeviation', '2');
+      feGlow.setAttribute('result', 'blur');
+      const feMerge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+      const feMN1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+      feMN1.setAttribute('in', 'blur');
+      const feMN2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+      feMN2.setAttribute('in', 'SourceGraphic');
+      feMerge.appendChild(feMN1); feMerge.appendChild(feMN2);
+      filterGlow.appendChild(feGlow); filterGlow.appendChild(feMerge);
+      defs.appendChild(filterGlow);
+
+      const filterGlowDim = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+      filterGlowDim.setAttribute('id', 'dotGlowDim');
+      filterGlowDim.setAttribute('x', '-80%'); filterGlowDim.setAttribute('y', '-80%');
+      filterGlowDim.setAttribute('width', '260%'); filterGlowDim.setAttribute('height', '260%');
+      const feGD = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+      feGD.setAttribute('stdDeviation', '1');
+      feGD.setAttribute('result', 'blurDim');
+      const feMD = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+      const feMD1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+      feMD1.setAttribute('in', 'blurDim');
+      const feMD2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+      feMD2.setAttribute('in', 'SourceGraphic');
+      feMD.appendChild(feMD1); feMD.appendChild(feMD2);
+      filterGlowDim.appendChild(feGD); filterGlowDim.appendChild(feMD);
+      defs.appendChild(filterGlowDim);
+
+      function updateKnob(val) {
+        captureDur = val;
+        const norm = (val - MIN_VAL) / (MAX_VAL - MIN_VAL);
+        const activeDotCount = Math.round(norm * (NUM_DOTS - 1));
+
+        for (let i = 0; i < NUM_DOTS; i++) {
+          const isActive = i <= activeDotCount;
+          const isTip    = i === activeDotCount;
+
+          if (isActive) {
+            dotEls[i].setAttribute('r', isTip ? TIP_RADIUS : DOT_RADIUS);
+            dotEls[i].setAttribute('fill', '#ff9500');
+            dotEls[i].setAttribute('filter', isTip ? 'url(#dotGlow)' : 'url(#dotGlowDim)');
+          } else {
+            dotEls[i].setAttribute('r', DOT_RADIUS);
+            dotEls[i].setAttribute('fill', '#333333');
+            dotEls[i].removeAttribute('filter');
+          }
+        }
+
+        // Indicator line
+        const indicatorAngleDeg = START_DEG + norm * SWEEP_DEG;
+        const rad = indicatorAngleDeg * Math.PI / 180;
+        const x1 = CENTER_X + IND_INNER * Math.cos(rad);
+        const y1 = CENTER_Y + IND_INNER * Math.sin(rad);
+        const x2 = CENTER_X + IND_OUTER * Math.cos(rad);
+        const y2 = CENTER_Y + IND_OUTER * Math.sin(rad);
+        indicator.setAttribute('x1', x1.toFixed(2));
+        indicator.setAttribute('y1', y1.toFixed(2));
+        indicator.setAttribute('x2', x2.toFixed(2));
+        indicator.setAttribute('y2', y2.toFixed(2));
+
+        valueLabel.textContent = val + 's';
+      }
+
+      knobWrap.addEventListener('mousedown', (e) => {
+        knobDragStart = { y: e.clientY, val: captureDur };
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (knobDragStart === null) return;
+        const delta = knobDragStart.y - e.clientY;
+        const newVal = Math.max(MIN_VAL, Math.min(MAX_VAL,
+          Math.round(knobDragStart.val + delta * 0.3)
+        ));
+        if (newVal !== captureDur) updateKnob(newVal);
+      });
+
+      document.addEventListener('mouseup', () => { knobDragStart = null; });
+
+      knobWrap.addEventListener('dblclick', () => { updateKnob(DEFAULT_VAL); });
+
+      updateKnob(DEFAULT_VAL);
+    }
+
+    // =========================================================================
+    // WAVEFORM CANVAS + PREVIEW PLAYHEAD
+    // =========================================================================
+    const waveformCanvas = document.getElementById('waveformCanvas');
+    const waveCtx = waveformCanvas.getContext('2d');
+    let waveformBars = [];
+
+    let previewPlayhead = 0.0;
+    let previewAnimInterval = null;
+    let previewFlashing = false;
+
+    function seededRandBars(count) {
+      const bars = [];
+      let s = 0xdeadbeef;
+      for (let i = 0; i < count; i++) {
+        s = (s * 1664525 + 1013904223) & 0xffffffff;
+        bars.push(0.15 + 0.7 * ((s >>> 0) / 0xffffffff));
+      }
+      return bars;
+    }
+
+    // mode: 'idle' | 'recording' | 'ready' | 'preview'
+    function drawWaveform(fillPct, mode, playhead) {
+      const W = waveformCanvas.width;
+      const H = waveformCanvas.height;
+      const cx = H / 2;
+
+      waveCtx.clearRect(0, 0, W, H);
+      waveCtx.fillStyle = '#111111';
+      waveCtx.fillRect(0, 0, W, H);
+
+      const BAR_W = 2;
+      const BAR_GAP = 1;
+      const STEP = BAR_W + BAR_GAP;
+      const BAR_COUNT = Math.floor(W / STEP);
+
+      if (waveformBars.length !== BAR_COUNT) {
+        waveformBars = seededRandBars(BAR_COUNT);
+      }
+
+      if (mode === 'idle' || fillPct === 0) {
+        waveCtx.strokeStyle = '#282828';
+        waveCtx.lineWidth = 1;
+        waveCtx.beginPath();
+        waveCtx.moveTo(0, cx);
+        waveCtx.lineTo(W, cx);
+        waveCtx.stroke();
+        waveCtx.font = '9px "Inter", system-ui, sans-serif';
+        waveCtx.fillStyle = '#2e2e2e';
+        waveCtx.textAlign = 'center';
+        waveCtx.fillText('Press REC then play your track', W / 2, cx + 3);
+        return;
+      }
+
+      if (mode === 'preview' && typeof playhead === 'number') {
+        const playheadX = Math.round(playhead * W);
+        const maxHalf = cx - 3;
+
+        for (let i = 0; i < BAR_COUNT; i++) {
+          const x = i * STEP;
+          const amp = waveformBars[i];
+          const half = amp * maxHalf;
+          const barLeft = x;
+          const barRight = x + BAR_W;
+
+          if (barRight <= playheadX) {
+            waveCtx.fillStyle = '#ff9500';
+            waveCtx.fillRect(x, cx - half, BAR_W, half * 2);
+          } else if (barLeft >= playheadX) {
+            waveCtx.fillStyle = 'rgba(255,149,0,0.2)';
+            waveCtx.fillRect(x, cx - half, BAR_W, half * 2);
+          } else {
+            const playedW = playheadX - barLeft;
+            const unplayedW = BAR_W - playedW;
+            if (playedW > 0) {
+              waveCtx.fillStyle = '#ff9500';
+              waveCtx.fillRect(x, cx - half, playedW, half * 2);
+            }
+            if (unplayedW > 0) {
+              waveCtx.fillStyle = 'rgba(255,149,0,0.2)';
+              waveCtx.fillRect(x + playedW, cx - half, unplayedW, half * 2);
+            }
+          }
+        }
+
+        waveCtx.save();
+        waveCtx.globalAlpha = 0.7;
+        waveCtx.fillStyle = '#ffffff';
+        waveCtx.fillRect(playheadX, 0, 1, H);
+        waveCtx.restore();
+
+        waveCtx.strokeStyle = 'rgba(255,255,255,0.04)';
+        waveCtx.lineWidth = 1;
+        waveCtx.beginPath();
+        waveCtx.moveTo(0, cx);
+        waveCtx.lineTo(W, cx);
+        waveCtx.stroke();
+        return;
+      }
+
+      // Non-preview drawing (recording fill / ready / analyzing / complete)
+      const filledBars = Math.floor(fillPct * BAR_COUNT);
+      const maxHalf = cx - 4;
+
+      for (let i = 0; i < BAR_COUNT; i++) {
+        const x = i * STEP;
+        const amp = waveformBars[i];
+        const half = amp * maxHalf;
+
+        if (i < filledBars) {
+          const isLeading = (i === filledBars - 1);
+          const alpha = isLeading ? 0.85 : 0.38;
+          waveCtx.fillStyle = `rgba(255,149,0,${alpha})`;
+          waveCtx.fillRect(x, cx - half, BAR_W, half * 2);
+          if (isLeading) {
+            waveCtx.fillStyle = 'rgba(255,149,0,0.95)';
+            waveCtx.fillRect(x, cx - half, BAR_W, 1);
+            waveCtx.fillRect(x, cx + half - 1, BAR_W, 1);
+          }
+        } else {
+          if (mode !== 'recording') {
+            waveCtx.fillStyle = 'rgba(255,149,0,0.38)';
+            waveCtx.fillRect(x, cx - half, BAR_W, half * 2);
+          }
+        }
+      }
+
+      waveCtx.strokeStyle = 'rgba(255,255,255,0.06)';
+      waveCtx.lineWidth = 1;
+      waveCtx.beginPath();
+      waveCtx.moveTo(0, cx);
+      waveCtx.lineTo(W, cx);
+      waveCtx.stroke();
+    }
+
+    function startPreviewPlayhead() {
+      stopPreviewPlayhead();
+      previewPlayhead = 0.0;
+      previewFlashing = false;
+
+      previewAnimInterval = setInterval(() => {
+        if (previewFlashing) return;
+
+        previewPlayhead += 0.01;
+
+        if (previewPlayhead >= 1.0) {
+          previewPlayhead = 0.0;
+          previewFlashing = true;
+
+          const W = waveformCanvas.width;
+          const H = waveformCanvas.height;
+          const cx = H / 2;
+          const BAR_W = 2;
+          const STEP = 3;
+          const BAR_COUNT = Math.floor(W / STEP);
+          const maxHalf = cx - 3;
+
+          waveCtx.clearRect(0, 0, W, H);
+          waveCtx.fillStyle = '#111111';
+          waveCtx.fillRect(0, 0, W, H);
+          for (let i = 0; i < BAR_COUNT; i++) {
+            const x = i * STEP;
+            const amp = (waveformBars[i] || 0.5);
+            const half = amp * maxHalf;
+            waveCtx.fillStyle = 'rgba(255,149,0,0.08)';
+            waveCtx.fillRect(x, cx - half, BAR_W, half * 2);
+          }
+
+          setTimeout(() => {
+            previewFlashing = false;
+            previewPlayhead = 0.0;
+          }, 120);
+          return;
+        }
+
+        drawWaveform(1.0, 'preview', previewPlayhead);
+      }, 100);
+    }
+
+    function stopPreviewPlayhead() {
+      if (previewAnimInterval !== null) {
+        clearInterval(previewAnimInterval);
+        previewAnimInterval = null;
+      }
+      previewPlayhead = 0.0;
+      previewFlashing = false;
+    }
+
+    // =========================================================================
+    // PIANO ROLL RENDERING (MIDI TILES)
+    // =========================================================================
+    const ACCENT     = '#ff9500';
+    const ACCENT_DIM = '#cc7700';
+    const ROLL_BG    = '#111111';
+    const GRID_LINE  = '#1c1c1c';
+    const ROWS = 20;
+
+    function sizeCanvas(cvs) {
+      const wrap = cvs.parentElement;
+      const W = wrap.offsetWidth;
+      const H = wrap.offsetHeight;
+      if (W > 0 && H > 0) { cvs.width = W; cvs.height = H; }
+    }
+
+    function drawGrid(ctx, w, h) {
+      ctx.fillStyle = ROLL_BG;
       ctx.fillRect(0, 0, w, h);
-      const rowH = h / rowCount;
+      const rowH = h / ROWS;
       ctx.strokeStyle = GRID_LINE;
       ctx.lineWidth = 0.5;
-      for (let i = 1; i < rowCount; i++) {
+      for (let i = 1; i < ROWS; i++) {
         const y = Math.round(i * rowH) + 0.5;
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
       }
-      ctx.strokeStyle = '#1e1e1e';
+      ctx.strokeStyle = '#161616';
       for (let b = 1; b < 4; b++) {
         const x = Math.round((b / 4) * w) + 0.5;
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
@@ -1064,58 +1483,57 @@
       ctx.fillStyle = color;
       const r = 2;
       ctx.beginPath();
-      ctx.roundRect(x, y, w, h, r);
+      if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+      else ctx.rect(x, y, w, h);
       ctx.fill();
-      ctx.globalAlpha = alpha * 0.5;
+      ctx.globalAlpha = alpha * 0.4;
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(x + r, y + 0.5, w - r * 2, 1);
       ctx.globalAlpha = 1;
     }
 
-    const ROWS = 24;
-
-    function drawPlaceholder(ctx, pattern) {
-      const w = ctx.canvas.width, h = ctx.canvas.height;
-      drawGrid(ctx, w, h, ROWS);
-      const rowH = h / ROWS;
+    function drawRollPattern(ctx, pattern, color, alpha) {
+      const W = ctx.canvas.width, H = ctx.canvas.height;
+      drawGrid(ctx, W, H);
+      const rowH = H / ROWS;
+      if (color === ACCENT) { ctx.shadowColor = ACCENT; ctx.shadowBlur = 3; }
       for (const n of pattern) {
-        drawNote(ctx, n.beat * w, n.row * rowH + 1, n.dur * w - 2, rowH - 2, '#aaaaaa', 0.18);
-      }
-    }
-
-    function drawActive(ctx, pattern) {
-      const w = ctx.canvas.width, h = ctx.canvas.height;
-      drawGrid(ctx, w, h, ROWS);
-      const rowH = h / ROWS;
-      ctx.shadowColor = ACCENT; ctx.shadowBlur = 4;
-      for (const n of pattern) {
-        drawNote(ctx, n.beat * w, n.row * rowH + 1, n.dur * w - 2, rowH - 2, ACCENT, 0.85);
+        drawNote(ctx, n.beat * W, n.row * rowH + 0.5, n.dur * W - 1.5, rowH - 1, color, alpha);
       }
       ctx.shadowBlur = 0;
     }
 
-    const CHORD_PATTERN     = [{ row:4, beat:0.02, dur:0.46 }, { row:7, beat:0.02, dur:0.46 }, { row:10, beat:0.02, dur:0.46 }];
-    const CHORD_PLACEHOLDER = [{ row:3, beat:0.02, dur:0.60 }, { row:6, beat:0.02, dur:0.60 }, { row:9, beat:0.02, dur:0.60 }, { row:13, beat:0.55, dur:0.42 }];
-    const KICK_PATTERN      = [{ row:20, beat:0.00, dur:0.10 }, { row:20, beat:0.25, dur:0.07 }, { row:20, beat:0.625, dur:0.10 }];
-    const KICK_PLACEHOLDER  = [{ row:19, beat:0.00, dur:0.12 }, { row:20, beat:0.50, dur:0.09 }, { row:21, beat:0.75, dur:0.07 }];
-    const SNARE_PATTERN     = [{ row:13, beat:0.00, dur:0.09 }, { row:12, beat:0.25, dur:0.11 }, { row:12, beat:0.75, dur:0.11 }];
-    const SNARE_PLACEHOLDER = [{ row:12, beat:0.25, dur:0.10 }, { row:13, beat:0.75, dur:0.10 }, { row:14, beat:0.50, dur:0.06 }];
-    const HIHAT_PATTERN     = [{ row:2, beat:0.00, dur:0.10 }, { row:2, beat:0.125, dur:0.10 }, { row:2, beat:0.25, dur:0.10 }, { row:2, beat:0.375, dur:0.10 }, { row:1, beat:0.50, dur:0.10 }, { row:2, beat:0.625, dur:0.10 }, { row:2, beat:0.75, dur:0.10 }, { row:2, beat:0.875, dur:0.10 }];
-    const HIHAT_PLACEHOLDER = [{ row:1, beat:0.00, dur:0.09 }, { row:2, beat:0.25, dur:0.09 }, { row:1, beat:0.50, dur:0.09 }, { row:2, beat:0.75, dur:0.09 }];
+    const PATTERNS = {
+      chord: {
+        ph:  [{ row:3, beat:0.02, dur:0.46 }, { row:7, beat:0.02, dur:0.46 }, { row:11, beat:0.02, dur:0.46 }],
+        act: [{ row:3, beat:0.02, dur:0.44 }, { row:7, beat:0.02, dur:0.44 }, { row:11, beat:0.02, dur:0.44 }]
+      },
+      kick: {
+        ph:  [{ row:17, beat:0.00, dur:0.12 }, { row:18, beat:0.50, dur:0.09 }, { row:17, beat:0.75, dur:0.07 }],
+        act: [{ row:17, beat:0.00, dur:0.10 }, { row:17, beat:0.25, dur:0.07 }, { row:17, beat:0.625, dur:0.10 }]
+      },
+      snare: {
+        ph:  [{ row:11, beat:0.25, dur:0.10 }, { row:12, beat:0.75, dur:0.10 }, { row:13, beat:0.50, dur:0.06 }],
+        act: [{ row:11, beat:0.00, dur:0.09 }, { row:10, beat:0.25, dur:0.11 }, { row:10, beat:0.75, dur:0.11 }]
+      },
+      hihat: {
+        ph:  [{ row:1, beat:0.00, dur:0.09 }, { row:2, beat:0.25, dur:0.09 }, { row:1, beat:0.50, dur:0.09 }, { row:2, beat:0.75, dur:0.09 }],
+        act: [{ row:1, beat:0.00, dur:0.09 }, { row:1, beat:0.125, dur:0.09 }, { row:1, beat:0.25, dur:0.09 }, { row:1, beat:0.375, dur:0.09 },
+              { row:2, beat:0.50, dur:0.09 }, { row:1, beat:0.625, dur:0.09 }, { row:1, beat:0.75, dur:0.09 }, { row:1, beat:0.875, dur:0.09 }]
+      }
+    };
 
-    const CLIPS = [
-      { id:'chord', placeholder: CHORD_PLACEHOLDER, active: CHORD_PATTERN },
-      { id:'kick',  placeholder: KICK_PLACEHOLDER,  active: KICK_PATTERN  },
-      { id:'snare', placeholder: SNARE_PLACEHOLDER, active: SNARE_PATTERN },
-      { id:'hihat', placeholder: HIHAT_PLACEHOLDER, active: HIHAT_PATTERN },
-    ];
-
-    function renderAllClips() {
-      for (const clip of CLIPS) {
-        const ph  = document.getElementById(`canvas-${clip.id}-placeholder`);
-        const act = document.getElementById(`canvas-${clip.id}-active`);
-        if (ph)  drawPlaceholder(ph.getContext('2d'), clip.placeholder);
-        if (act) drawActive(act.getContext('2d'), clip.active);
+    function renderMidiTiles(active) {
+      for (const clip of ['chord', 'kick', 'snare', 'hihat']) {
+        const ph  = document.getElementById(`canvas-${clip}-ph`);
+        const act = document.getElementById(`canvas-${clip}-active`);
+        if (!ph || !act) continue;
+        sizeCanvas(ph); sizeCanvas(act);
+        if (ph.width === 0 || ph.height === 0) continue;
+        drawRollPattern(ph.getContext('2d'), PATTERNS[clip].ph, '#666666', 0.2);
+        drawRollPattern(act.getContext('2d'), PATTERNS[clip].act, ACCENT, 0.88);
+        ph.style.opacity  = active ? '0' : '1';
+        act.style.opacity = active ? '1' : '0';
       }
     }
 
@@ -1131,9 +1549,12 @@
     // LOG-SCALE DUAL-HANDLE FREQUENCY RANGE SLIDERS
     // =========================================================================
     const FREQ_CONFIGS = {
-      kick:  { minFreq: 20,   maxFreq: 1000,  defaultLow: 40,   defaultHigh: 120,   paramLow: 'kickFreqLow',   paramHigh: 'kickFreqHigh',   stateLow: st_kickFreqLow,   stateHigh: st_kickFreqHigh  },
-      snare: { minFreq: 100,  maxFreq: 20000, defaultLow: 200,  defaultHigh: 8000,  paramLow: 'snareFreqLow',  paramHigh: 'snareFreqHigh',  stateLow: st_snareFreqLow,  stateHigh: st_snareFreqHigh },
-      hihat: { minFreq: 1000, maxFreq: 20000, defaultLow: 5000, defaultHigh: 16000, paramLow: 'hihatFreqLow',  paramHigh: 'hihatFreqHigh',  stateLow: st_hihatFreqLow,  stateHigh: st_hihatFreqHigh },
+      kick:  { minFreq: 20,   maxFreq: 1000,  defaultLow: 40,   defaultHigh: 120,
+               stateLow: st_kickFreqLow,  stateHigh: st_kickFreqHigh  },
+      snare: { minFreq: 100,  maxFreq: 20000, defaultLow: 200,  defaultHigh: 8000,
+               stateLow: st_snareFreqLow, stateHigh: st_snareFreqHigh },
+      hihat: { minFreq: 1000, maxFreq: 20000, defaultLow: 5000, defaultHigh: 16000,
+               stateLow: st_hihatFreqLow, stateHigh: st_hihatFreqHigh },
     };
 
     function posToFreq(pos, trackWidth, minFreq, maxFreq) {
@@ -1147,13 +1568,13 @@
     const freqState = {};
 
     function setupFreqRangeSlider(inst) {
-      const cfg       = FREQ_CONFIGS[inst];
-      const track     = document.getElementById(`${inst}FreqTrack`);
-      const fill      = document.getElementById(`${inst}FreqFill`);
-      const lowHandle = document.getElementById(`${inst}LowHandle`);
-      const highHandle= document.getElementById(`${inst}HighHandle`);
-      const lowLabel  = document.getElementById(`${inst}FreqLowVal`);
-      const highLabel = document.getElementById(`${inst}FreqHighVal`);
+      const cfg        = FREQ_CONFIGS[inst];
+      const track      = document.getElementById(`${inst}FreqTrack`);
+      const fill       = document.getElementById(`${inst}FreqFill`);
+      const lowHandle  = document.getElementById(`${inst}LowHandle`);
+      const highHandle = document.getElementById(`${inst}HighHandle`);
+      const lowLabel   = document.getElementById(`${inst}FreqLowVal`);
+      const highLabel  = document.getElementById(`${inst}FreqHighVal`);
 
       const state = {
         lowFreq:  cfg.defaultLow,
@@ -1166,24 +1587,21 @@
       function render() {
         const trackWidth = track.clientWidth;
         if (trackWidth === 0) return;
-
         const lowPos  = freqToPos(state.lowFreq,  trackWidth, cfg.minFreq, cfg.maxFreq);
         const highPos = freqToPos(state.highFreq, trackWidth, cfg.minFreq, cfg.maxFreq);
-
         lowHandle.style.left  = lowPos  + 'px';
         highHandle.style.left = highPos + 'px';
         fill.style.left  = lowPos  + 'px';
         fill.style.width = (highPos - lowPos) + 'px';
-
         lowLabel.textContent  = formatHz(state.lowFreq);
         highLabel.textContent = formatHz(state.highFreq);
-
-        // Send to JUCE (normalized 0-1 on log scale)
         const normLow  = Math.log(state.lowFreq  / cfg.minFreq) / Math.log(cfg.maxFreq / cfg.minFreq);
         const normHigh = Math.log(state.highFreq / cfg.minFreq) / Math.log(cfg.maxFreq / cfg.minFreq);
         cfg.stateLow.setNormalisedValue(normLow);
         cfg.stateHigh.setNormalisedValue(normHigh);
       }
+
+      freqState[inst].render = render;
 
       lowHandle.addEventListener('mousedown', (e) => {
         state.dragging = 'low';
@@ -1202,20 +1620,16 @@
       document.addEventListener('mousemove', (e) => {
         if (state.dragging === null) return;
         const trackWidth = state.trackRect.width;
-        let rawPos = e.clientX - state.trackRect.left;
-        rawPos = Math.max(0, Math.min(trackWidth, rawPos));
-        const MIN_GAP_PX = 10;
-
+        let rawPos = Math.max(0, Math.min(trackWidth, e.clientX - state.trackRect.left));
+        const MIN_GAP = 10;
         if (state.dragging === 'low') {
           const highPos = freqToPos(state.highFreq, trackWidth, cfg.minFreq, cfg.maxFreq);
-          const clampedPos = Math.min(rawPos, highPos - MIN_GAP_PX);
-          state.lowFreq = posToFreq(Math.max(0, clampedPos), trackWidth, cfg.minFreq, cfg.maxFreq);
-          state.lowFreq = Math.max(cfg.minFreq, Math.min(state.highFreq * 0.999, state.lowFreq));
+          const clamped = Math.min(rawPos, highPos - MIN_GAP);
+          state.lowFreq = Math.max(cfg.minFreq, posToFreq(Math.max(0, clamped), trackWidth, cfg.minFreq, cfg.maxFreq));
         } else {
-          const lowPos = freqToPos(state.lowFreq, trackWidth, cfg.minFreq, cfg.maxFreq);
-          const clampedPos = Math.max(rawPos, lowPos + MIN_GAP_PX);
-          state.highFreq = posToFreq(Math.min(trackWidth, clampedPos), trackWidth, cfg.minFreq, cfg.maxFreq);
-          state.highFreq = Math.min(cfg.maxFreq, Math.max(state.lowFreq * 1.001, state.highFreq));
+          const lowPos  = freqToPos(state.lowFreq, trackWidth, cfg.minFreq, cfg.maxFreq);
+          const clamped = Math.max(rawPos, lowPos + MIN_GAP);
+          state.highFreq = Math.min(cfg.maxFreq, posToFreq(Math.min(trackWidth, clamped), trackWidth, cfg.minFreq, cfg.maxFreq));
         }
         render();
       });
@@ -1229,15 +1643,16 @@
         }
       });
 
-      // Sync from JUCE on init — callback reads value from state object (Pattern #15)
+      // Listen for JUCE relay value changes (host automation, preset recall)
       cfg.stateLow.valueChangedEvent.addListener(() => {
         const norm = cfg.stateLow.getNormalisedValue();
-        state.lowFreq = posToFreq(norm * track.clientWidth, track.clientWidth, cfg.minFreq, cfg.maxFreq);
+        state.lowFreq = cfg.minFreq * Math.pow(cfg.maxFreq / cfg.minFreq, norm);
         render();
       });
+
       cfg.stateHigh.valueChangedEvent.addListener(() => {
         const norm = cfg.stateHigh.getNormalisedValue();
-        state.highFreq = posToFreq(norm * track.clientWidth, track.clientWidth, cfg.minFreq, cfg.maxFreq);
+        state.highFreq = cfg.minFreq * Math.pow(cfg.maxFreq / cfg.minFreq, norm);
         render();
       });
 
@@ -1247,269 +1662,411 @@
     // =========================================================================
     // SENSITIVITY SLIDERS
     // =========================================================================
-    function setupSensitivity(inst, state) {
-      const slider  = document.getElementById(`slider${inst.charAt(0).toUpperCase() + inst.slice(1)}Sensitivity`);
+    function setupSensitivity(inst, juceState) {
+      const slider  = document.getElementById(`${inst}Sensitivity`);
       const display = document.getElementById(`${inst}SensitivityVal`);
       if (!slider || !display) return;
-
       slider.addEventListener('input', () => {
-        const v = slider.value / 1000;
+        const v = slider.value / 100;
         display.textContent = v.toFixed(2);
-        state.setNormalisedValue(v);
+        juceState.setNormalisedValue(v);
       });
-
-      // Sync from JUCE (Pattern #15)
-      state.valueChangedEvent.addListener(() => {
-        const v = state.getNormalisedValue();
-        slider.value = Math.round(v * 1000);
+      // Listen for JUCE relay value changes (host automation, preset recall)
+      juceState.valueChangedEvent.addListener(() => {
+        const v = juceState.getNormalisedValue();
+        slider.value = Math.round(v * 100);
         display.textContent = v.toFixed(2);
       });
     }
 
     // =========================================================================
-    // BPM MULTIPLIER CHIPS
-    // Linked to bpmMultiplier Choice parameter (index 0=half, 1=1x, 2=2x)
+    // PREVIEW BUTTONS — also controls playhead animation
     // =========================================================================
-    const chips = document.querySelectorAll('.chip');
-    chips.forEach(chip => {
-      chip.addEventListener('click', () => {
-        chips.forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        // Choice parameter: setChoiceIndex uses 0-based index (JUCE 8 ComboBoxState API)
-        const idx = parseInt(chip.dataset.mult);
-        st_bpmMultiplier.setChoiceIndex(idx);
-      });
-    });
+    const previewState = { kick: false, snare: false, hihat: false };
 
-    // Sync multiplier chips from JUCE
-    st_bpmMultiplier.valueChangedEvent.addListener(() => {
-      const idx = st_bpmMultiplier.getChoiceIndex();
-      chips.forEach(c => c.classList.remove('active'));
-      const targetChip = document.querySelector(`.chip[data-mult="${idx}"]`);
-      if (targetChip) targetChip.classList.add('active');
-    });
-
-    // =========================================================================
-    // ANALYSIS BAR TOGGLE BINDINGS (analyzeBPM, analyzeKey)
-    // Pattern #19: Bool params use getToggleState
-    // =========================================================================
-    function bindAnalysisBarToggle(checkboxId, juceState) {
-      const el = document.getElementById(checkboxId);
-      if (!el) return;
-      el.addEventListener('change', () => {
-        juceState.setValue(el.checked);
-      });
-      juceState.valueChangedEvent.addListener(() => {
-        el.checked = juceState.getValue();
-      });
+    function anyPreviewActive() {
+      return previewState.kick || previewState.snare || previewState.hihat;
     }
-    bindAnalysisBarToggle('toggleAnalyzeBPM', st_analyzeBPM);
-    bindAnalysisBarToggle('toggleAnalyzeKey', st_analyzeKey);
 
-    // =========================================================================
-    // DRUM CARD ENABLE/DISABLE TOGGLES
-    // =========================================================================
-    function setCardEnabled(inst, enabled) {
-      const card     = document.getElementById(`${inst}Card`);
-      const controls = document.getElementById(`${inst}Controls`);
-      if (!card || !controls) return;
-      if (enabled) {
-        card.classList.remove('disabled');
-        controls.classList.remove('disabled');
+    ['kick', 'snare', 'hihat'].forEach(inst => {
+      const btn = document.getElementById(`preview${inst.charAt(0).toUpperCase() + inst.slice(1)}`);
+      btn.addEventListener('click', () => {
+        if (btn.classList.contains('disabled-state')) return;
+        const active = !previewState[inst];
+
+        // Stop other active previews
+        ['kick', 'snare', 'hihat'].forEach(other => {
+          if (other !== inst && previewState[other]) {
+            previewState[other] = false;
+            updatePreviewBtn(other, false);
+          }
+        });
+
+        previewState[inst] = active;
+        updatePreviewBtn(inst, active);
+
+        // Hook into playhead animation
+        if (active) {
+          startPreviewPlayhead();
+        } else {
+          stopPreviewPlayhead();
+          drawWaveform(1.0, 'ready', null);
+        }
+      });
+    });
+
+    function updatePreviewBtn(inst, active) {
+      const btn = document.getElementById(`preview${inst.charAt(0).toUpperCase() + inst.slice(1)}`);
+      if (active) {
+        btn.innerHTML = '<span>&#9632;</span><span>STOP AUDITION</span>';
+        btn.classList.add('active');
       } else {
-        card.classList.add('disabled');
-        controls.classList.add('disabled');
+        btn.innerHTML = '<span>&#9654;</span><span>AUDITION</span>';
+        btn.classList.remove('active');
       }
     }
 
-    function bindDrumCardToggle(inst, checkboxId, juceState) {
-      const el = document.getElementById(checkboxId);
-      if (!el) return;
-      el.addEventListener('change', () => {
-        juceState.setValue(el.checked);
-        setCardEnabled(inst, el.checked);
+    function setPreviewsEnabled(enabled) {
+      ['kick', 'snare', 'hihat'].forEach(inst => {
+        const btn = document.getElementById(`preview${inst.charAt(0).toUpperCase() + inst.slice(1)}`);
+        if (enabled) {
+          btn.classList.remove('disabled-state');
+        } else {
+          btn.classList.add('disabled-state');
+          if (previewState[inst]) {
+            previewState[inst] = false;
+            updatePreviewBtn(inst, false);
+          }
+        }
       });
-      juceState.valueChangedEvent.addListener(() => {
-        const v = juceState.getValue();
-        el.checked = v;
-        setCardEnabled(inst, v);
-      });
+      if (!enabled) {
+        stopPreviewPlayhead();
+      }
     }
-
-    bindDrumCardToggle('kick',  'toggleAnalyzeKick',  st_analyzeKick);
-    bindDrumCardToggle('snare', 'toggleAnalyzeSnare', st_analyzeSnare);
-    bindDrumCardToggle('hihat', 'toggleAnalyzeHihat', st_analyzeHihat);
-
-    // =========================================================================
-    // ACCORDION
-    // =========================================================================
-    const accordionHeader = document.getElementById('accordionHeader');
-    const accordionBody   = document.getElementById('accordionBody');
-
-    accordionHeader.addEventListener('click', () => {
-      const isOpen = accordionBody.classList.contains('open');
-      accordionBody.classList.toggle('open', !isOpen);
-      accordionHeader.classList.toggle('open', !isOpen);
-
-      // Re-render freq sliders after accordion opens (clientWidth was 0 when closed)
-      if (!isOpen) {
-        setTimeout(() => {
-          ['kick', 'snare', 'hihat'].forEach(inst => {
-            if (freqState[inst]) {
-              const track = document.getElementById(`${inst}FreqTrack`);
-              const cfg   = FREQ_CONFIGS[inst];
-              const state = freqState[inst];
-              const fill  = document.getElementById(`${inst}FreqFill`);
-              const lowH  = document.getElementById(`${inst}LowHandle`);
-              const highH = document.getElementById(`${inst}HighHandle`);
-              const lowL  = document.getElementById(`${inst}FreqLowVal`);
-              const highL = document.getElementById(`${inst}FreqHighVal`);
-              const tw    = track.clientWidth;
-              if (tw === 0) return;
-              const lp = freqToPos(state.lowFreq,  tw, cfg.minFreq, cfg.maxFreq);
-              const hp = freqToPos(state.highFreq, tw, cfg.minFreq, cfg.maxFreq);
-              lowH.style.left  = lp + 'px';
-              highH.style.left = hp + 'px';
-              fill.style.left  = lp + 'px';
-              fill.style.width = (hp - lp) + 'px';
-              lowL.textContent  = formatHz(state.lowFreq);
-              highL.textContent = formatHz(state.highFreq);
-            }
-          });
-        }, 50);
-      }
-    });
-
-    // =========================================================================
-    // ANALYZE / CANCEL BUTTON — calls native functions
-    // =========================================================================
-    const ICON_ANALYZE = `
-      <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2"    y="14" width="2.5" height="8"  rx="1" fill="currentColor" opacity="0.55"/>
-        <rect x="5.5"  y="8"  width="2.5" height="14" rx="1" fill="currentColor" opacity="0.75"/>
-        <rect x="9"    y="12" width="2.5" height="10" rx="1" fill="currentColor" opacity="0.65"/>
-        <rect x="12.5" y="4"  width="2.5" height="18" rx="1" fill="currentColor" opacity="1.0"/>
-        <rect x="16"   y="10" width="2.5" height="12" rx="1" fill="currentColor" opacity="0.70"/>
-        <rect x="19.5" y="16" width="2.5" height="6"  rx="1" fill="currentColor" opacity="0.5"/>
-        <line x1="1" y1="13" x2="25" y2="13" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.9"/>
-        <polygon points="22,10 25,13 22,16" fill="currentColor" opacity="0.85"/>
-      </svg>`;
-
-    const ICON_CANCEL = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-           stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="6"  x2="6"  y2="18"/>
-        <line x1="6"  y1="6"  x2="18" y2="18"/>
-      </svg>`;
-
-    const analyzeBtn      = document.getElementById('analyzeBtn');
-    const analyzeBtnLabel = document.getElementById('analyzeBtnLabel');
-    let isAnalyzing = false;
-
-    analyzeBtn.addEventListener('click', () => {
-      if (isAnalyzing) {
-        fn_cancel();
-      } else {
-        fn_analyze();
-      }
-    });
 
     // =========================================================================
     // BPM DISPLAY CLICK — set DAW tempo
     // =========================================================================
     document.getElementById('bpmDisplay').addEventListener('click', () => {
-      fn_setBpm();
+      if (currentState === 'complete') {
+        fn_setBpm();
+      }
     });
 
     // =========================================================================
-    // MIDI CLIP DRAG — calls native function with clip type
+    // WAVEFORM ANIMATION (recording state)
     // =========================================================================
-    const clipIds = ['chord', 'kick', 'snare', 'hihat'];
-    clipIds.forEach(clipId => {
-      const box = document.getElementById(`clip-${clipId}`);
-      if (!box) return;
-      box.addEventListener('mousedown', (e) => {
-        if (box.classList.contains('active')) {
-          // Small drag threshold check: start drag on significant movement
-          const startX = e.clientX, startY = e.clientY;
-          const onMove = (ev) => {
-            const dx = ev.clientX - startX, dy = ev.clientY - startY;
-            if (Math.sqrt(dx * dx + dy * dy) > 6) {
-              document.removeEventListener('mousemove', onMove);
-              document.removeEventListener('mouseup', onUp);
-              fn_startDrag(clipId);
-            }
-          };
-          const onUp = () => {
+    let recordingFill = 0;
+    let recordingAnimId = null;
+
+    function animateRecording() {
+      if (currentState !== 'recording') return;
+      recordingFill = Math.min(1.0, recordingFill + 0.003);
+      drawWaveform(recordingFill, 'recording', null);
+      recordingAnimId = requestAnimationFrame(animateRecording);
+    }
+
+    // =========================================================================
+    // STATE MACHINE
+    // =========================================================================
+    let currentState = 'idle';
+
+    const STEPS = ['Detecting BPM...', 'Detecting key...', 'Detecting drums...', 'Writing MIDI...'];
+
+    function setState(state) {
+      currentState = state;
+
+      if (recordingAnimId) { cancelAnimationFrame(recordingAnimId); recordingAnimId = null; }
+
+      // Stop playhead on states that don't support it
+      if (state !== 'buffer_ready' && state !== 'complete' && state !== 'partial' && state !== 'analyzing') {
+        stopPreviewPlayhead();
+        ['kick', 'snare', 'hihat'].forEach(inst => {
+          if (previewState[inst]) {
+            previewState[inst] = false;
+            updatePreviewBtn(inst, false);
+          }
+        });
+      }
+
+      const recBtn         = document.getElementById('recBtn');
+      const stopBtnRec     = document.getElementById('stopBtnRec');
+      const analyzeBtn     = document.getElementById('analyzeBtn');
+      const stopBtnAnalyze = document.getElementById('stopBtnAnalyze');
+      const bpmDisplay     = document.getElementById('bpmDisplay');
+      const keyDisplay     = document.getElementById('keyDisplay');
+      const progressOverlay= document.getElementById('progressOverlay');
+      const progressFill   = document.getElementById('progressFill');
+      const progressStep   = document.getElementById('progressStepLabel');
+      const bufferDot      = document.getElementById('bufferDot');
+      const bufferText     = document.getElementById('bufferStatusText');
+      const barsHint       = document.getElementById('barsHint');
+      const tiles          = ['chord','kick','snare','hihat'].map(id => document.getElementById(`tile-${id}`));
+
+      // Common reset
+      recBtn.classList.remove('recording', 'disabled-state');
+      stopBtnRec.classList.add('disabled-state');
+      stopBtnAnalyze.classList.add('hidden');
+      analyzeBtn.classList.remove('disabled-state');
+      progressOverlay.classList.add('hidden');
+      bufferDot.classList.remove('active', 'recording-pulse');
+      bufferText.classList.remove('ready');
+      tiles.forEach(t => t.classList.remove('available', 'scanning'));
+
+      if (state === 'idle') {
+        recBtn.classList.remove('disabled-state');
+        analyzeBtn.classList.add('disabled-state');
+        bpmDisplay.textContent = '--';
+        bpmDisplay.classList.remove('has-value', 'failed');
+        keyDisplay.textContent = '--';
+        keyDisplay.classList.remove('has-value', 'failed');
+        bufferDot.style.background = '';
+        bufferText.textContent = 'BUFFER EMPTY';
+        barsHint.classList.add('hidden');
+        drawWaveform(0, 'idle', null);
+        setPreviewsEnabled(false);
+        renderMidiTiles(false);
+        recordingFill = 0;
+
+      } else if (state === 'recording') {
+        recBtn.classList.add('recording');
+        stopBtnRec.classList.remove('disabled-state');
+        analyzeBtn.classList.add('disabled-state');
+        bpmDisplay.textContent = '--';
+        bpmDisplay.classList.remove('has-value', 'failed');
+        keyDisplay.textContent = '--';
+        keyDisplay.classList.remove('has-value', 'failed');
+        bufferDot.classList.add('recording-pulse');
+        bufferText.textContent = 'RECORDING...';
+        barsHint.classList.add('hidden');
+        recordingFill = 0;
+        animateRecording();
+        setPreviewsEnabled(false);
+        renderMidiTiles(false);
+
+      } else if (state === 'buffer_ready') {
+        stopBtnRec.classList.add('disabled-state');
+        recBtn.classList.remove('recording');
+        bufferDot.classList.add('active');
+        bufferText.textContent = 'BUFFER READY';
+        bufferText.classList.add('ready');
+        barsHint.classList.add('hidden');
+        recordingFill = 1.0;
+        drawWaveform(1.0, 'ready', null);
+        bpmDisplay.textContent = '--';
+        bpmDisplay.classList.remove('has-value', 'failed');
+        keyDisplay.textContent = '--';
+        keyDisplay.classList.remove('has-value', 'failed');
+        setPreviewsEnabled(true);
+        renderMidiTiles(false);
+
+      } else if (state === 'analyzing') {
+        recBtn.classList.add('disabled-state');
+        stopBtnAnalyze.classList.remove('hidden');
+        analyzeBtn.classList.add('disabled-state');
+        bufferDot.classList.add('active');
+        bufferText.textContent = 'BUFFER READY';
+        bufferText.classList.add('ready');
+        barsHint.classList.add('hidden');
+        progressOverlay.classList.remove('hidden');
+        progressFill.style.width = '0%';
+        progressStep.textContent = STEPS[0];
+        setPreviewsEnabled(false);
+        startPreviewPlayhead();
+        tiles.forEach(t => t.classList.add('scanning'));
+        bpmDisplay.textContent = '--';
+        bpmDisplay.classList.remove('has-value', 'failed');
+        keyDisplay.textContent = '--';
+        keyDisplay.classList.remove('has-value', 'failed');
+        renderMidiTiles(false);
+        // Progress updates come from C++ via groovescout_updateAnalysisState
+
+      } else if (state === 'complete') {
+        stopPreviewPlayhead();
+        bufferDot.classList.add('active');
+        bufferText.textContent = 'BUFFER READY';
+        bufferText.classList.add('ready');
+        drawWaveform(1.0, 'ready', null);
+        // BPM/key values already set by groovescout_updateAnalysisState
+        // Calculate bars hint from detected BPM and capture duration
+        const bpm = parseFloat(bpmDisplay.textContent);
+        if (!isNaN(bpm) && bpm > 0) {
+          const bars = Math.round(captureDur * bpm / (4 * 60));
+          barsHint.textContent = '\u2248 ' + bars + ' bars';
+          barsHint.classList.remove('hidden');
+        } else {
+          barsHint.classList.add('hidden');
+        }
+        tiles.forEach(t => t.classList.add('available'));
+        setPreviewsEnabled(true);
+        renderMidiTiles(true);
+
+      } else if (state === 'partial') {
+        stopPreviewPlayhead();
+        bufferDot.classList.add('active');
+        bufferText.textContent = 'BUFFER READY';
+        bufferText.classList.add('ready');
+        drawWaveform(1.0, 'ready', null);
+        // Partial results: BPM/key may already be set or show '--'
+        barsHint.classList.add('hidden');
+        setPreviewsEnabled(true);
+        renderMidiTiles(false);
+      }
+    }
+
+    // =========================================================================
+    // BUTTON WIRING — native function calls + local state transitions
+    // =========================================================================
+    document.getElementById('recBtn').addEventListener('click', () => {
+      if (currentState === 'idle' || currentState === 'buffer_ready' || currentState === 'complete' || currentState === 'partial') {
+        fn_startRec();
+        setState('recording');
+      }
+    });
+
+    document.getElementById('stopBtnRec').addEventListener('click', () => {
+      if (currentState === 'recording') {
+        fn_stopOp();
+        setState('buffer_ready');
+      }
+    });
+
+    document.getElementById('analyzeBtn').addEventListener('click', () => {
+      if (currentState === 'buffer_ready' || currentState === 'complete' || currentState === 'partial') {
+        fn_analyze();
+        setState('analyzing');
+      }
+    });
+
+    document.getElementById('stopBtnAnalyze').addEventListener('click', () => {
+      if (currentState === 'analyzing') {
+        fn_cancel();
+        setState('partial');
+      }
+    });
+
+    // =========================================================================
+    // MIDI TILE DRAG-TO-DAW
+    // =========================================================================
+    ['chord', 'kick', 'snare', 'hihat'].forEach(clipId => {
+      const tile = document.getElementById(`tile-${clipId}`);
+      if (!tile) return;
+      tile.addEventListener('mousedown', (e) => {
+        if (!tile.classList.contains('available')) return;
+        const sx = e.clientX, sy = e.clientY;
+        const onMove = (ev) => {
+          if (Math.sqrt((ev.clientX - sx) ** 2 + (ev.clientY - sy) ** 2) > 6) {
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
-          };
-          document.addEventListener('mousemove', onMove);
-          document.addEventListener('mouseup', onUp);
-        }
+            fn_startDrag(clipId);
+          }
+        };
+        const onUp = () => {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
       });
     });
 
     // =========================================================================
-    // ANALYSIS STATE UPDATE — called by C++ Timer via evaluateJavascript
-    // window.groovescout_updateAnalysisState({ bpm, key, progress, isAnalyzing, isComplete })
+    // C++ CALLBACK: Analysis state updates (driven by PluginEditor::timerCallback)
+    //   Called via: evaluateJavascript("window.groovescout_updateAnalysisState({...})")
+    //   Payload: { isAnalyzing: bool, isComplete: bool, progress: 0-1, bpm: num|null, key: str|null }
     // =========================================================================
+    let analysisActive = false;
+
     window.groovescout_updateAnalysisState = function(data) {
-      const bpmDisplay  = document.getElementById('bpmDisplay');
-      const keyDisplay  = document.getElementById('keyDisplay');
-      const progressRow = document.getElementById('progressBarRow');
-      const progressFill= document.getElementById('progressFill');
-      const clipEls     = clipIds.map(id => document.getElementById(`clip-${id}`));
+      const bpmDisplay     = document.getElementById('bpmDisplay');
+      const keyDisplay     = document.getElementById('keyDisplay');
+      const progressFill   = document.getElementById('progressFill');
+      const progressStep   = document.getElementById('progressStepLabel');
 
-      isAnalyzing = data.isAnalyzing || false;
-
-      if (data.isAnalyzing) {
-        analyzeBtn.innerHTML = ICON_CANCEL;
-        analyzeBtn.classList.add('cancel-btn');
-        analyzeBtnLabel.textContent = 'Cancel';
-        progressRow.classList.remove('hidden');
-        progressFill.style.width = ((data.progress || 0) * 100) + '%';
-        clipEls.forEach(el => { el.classList.remove('active'); el.classList.add('analyzing'); });
-      } else {
-        analyzeBtn.innerHTML = data.isComplete ? ICON_ANALYZE : ICON_ANALYZE;
-        analyzeBtn.classList.remove('cancel-btn');
-        analyzeBtnLabel.textContent = data.isComplete ? 'Re-Analyze' : 'Analyze';
-        progressRow.classList.add('hidden');
-        progressFill.style.width = '0%';
-        if (data.isComplete) {
-          clipEls.forEach(el => { el.classList.remove('analyzing'); el.classList.add('active'); });
-        } else {
-          clipEls.forEach(el => { el.classList.remove('active', 'analyzing'); });
+      // Entering analysis
+      if (data.isAnalyzing && !analysisActive) {
+        analysisActive = true;
+        if (currentState !== 'analyzing') {
+          setState('analyzing');
         }
       }
 
-      if (data.bpm !== undefined && data.bpm !== null) {
-        bpmDisplay.textContent = data.bpm.toFixed(1);
-        bpmDisplay.classList.remove('placeholder');
-        bpmDisplay.classList.add('has-value');
+      // During analysis: update progress bar and step label
+      if (data.isAnalyzing) {
+        const pct = (data.progress || 0) * 100;
+        progressFill.style.width = pct + '%';
+
+        if (pct < 30) progressStep.textContent = STEPS[0];
+        else if (pct < 55) progressStep.textContent = STEPS[1];
+        else if (pct < 80) progressStep.textContent = STEPS[2];
+        else progressStep.textContent = STEPS[3];
+
+        // Incremental BPM/key (if C++ provides them during analysis)
+        if (data.bpm != null && data.bpm > 0) {
+          bpmDisplay.textContent = data.bpm.toFixed(1);
+          bpmDisplay.classList.add('has-value');
+        }
+        if (data.key != null && data.key !== '') {
+          keyDisplay.textContent = data.key;
+          keyDisplay.classList.add('has-value');
+        }
+
+        // Tile transitions based on progress
+        const pctTiles = pct;
+        if (pctTiles >= 60) { const t = document.getElementById('tile-chord'); if (t) { t.classList.remove('scanning'); t.classList.add('available'); }}
+        if (pctTiles >= 70) { const t = document.getElementById('tile-kick');  if (t) { t.classList.remove('scanning'); t.classList.add('available'); }}
+        if (pctTiles >= 82) { const t = document.getElementById('tile-snare'); if (t) { t.classList.remove('scanning'); t.classList.add('available'); }}
+        if (pctTiles >= 94) { const t = document.getElementById('tile-hihat'); if (t) { t.classList.remove('scanning'); t.classList.add('available'); }}
       }
 
-      if (data.key !== undefined && data.key !== null) {
-        keyDisplay.textContent = data.key;
-        keyDisplay.classList.remove('placeholder');
-        keyDisplay.classList.add('has-value');
-      }
+      // Leaving analysis
+      if (!data.isAnalyzing && analysisActive) {
+        analysisActive = false;
 
-      if (!data.isAnalyzing && !data.isComplete) {
-        bpmDisplay.textContent = '---';
-        bpmDisplay.classList.add('placeholder');
-        bpmDisplay.classList.remove('has-value');
-        keyDisplay.textContent = '---';
-        keyDisplay.classList.add('placeholder');
-        keyDisplay.classList.remove('has-value');
+        if (data.isComplete) {
+          // Set final values before setState
+          if (data.bpm != null && data.bpm > 0) {
+            bpmDisplay.textContent = data.bpm.toFixed(1);
+            bpmDisplay.classList.add('has-value');
+          }
+          if (data.key != null && data.key !== '') {
+            keyDisplay.textContent = data.key;
+            keyDisplay.classList.add('has-value');
+          } else {
+            keyDisplay.textContent = '?';
+            keyDisplay.classList.add('failed');
+          }
+          setState('complete');
+        } else {
+          // Cancelled or failed
+          setState('partial');
+        }
+      }
+    };
+
+    // =========================================================================
+    // C++ CALLBACK: Waveform RMS data (driven by PluginEditor::timerCallback)
+    //   Called via: evaluateJavascript("window.groovescout_updateWaveform([...])")
+    //   Payload: array of normalized RMS values (0-1)
+    // =========================================================================
+    window.groovescout_updateWaveform = function(rmsData) {
+      if (!rmsData || !Array.isArray(rmsData) || rmsData.length === 0) return;
+      // Replace default seeded-random bars with actual waveform data
+      waveformBars = rmsData;
+      // Redraw in current visual mode
+      if (currentState === 'recording') {
+        drawWaveform(recordingFill, 'recording', null);
+      } else if (currentState === 'buffer_ready' || currentState === 'complete' || currentState === 'partial') {
+        if (!anyPreviewActive()) {
+          drawWaveform(1.0, 'ready', null);
+        }
       }
     };
 
     // =========================================================================
     // INIT
+    // Module scripts are deferred — DOM is already parsed, no DOMContentLoaded needed
     // =========================================================================
-    renderAllClips();
-
     setupFreqRangeSlider('kick');
     setupFreqRangeSlider('snare');
     setupFreqRangeSlider('hihat');
@@ -1518,11 +2075,15 @@
     setupSensitivity('snare', st_snareSensitivity);
     setupSensitivity('hihat', st_hihatSensitivity);
 
-    // Init card state from JUCE toggle states
-    setCardEnabled('kick',  st_analyzeKick.getValue());
-    setCardEnabled('snare', st_analyzeSnare.getValue());
-    setCardEnabled('hihat', st_analyzeHihat.getValue());
+    setState('idle');
 
+    // Delay layout-dependent renders until browser has performed layout
+    setTimeout(() => {
+      ['kick', 'snare', 'hihat'].forEach(inst => {
+        if (freqState[inst] && freqState[inst].render) freqState[inst].render();
+      });
+      renderMidiTiles(false);
+    }, 80);
   </script>
 </body>
 </html>
