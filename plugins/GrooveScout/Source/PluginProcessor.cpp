@@ -369,7 +369,10 @@ void GrooveScoutAudioProcessor::startAnalysis()
 {
     if (recordedSamples.load() == 0)
     {
-        DBG ("GrooveScout: startAnalysis() called with empty buffer — ignored");
+        DBG ("GrooveScout: startAnalysis() called with empty buffer — setting complete so JS can escape analyzing state");
+        analyzeTriggered.store (true);
+        analysisError.store (1);   // 1 = buffer empty
+        analysisComplete.store (true);
         return;
     }
 
