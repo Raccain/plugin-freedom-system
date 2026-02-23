@@ -91,9 +91,10 @@ public:
     std::atomic<bool>  recordingComplete { false };
 
     // Preview state
-    std::atomic<bool>  isPreviewActive   { false };
+    std::atomic<bool>  isPreviewActive    { false };
     std::atomic<int>   previewPlayhead   { 0 };
     std::atomic<int>   previewBand       { 0 };  // 0=kick, 1=snare, 2=hihat
+    std::atomic<bool>  previewJustStarted { false };  // triggers filter reset on new preview
 
     // Analysis state
     std::atomic<bool>  analysisComplete  { false };
@@ -162,6 +163,33 @@ private:
     //==============================================================================
 
     int    currentBlockSize    = 512;
+
+    // Preview band-pass IIR filters — audio thread only, no locking needed.
+    // Applied to recorded-buffer playback so the user hears the freq-filtered band.
+    juce::IIRFilter previewHP[2];   // high-pass (L, R)
+    juce::IIRFilter previewLP[2];   // low-pass  (L, R)
+    float  previewLastFreqLow  = -1.0f;
+    float  previewLastFreqHigh = -1.0f;
+    int    previewLastBand     = -1;
+
+    // Cached raw parameter pointers — set in prepareToPlay(), used in processBlock()
+    // to avoid HashMap lookup on every audio callback.
+    std::atomic<float>* p_kickFreqLow      = nullptr;
+    std::atomic<float>* p_kickFreqHigh     = nullptr;
+    std::atomic<float>* p_snareFreqLow     = nullptr;
+    std::atomic<float>* p_snareFreqHigh    = nullptr;
+    std::atomic<float>* p_hihatFreqLow     = nullptr;
+    std::atomic<float>* p_hihatFreqHigh    = nullptr;
+    std::atomic<float>* p_kickSensitivity  = nullptr;
+    std::atomic<float>* p_snareSensitivity = nullptr;
+    std::atomic<float>* p_hihatSensitivity = nullptr;
+
+    // Sensitivity gate state — audio thread only, no locking needed.
+    // Mirrors the adaptive threshold used in detectOnsetsInBand() so the user
+    // hears exactly which transients would pass during analysis.
+    float previewGateEnv    = 0.0f;   // envelope follower (instant attack, ~75ms release)
+    float previewGatePeak   = 0.0f;   // slow-decaying peak reference for threshold
+    float previewGateSmooth = 0.0f;   // smoothed gate output (avoids clicks)
 
     // Background analysis thread
     std::unique_ptr<GrooveScoutAnalyzer> analyzerThread;

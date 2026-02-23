@@ -220,6 +220,26 @@ void GrooveScoutAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     analysisProgress.store (0);
     analysisStep.store (0);
     analysisError.store (0);
+
+    // Cache raw parameter pointers for processBlock() (avoids HashMap lookup per block)
+    p_kickFreqLow      = parameters.getRawParameterValue ("kickFreqLow");
+    p_kickFreqHigh     = parameters.getRawParameterValue ("kickFreqHigh");
+    p_snareFreqLow     = parameters.getRawParameterValue ("snareFreqLow");
+    p_snareFreqHigh    = parameters.getRawParameterValue ("snareFreqHigh");
+    p_hihatFreqLow     = parameters.getRawParameterValue ("hihatFreqLow");
+    p_hihatFreqHigh    = parameters.getRawParameterValue ("hihatFreqHigh");
+    p_kickSensitivity  = parameters.getRawParameterValue ("kickSensitivity");
+    p_snareSensitivity = parameters.getRawParameterValue ("snareSensitivity");
+    p_hihatSensitivity = parameters.getRawParameterValue ("hihatSensitivity");
+
+    // Reset preview filter state
+    for (int ch = 0; ch < 2; ++ch) { previewHP[ch].reset(); previewLP[ch].reset(); }
+    previewLastFreqLow  = -1.0f;
+    previewLastFreqHigh = -1.0f;
+    previewLastBand     = -1;
+    previewGateEnv    = 0.0f;
+    previewGatePeak   = 0.0f;
+    previewGateSmooth = 0.0f;
 }
 
 void GrooveScoutAudioProcessor::releaseResources()
@@ -303,8 +323,15 @@ void GrooveScoutAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         }
     }
 
-    // Preview playback — replaces passthrough audio with the recorded buffer
-    // when the user activates an Audition button.
+    // Preview playback — replaces passthrough audio with the recorded buffer,
+    // filtered to the selected drum's frequency range so the user hears only
+    // that band while auditioning.
+    //
+    // Sensitivity gate: mirrors the adaptive threshold used in detectOnsetsInBand().
+    // Gate opens when the filtered envelope exceeds peak * (1 - sensitivity) * 0.35.
+    //   sensitivity=1.0 → threshold=0 → gate always open (hear full band)
+    //   sensitivity=0.5 → threshold=peak*0.175 → only moderately loud hits pass
+    //   sensitivity=0.0 → threshold=peak*0.35 → only the strongest transients pass
     if (isPreviewActive.load())
     {
         const int nRecorded = recordedSamples.load();
@@ -314,12 +341,103 @@ void GrooveScoutAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             const int numCh  = juce::jmin (buffer.getNumChannels(),
                                             recordingBuffer.getNumChannels());
 
-            for (int ch = 0; ch < numCh; ++ch)
+            // Reset filter + gate state at the start of a new preview session
+            if (previewJustStarted.load())
             {
-                for (int i = 0; i < numSamples; ++i)
+                previewJustStarted.store (false);
+                previewLastFreqLow  = -1.0f;
+                previewLastFreqHigh = -1.0f;
+                previewLastBand     = -1;
+                for (int ch = 0; ch < 2; ++ch) { previewHP[ch].reset(); previewLP[ch].reset(); }
+                previewGateEnv    = 0.0f;
+                previewGatePeak   = 0.0f;
+                previewGateSmooth = 0.0f;
+            }
+
+            // Read freq range for the active band (cached atomic pointers — safe on audio thread)
+            const int band = previewBand.load();
+            float freqLow, freqHigh;
+            if (band == 0)      { freqLow = p_kickFreqLow  ? p_kickFreqLow->load()   :  40.0f;
+                                  freqHigh = p_kickFreqHigh ? p_kickFreqHigh->load()  : 120.0f; }
+            else if (band == 1) { freqLow = p_snareFreqLow  ? p_snareFreqLow->load() :  200.0f;
+                                  freqHigh = p_snareFreqHigh ? p_snareFreqHigh->load(): 8000.0f; }
+            else                { freqLow = p_hihatFreqLow  ? p_hihatFreqLow->load() :  5000.0f;
+                                  freqHigh = p_hihatFreqHigh ? p_hihatFreqHigh->load(): 16000.0f; }
+
+            // Recompute IIR coefficients only when band or freq params change
+            if (band != previewLastBand
+                || std::abs (freqLow  - previewLastFreqLow)  > 0.5f
+                || std::abs (freqHigh - previewLastFreqHigh) > 0.5f)
+            {
+                previewLastBand     = band;
+                previewLastFreqLow  = freqLow;
+                previewLastFreqHigh = freqHigh;
+
+                const auto hpCoeffs = juce::IIRCoefficients::makeHighPass (currentSampleRate, (double) freqLow);
+                const auto lpCoeffs = juce::IIRCoefficients::makeLowPass  (currentSampleRate, (double) freqHigh);
+                for (int ch = 0; ch < 2; ++ch)
                 {
-                    const int readPos = (head + i) % nRecorded;
-                    buffer.setSample (ch, i, recordingBuffer.getSample (ch, readPos));
+                    previewHP[ch].setCoefficients (hpCoeffs);
+                    previewLP[ch].setCoefficients (lpCoeffs);
+                }
+            }
+
+            // Read sensitivity for the active band
+            float sensitivity = 0.5f;
+            if      (band == 0 && p_kickSensitivity)  sensitivity = p_kickSensitivity->load();
+            else if (band == 1 && p_snareSensitivity) sensitivity = p_snareSensitivity->load();
+            else if (             p_hihatSensitivity) sensitivity = p_hihatSensitivity->load();
+
+            // Gate coefficients (tuned for natural drum transient behaviour).
+            // Release ~75ms: exp(-1/(0.075*sr)) ≈ 0.9997 at 44.1kHz — slightly fast but snappy.
+            // Peak decay ~30s: very slow, keeps the reference stable across buffer loops.
+            // Open speed ~3ms, close speed ~30ms: fast open preserves transient attack;
+            // slower close avoids chopping off the tail of each hit.
+            const float gateRelCoeff   = 0.9997f;
+            const float gatePeakCoeff  = 0.99999f;
+            const float gateOpenSpeed  = 0.01f;
+            const float gateCloseSpeed = 0.001f;
+
+            // Fill buffer with band-filtered + sensitivity-gated recorded audio.
+            // Gate uses channel-0 envelope; the same gate value is applied to all channels.
+            for (int i = 0; i < numSamples; ++i)
+            {
+                const int readPos = (head + i) % nRecorded;
+
+                // Filter channel 0 and use it to drive the gate envelope
+                float s0 = recordingBuffer.getSample (0, readPos);
+                s0 = previewHP[0].processSingleSampleRaw (s0);
+                s0 = previewLP[0].processSingleSampleRaw (s0);
+
+                // Envelope follower: instant attack, ~75ms release
+                const float absS = std::abs (s0);
+                if (absS > previewGateEnv) previewGateEnv = absS;
+                else                       previewGateEnv *= gateRelCoeff;
+
+                // Slow peak tracker: provides a stable reference across buffer loops
+                if (previewGateEnv > previewGatePeak) previewGatePeak = previewGateEnv;
+                else                                  previewGatePeak *= gatePeakCoeff;
+
+                // Gate threshold: mirrors detectOnsetsInBand() sensitivity semantics.
+                // sensitivity=1.0 → thresh=0 → gate always open
+                // sensitivity=0.0 → thresh=peak*0.35 → only strong transients pass
+                const float thresh = previewGatePeak * (1.0f - sensitivity) * 0.35f;
+
+                // Smoothed gate output — fast open preserves transient click,
+                // slow close avoids chopping the decay of each hit
+                const float target    = (previewGateEnv > thresh) ? 1.0f : 0.0f;
+                const float gateSpeed = (target > previewGateSmooth) ? gateOpenSpeed : gateCloseSpeed;
+                previewGateSmooth    += (target - previewGateSmooth) * gateSpeed;
+
+                buffer.setSample (0, i, s0 * previewGateSmooth);
+
+                // Filter remaining channels with the same gate value
+                for (int ch = 1; ch < numCh; ++ch)
+                {
+                    float s = recordingBuffer.getSample (ch, readPos);
+                    s = previewHP[ch].processSingleSampleRaw (s);
+                    s = previewLP[ch].processSingleSampleRaw (s);
+                    buffer.setSample (ch, i, s * previewGateSmooth);
                 }
             }
 
@@ -376,6 +494,7 @@ void GrooveScoutAudioProcessor::startRecording()
 
     // Reset all state flags
     recordedSamples.store (0);
+    analyzeTriggered.store (false);   // CRITICAL: clear stale flag from previous analysis
     analysisComplete.store (false);
     analysisCancelled.store (false);
     analysisError.store (0);
@@ -412,9 +531,12 @@ void GrooveScoutAudioProcessor::startAnalysis()
         return;
     }
 
-    // Ensure capture and preview are stopped before analysis begins
+    // Stop capture before analysis begins (analysis reads the frozen buffer).
+    // Preview is intentionally NOT stopped — the recording buffer is read-only
+    // from both the analysis thread and the preview path, so they are safe to
+    // run concurrently. Stopping preview here was what caused audition to stop
+    // working after pressing Analyze.
     isCapturing.store (false);
-    isPreviewActive.store (false);
 
     // Reset analysis state
     analyzeTriggered.store (true);

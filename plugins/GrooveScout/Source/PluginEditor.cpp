@@ -128,6 +128,7 @@ GrooveScoutAudioProcessorEditor::GrooveScoutAudioProcessorEditor (GrooveScoutAud
                     processorRef.isPreviewActive.store (false);
                     processorRef.previewBand.store (bandIndex);
                     processorRef.previewPlayhead.store (0);
+                    processorRef.previewJustStarted.store (true);  // triggers filter reset in processBlock
                     processorRef.isPreviewActive.store (true);
                     DBG ("GrooveScout: startPreview(" + band + ")");
                     complete (juce::var {});
@@ -343,6 +344,12 @@ GrooveScoutAudioProcessorEditor::GrooveScoutAudioProcessorEditor (GrooveScoutAud
 
 GrooveScoutAudioProcessorEditor::~GrooveScoutAudioProcessorEditor()
 {
+    // Stop recording and preview before the timer fires any more callbacks.
+    // This prevents audio from continuing to record into a buffer after the
+    // UI is gone, and avoids preview playback with no editor to display it.
+    processorRef.isCapturing.store (false);
+    processorRef.isPreviewActive.store (false);
+
     stopTimer();
 
     // Members automatically destroyed in reverse order of declaration:

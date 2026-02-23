@@ -612,7 +612,8 @@ void GrooveScoutAnalyzer::run()
     {
         auto mono = makeMono();
         kickOnsets = detectOnsetsInBand (mono, onsetNumRecorded, onsetSr,
-                                         kickFreqLow, kickFreqHigh, kickSens);
+                                         kickFreqLow, kickFreqHigh, kickSens,
+                                         80);  // 80ms min gap — kick can't repeat faster
         DBG ("GrooveScoutAnalyzer: kick onsets detected = " + juce::String (static_cast<int> (kickOnsets.size())));
     }
 
@@ -629,7 +630,8 @@ void GrooveScoutAnalyzer::run()
     {
         auto mono = makeMono();
         snareOnsets = detectOnsetsInBand (mono, onsetNumRecorded, onsetSr,
-                                          snareFreqLow, snareFreqHigh, snareSens);
+                                          snareFreqLow, snareFreqHigh, snareSens,
+                                          60);  // 60ms min gap — snare minimum realistic spacing
         DBG ("GrooveScoutAnalyzer: snare onsets detected = " + juce::String (static_cast<int> (snareOnsets.size())));
     }
 
@@ -646,7 +648,8 @@ void GrooveScoutAnalyzer::run()
     {
         auto mono = makeMono();
         hihatOnsets = detectOnsetsInBand (mono, onsetNumRecorded, onsetSr,
-                                          hihatFreqLow, hihatFreqHigh, hihatSens);
+                                          hihatFreqLow, hihatFreqHigh, hihatSens,
+                                          30);  // 30ms min gap — hihats can be dense (16ths)
         DBG ("GrooveScoutAnalyzer: hihat onsets detected = " + juce::String (static_cast<int> (hihatOnsets.size())));
     }
 
@@ -761,7 +764,8 @@ GrooveScoutAnalyzer::detectOnsetsInBand (std::vector<float>& monoBuffer,
                                           double sampleRate,
                                           float freqLow,
                                           float freqHigh,
-                                          float sensitivity)
+                                          float sensitivity,
+                                          int minGapMs)
 {
     std::vector<OnsetEvent> onsets;
 
@@ -836,10 +840,14 @@ GrooveScoutAnalyzer::detectOnsetsInBand (std::vector<float>& monoBuffer,
     // Step 3: Adaptive threshold + peak detection
     //         T[n] = mean(O[n-w..n]) + (1 - sensitivity) * 4 * std(O[n-w..n])
     //         w = 40 frames (~500ms window)
-    //         Minimum inter-onset interval: 10 frames (~80ms)
+    //         Minimum inter-onset interval: band-specific (ms → frames)
     // -----------------------------------------------------------------
     const int threshWindow = 40;
-    const int minOnsetGap  = 10;  // frames of suppression after detected onset
+
+    // Convert caller-specified minimum gap (ms) to frames
+    // frames = ms * sampleRate / (1000 * hopSize)
+    const int minOnsetGap = std::max (1,
+        static_cast<int> (std::round (minGapMs * sampleRate / (1000.0 * hopSize))));
 
     // Find peak onset strength for velocity normalization
     float peakOnset = 0.0f;
@@ -848,6 +856,13 @@ GrooveScoutAnalyzer::detectOnsetsInBand (std::vector<float>& monoBuffer,
 
     if (peakOnset < 1e-10f)
         return onsets;  // No energy in this band
+
+    // Sensitivity-scaled strength floor: at low sensitivity only the strongest
+    // transients (dominant hits) survive; at high sensitivity most hits are kept.
+    //   sens=0.0 → floor = 55% of peak  (only top-tier hits)
+    //   sens=0.5 → floor = 30% of peak  (reasonable selectivity)
+    //   sens=1.0 → floor =  5% of peak  (catch nearly everything)
+    const float strengthFloor = peakOnset * (0.05f + (1.0f - sensitivity) * 0.50f);
 
     int cooldown = 0;  // frames remaining in suppression window
 
@@ -877,11 +892,13 @@ GrooveScoutAnalyzer::detectOnsetsInBand (std::vector<float>& monoBuffer,
         variance /= static_cast<float> (wLen);
         const float stdDev = std::sqrt (variance);
 
-        const float threshold = mean + (1.0f - sensitivity) * 4.0f * stdDev;
+        // Multiplier raised to 6× (was 4×) so low-sensitivity settings demand
+        // a much larger energy increase relative to local variance.
+        const float threshold = mean + (1.0f - sensitivity) * 6.0f * stdDev;
 
-        // Check if current frame exceeds threshold
+        // Check if current frame exceeds threshold AND the absolute strength floor
         const float val = onsetFunc[static_cast<size_t> (f)];
-        if (val <= threshold)
+        if (val <= threshold || val < strengthFloor)
             continue;
 
         // Local maximum check: O[f] > O[f-1] and O[f] >= O[f+1]

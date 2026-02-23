@@ -833,7 +833,7 @@
     <!-- ROW 1: Title Bar -->
     <div class="title-bar">
       <span class="title-text">GrooveScout</span>
-      <span class="title-version">v1.0.4β</span>
+      <span class="title-version">v1.0.9β</span>
     </div>
 
     <!-- ROW 2: Record Controls (84px — knob group has breathing room) -->
@@ -1901,8 +1901,10 @@
         progressOverlay.classList.remove('hidden');
         progressFill.style.width = '0%';
         progressStep.textContent = STEPS[0];
-        setPreviewsEnabled(false);
-        startPreviewPlayhead();
+        // Audition stays enabled during analysis — the recording buffer is read-only
+        // from both analysis and preview, so they run safely in parallel.
+        // setPreviewsEnabled(false) was removed: it was the cause of "audition stops
+        // working after pressing Analyze".
         tiles.forEach(t => t.classList.add('scanning'));
         bpmDisplay.textContent = '--';
         bpmDisplay.classList.remove('has-value', 'failed');

@@ -63,7 +63,8 @@ private:
                                                  double sampleRate,
                                                  float freqLow,
                                                  float freqHigh,
-                                                 float sensitivity);
+                                                 float sensitivity,
+                                                 int minGapMs = 30);
 
     /**
      * Write a single-track MIDI file (format 0, 480 PPQ) containing note events
