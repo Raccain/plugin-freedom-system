@@ -5,9 +5,10 @@
 // Generalized Autocorrelation (GAC) using juce::dsp::FFT.
 //
 // Phase DSP.3: Key detection via STFT chromagram + Krumhansl-Schmuckler
-// profile correlation. Includes 100 Hz high-pass pre-filter, 4096-point
-// FFT with Hann window, pitch class profile accumulation, Pearson
-// correlation against 24 key profiles, and root chord MIDI derivation.
+// profile correlation. Includes 4th-order Butterworth 150 Hz high-pass
+// pre-filter, 4096-point FFT with Hann window, per-frame amplitude floor,
+// pitch class profile accumulation, Pearson correlation against 24 key
+// profiles with confidence threshold, and root chord MIDI derivation.
 //
 // Phase DSP.4: Band-separated drum onset detection (kick, snare, hihat)
 // using cascaded IIR bandpass filtering + adaptive energy-based onset
@@ -273,27 +274,23 @@ void GrooveScoutAnalyzer::run()
         proc.analysisProgress.store (28);
 
         // -----------------------------------------------------------------
-        // 3b. High-pass filter at 100 Hz to reduce kick drum contamination
-        //     Simple first-order IIR high-pass applied in-place.
-        //     y[n] = alpha * (y[n-1] + x[n] - x[n-1])
-        //     where alpha = RC / (RC + dt), RC = 1/(2*pi*fc)
+        // 3b. High-pass filter at 150 Hz to reduce kick drum contamination
+        //     4th-order Butterworth (24 dB/oct rolloff) — cascaded biquads.
+        //     Upgraded from 1st-order 100 Hz (~6 dB/oct) for much stronger
+        //     attenuation of kick fundamentals (40-80 Hz).
         // -----------------------------------------------------------------
         {
             const double sr = proc.currentSampleRate;
-            const double cutoff = 100.0;
-            const double rc = 1.0 / (2.0 * juce::MathConstants<double>::pi * cutoff);
-            const double dt = 1.0 / sr;
-            const float alpha = static_cast<float> (rc / (rc + dt));
+            auto hpSections = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod (
+                150.0f, sr, 4);
 
-            float prevX = keyMono[0];
-            float prevY = keyMono[0];
-
-            for (size_t i = 1; i < keyMono.size(); ++i)
+            for (auto& coeffs : hpSections)
             {
-                const float x = keyMono[i];
-                prevY = alpha * (prevY + x - prevX);
-                prevX = x;
-                keyMono[i] = prevY;
+                juce::dsp::IIR::Filter<float> f;
+                f.coefficients = coeffs;
+                f.reset();
+                for (size_t i = 0; i < keyMono.size(); ++i)
+                    keyMono[i] = f.processSample (keyMono[i]);
             }
         }
 
@@ -352,6 +349,20 @@ void GrooveScoutAnalyzer::run()
             const int minBin = std::max (1, static_cast<int> (std::ceil (32.0 * chromaFftSize / keySr)));
             const int maxBin = chromaFftSize / 2;  // Nyquist bin
 
+            // First pass: find peak magnitude in this frame for amplitude floor
+            float framePeak = 0.0f;
+            for (int k = minBin; k < maxBin; ++k)
+            {
+                const float re  = fftBuffer[static_cast<size_t> (k * 2)];
+                const float im  = fftBuffer[static_cast<size_t> (k * 2 + 1)];
+                const float mag = re * re + im * im;  // squared mag for comparison
+                if (mag > framePeak)
+                    framePeak = mag;
+            }
+            // Amplitude floor: skip bins below 1% of frame peak magnitude.
+            // This prevents noise-floor bins from flattening the PCP.
+            const float magFloor = std::sqrt (framePeak) * 0.01f;
+
             for (int k = minBin; k < maxBin; ++k)
             {
                 const double freq = static_cast<double> (k) * keySr / static_cast<double> (chromaFftSize);
@@ -364,6 +375,10 @@ void GrooveScoutAnalyzer::run()
                 const float re  = fftBuffer[static_cast<size_t> (k * 2)];
                 const float im  = fftBuffer[static_cast<size_t> (k * 2 + 1)];
                 const float mag = std::sqrt (re * re + im * im);
+
+                // Skip bins below amplitude floor (noise reduction)
+                if (mag < magFloor)
+                    continue;
 
                 // Map to MIDI pitch, then to pitch class (0-11)
                 const double midiPitch = 12.0 * std::log2 (freq / 440.0) + 69.0;
@@ -502,38 +517,54 @@ void GrooveScoutAnalyzer::run()
             }
 
             // ---------------------------------------------------------
-            // 3f. Format key string and derive root chord MIDI
+            // 3f. Confidence check + format key string + root chord
+            //     Minimum correlation threshold: below 0.5 the match
+            //     is essentially random — report "Unknown" instead of
+            //     a misleading key name.
             // ---------------------------------------------------------
-            juce::String keyString = juce::String (noteNames[bestKeyIndex])
-                                   + (bestIsMajor ? " major" : " minor");
+            constexpr float minKeyConfidence = 0.5f;
 
-            proc.detectedKey = keyString;
-
-            // Root chord MIDI: place in octave 4 (C4 = MIDI 60)
-            const int rootMidi = 60 + bestKeyIndex;
-
-            if (bestIsMajor)
+            if (bestCorr < minKeyConfidence)
             {
-                // Major triad: root, +4, +7
-                proc.rootChordMidi[0] = rootMidi;
-                proc.rootChordMidi[1] = rootMidi + 4;
-                proc.rootChordMidi[2] = rootMidi + 7;
+                proc.detectedKey = "Unknown";
+                proc.rootChordValid = false;
+                DBG ("GrooveScoutAnalyzer: key detection — correlation too low ("
+                     + juce::String (bestCorr, 3) + " < " + juce::String (minKeyConfidence, 1)
+                     + "), returning Unknown");
             }
             else
             {
-                // Minor triad: root, +3, +7
-                proc.rootChordMidi[0] = rootMidi;
-                proc.rootChordMidi[1] = rootMidi + 3;
-                proc.rootChordMidi[2] = rootMidi + 7;
+                juce::String keyString = juce::String (noteNames[bestKeyIndex])
+                                       + (bestIsMajor ? " major" : " minor");
+
+                proc.detectedKey = keyString;
+
+                // Root chord MIDI: place in octave 4 (C4 = MIDI 60)
+                const int rootMidi = 60 + bestKeyIndex;
+
+                if (bestIsMajor)
+                {
+                    // Major triad: root, +4, +7
+                    proc.rootChordMidi[0] = rootMidi;
+                    proc.rootChordMidi[1] = rootMidi + 4;
+                    proc.rootChordMidi[2] = rootMidi + 7;
+                }
+                else
+                {
+                    // Minor triad: root, +3, +7
+                    proc.rootChordMidi[0] = rootMidi;
+                    proc.rootChordMidi[1] = rootMidi + 3;
+                    proc.rootChordMidi[2] = rootMidi + 7;
+                }
+
+                proc.rootChordValid = true;
+
+                DBG ("GrooveScoutAnalyzer: key detected = " + keyString
+                     + " (corr=" + juce::String (bestCorr, 3)
+                     + ", chord MIDI=" + juce::String (proc.rootChordMidi[0])
+                     + "," + juce::String (proc.rootChordMidi[1])
+                     + "," + juce::String (proc.rootChordMidi[2]) + ")");
             }
-
-            proc.rootChordValid = true;
-
-            DBG ("GrooveScoutAnalyzer: key detected = " + keyString
-                 + " (corr=" + juce::String (bestCorr, 3)
-                 + ", chord MIDI=" + juce::String (proc.rootChordMidi[0])
-                 + "," + juce::String (proc.rootChordMidi[1])
-                 + "," + juce::String (proc.rootChordMidi[2]) + ")");
         }
     }
     else

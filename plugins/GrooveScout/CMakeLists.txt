@@ -75,7 +75,18 @@ target_compile_definitions(GrooveScout
         JUCE_VST3_CAN_REPLACE_VST2=0
         JUCE_WEB_BROWSER=1
         JUCE_USE_CURL=0
+        $<$<PLATFORM_ID:Windows>:JUCE_USE_WIN_WEBVIEW2=1>
 )
+
+# Windows: WebView2 SDK headers (required for JUCE_USE_WIN_WEBVIEW2)
+if(WIN32)
+    set(WEBVIEW2_PATH "C:/Data/Code/utils/WebView2" CACHE PATH "Path to WebView2 NuGet package")
+    if(EXISTS "${WEBVIEW2_PATH}/build/native/include/WebView2.h")
+        target_include_directories(GrooveScout PRIVATE "${WEBVIEW2_PATH}/build/native/include")
+    else()
+        message(WARNING "WebView2 SDK not found at ${WEBVIEW2_PATH}. Download from NuGet.")
+    endif()
+endif()
 
 # C++17 standard
 target_compile_features(GrooveScout
