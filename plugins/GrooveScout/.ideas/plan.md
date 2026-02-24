@@ -8,12 +8,11 @@
 
 ## Complexity Factors
 
-- **Parameters:** 15 parameters (15 / 5 = 3.0, capped at 2.0) = **2.0**
+- **Parameters:** 10 parameters (10 / 5 = 2.0, capped at 2.0) = **2.0**
+  - captureDuration (Float)
   - kickSensitivity, kickFreqLow, kickFreqHigh
   - snareSensitivity, snareFreqLow, snareFreqHigh
   - hihatSensitivity, hihatFreqLow, hihatFreqHigh
-  - bpmMultiplier (Choice)
-  - analyzeBPM, analyzeKey, analyzeKick, analyzeSnare, analyzeHihat (5 Bool)
 
 - **Algorithms:** 5 distinct analysis components = **5**
   - Audio Buffer Recorder (offline accumulation)
@@ -23,11 +22,12 @@
   - MIDI Pattern Assembler (MidiFile + MidiMessageSequence)
 
 - **Features (complexity modifiers):**
-  - Background thread analysis with cancellation (+1) — `juce::Thread`, `threadShouldExit()`
+  - Background thread analysis with partial-result STOP (+1) — `juce::Thread`, `threadShouldExit()`
   - FFT/frequency domain processing (+1) — `juce::dsp::FFT` for BPM autocorrelation + chroma
-  - Offline analysis trigger (non-standard plugin pattern) — not a standard modifier, but significantly adds complexity
+  - Explicit REC/STOP recording model with preview mode (+1) — non-standard plugin pattern, real-time buffer playback with live IIR filtering
+  - Waveform JS bridge (+0.5) — 200ms Timer push of RMS data to WebView
 
-- **Total (before cap):** 2.0 + 5 + 2 = **9.0 → capped at 5.0**
+- **Total (before cap):** 2.0 + 5 + 3.5 = **10.5 → capped at 5.0**
 
 **Complexity Tier:** 6 (Real-time analysis + FFT + file I/O + background threading)
 
@@ -46,30 +46,44 @@
 
 ## Stage 3: DSP Phases
 
-### Phase DSP.1: Audio Passthrough + Buffer Capture Infrastructure
+### Phase DSP.1: Audio Passthrough + Buffer Capture + Preview Infrastructure
 
-**Goal:** Plugin loads in DAW, audio passes through unmodified, and the recording buffer accumulator works correctly.
+**Goal:** Plugin loads in DAW, audio passes through unmodified, explicit REC/STOP recording works, preview mode plays back filtered buffer, and waveform data is pushed to JS.
 
 **Components:**
-- Stereo in → stereo out passthrough (`processBlock()` copies no data — audio is already in the output buffer)
+- Stereo in → stereo out passthrough (default mode — audio is already in output buffer, no copy needed)
 - Pre-allocated `juce::AudioBuffer<float>` recording buffer in `prepareToPlay()` (max 30s × sampleRate × 2 channels)
-- `std::atomic<bool>` flags: `isCapturing`, `analyzeTriggered`, `analysisComplete`, `analysisCancelled`
-- `std::atomic<int>` counters: `recordedSamples`, `analysisProgress`
-- Audio thread: on each `processBlock()`, if `isCapturing`, append stereo samples to recording buffer
-- `PluginProcessor::analyzeButtonPressed()` method (called from UI thread) that sets `analyzeTriggered`, stops capture, starts background thread
+- `std::atomic<bool>` flags: `isCapturing`, `recordingComplete`, `isPreviewActive`, `analysisComplete`
+- `std::atomic<int>` counters: `recordedSamples`, `analysisProgress`, `analysisStep`, `previewPlayhead`, `previewBand`
+- `PluginProcessor::startRecording()` — resets `recordedSamples = 0`, sets `isCapturing = true`
+- `PluginProcessor::stopCurrentOperation()` — clears `isCapturing` OR stops analysis thread; buffer always preserved
+- `PluginProcessor::startAnalysis()` — starts `GrooveScoutAnalyzer` thread (only if `recordedSamples > 0`)
+- `PluginProcessor::togglePreview(band)` — sets `previewBand`, `isPreviewActive`, resets `previewPlayhead`
+- Audio thread `processBlock()` logic:
+  - Preview mode: read buffer at `previewPlayhead`, apply live IIR filter for active band, write to output, advance + wrap playhead
+  - Capture mode: append stereo samples, check auto-stop vs `captureDuration`, update `waveformRms` accumulator
+  - Default: passthrough
 - Stub `GrooveScoutAnalyzer` thread class (just logs "analysis started/stopped")
-- `juce::Timer` in processor/editor that polls `analysisComplete`
+- `juce::Timer` at 60ms: polls analysis state, pushes updates to JS via `evaluateJavascript()`
+- `juce::Timer` at 200ms: serializes `waveformRms` → `evaluateJavascript("updateWaveform([...])")`
+- `captureDuration` APVTS parameter wired to auto-stop check
 
 **Test Criteria:**
 - [ ] Plugin loads in DAW without crashes
-- [ ] Audio passes through unmodified (verify with sine tone — output = input)
+- [ ] Default mode: audio passes through unmodified (verify with sine tone — output = input)
 - [ ] Recording buffer allocates correctly at `prepareToPlay()` (no crash on init)
 - [ ] Sample rate change triggers buffer reallocation without crash
-- [ ] `isCapturing` flag controls whether samples are appended
-- [ ] `recordedSamples` counter increments during capture
-- [ ] Analyze button triggers thread start (verify with log output)
-- [ ] Cancel button triggers thread stop (verify with log output)
-- [ ] No memory leaks or crashes on plugin close while thread is running
+- [ ] REC press: `isCapturing = true`, `recordedSamples` increments during playback
+- [ ] Auto-stop: recording stops automatically when `recordedSamples >= captureDuration * sampleRate`
+- [ ] STOP press during recording: `isCapturing = false`, buffer contains partial recording
+- [ ] REC press again: clears buffer, starts fresh recording
+- [ ] Analyze press: starts stub thread (verify with log output)
+- [ ] STOP press during analysis: thread stops cleanly (verify with log output)
+- [ ] Preview mode: output switches from passthrough to filtered buffer playback
+- [ ] Preview loops: playhead wraps at end of recorded samples
+- [ ] Preview cancelled by REC, STOP, or Analyze
+- [ ] Waveform RMS data pushed to JS every 200ms (verify via JS console log)
+- [ ] No memory leaks or crashes on plugin close while thread is running or preview is active
 
 ---
 
@@ -91,11 +105,9 @@
 **Test Criteria:**
 - [ ] BPM detected within ±2 BPM for 120 BPM drum loop
 - [ ] BPM detected within ±2 BPM for 90 BPM loop
-- [ ] bpmMultiplier 2x doubles the displayed BPM
-- [ ] bpmMultiplier 0.5x halves the displayed BPM
-- [ ] Cancel during BPM detection stops cleanly without crash
+- [ ] STOP during BPM detection stops cleanly without crash; BPM shows `?` in UI
 - [ ] Thread exits cleanly when `threadShouldExit()` returns true
-- [ ] BPM of 0 returned for silent audio (graceful no-result)
+- [ ] BPM of 0 / `?` returned for silent audio (graceful no-result, no crash)
 
 ---
 
@@ -119,8 +131,8 @@
 - [ ] "C major" detected for a C major scale recording
 - [ ] Key string formatted correctly ("F# minor", not "F#minor" or "Fsharp minor")
 - [ ] Root chord MIDI contains correct notes for detected key
-- [ ] Cancel during key detection stops cleanly without crash
-- [ ] Silent audio returns "Unknown" gracefully (no crash)
+- [ ] STOP during key detection stops cleanly; key shows `?`, BPM result (if completed) still shows
+- [ ] Silent audio returns `?` gracefully (no crash)
 
 ---
 
@@ -158,8 +170,7 @@
 - [ ] Kick detected on beat 1 and 3 for a standard 4/4 beat (verify timing)
 - [ ] Snare detected on beat 2 and 4 for a standard 4/4 beat
 - [ ] Hihat detected on every 8th note for a standard 8th-note hat pattern
-- [ ] Setting `analyzeKick = false` skips kick detection and leaves no kick MIDI
-- [ ] Setting `kickFreqLow > kickFreqHigh` skips kick band gracefully
+- [ ] Setting `kickFreqLow > kickFreqHigh` skips kick band gracefully (no crash, no kick MIDI)
 - [ ] MIDI velocity varies with onset strength (loud hit → higher velocity)
 - [ ] Cancel during drum detection stops cleanly without crash
 - [ ] Analysis runs cleanly for both short (4-bar) and long (32-bar) recordings
@@ -170,59 +181,69 @@
 
 ### Phase GUI.1: Layout and Basic Controls
 
-**Goal:** Render the plugin UI with all parameter controls visible and laid out correctly.
+**Goal:** Render the plugin UI with all controls visible and laid out correctly per the v3 mockup.
 
 **Components:**
-- HTML/CSS mockup integrated as WebView (or native JUCE components if WebView not used)
-- Parameter controls for all 9 frequency/sensitivity sliders (kick/snare/hihat bands)
-- bpmMultiplier dropdown (3-way choice)
-- 5 analysis toggle checkboxes (analyzeBPM, analyzeKey, analyzeKick, analyzeSnare, analyzeHihat)
-- Analyze button (non-parameter trigger)
-- Cancel button (non-parameter trigger, hidden when not analyzing)
-- BPM display area (read-only text, shows "--" until analyzed)
-- Key display area (read-only text, shows "--" until analyzed)
-- MIDI clip drag areas: Root Chord, Kick, Snare, Hihat (shown grayed out until analyzed)
-- Progress indicator (shown during analysis)
+- HTML/CSS v3 mockup integrated as WebView
+- Record controls row: REC button, STOP button, `captureDuration` knob (1–30s), `≈ X bars` label (JS-computed)
+- Waveform display: canvas element, filled left-to-right via `updateWaveform()` JS function
+- Three drum cards (Kick, Snare, Hihat), each with: dual-handle frequency range slider, sensitivity slider, Preview toggle button
+- Analyze button (disabled until buffer has content)
+- STOP button (visible only when recording or analyzing)
+- Progress bar + step label (hidden when idle)
+- BPM display (shows `--` until analyzed, `?` on failure)
+- Key display (shows `--` until analyzed, `?` on failure)
+- MIDI clip drag areas: Root Chord, Kick, Snare, Hihat (grayed out until analysis complete)
 
 **Test Criteria:**
 - [ ] Plugin editor opens without crash
-- [ ] All parameter sliders visible and styled correctly
-- [ ] bpmMultiplier dropdown shows correct options
-- [ ] Analysis toggles visible with correct default state (all enabled)
-- [ ] Analyze button visible and clickable
-- [ ] Cancel button hidden at rest
-- [ ] BPM display shows "--" on first open
-- [ ] Key display shows "--" on first open
+- [ ] All drum card sliders visible and styled correctly
+- [ ] REC button visible and clickable
+- [ ] captureDuration knob shows correct value (default 15s)
+- [ ] `≈ X bars` label hidden until BPM is detected
+- [ ] Waveform canvas visible (empty on first open)
+- [ ] Analyze button disabled on first open (no buffer yet)
+- [ ] STOP button hidden at rest
+- [ ] BPM display shows `--` on first open
+- [ ] Key display shows `--` on first open
 - [ ] MIDI clip areas visible but grayed out
 
 ---
 
-### Phase GUI.2: Parameter Binding and Analysis Flow
+### Phase GUI.2: Parameter Binding, Recording Flow, and Analysis State
 
-**Goal:** Two-way parameter binding for all controls, Analyze/Cancel button wiring, and analysis state display.
+**Goal:** Full parameter binding, REC/STOP/Analyze wiring, waveform updates, and analysis state display.
 
 **Components:**
-- APVTS parameter bindings for all sliders, toggles, bpmMultiplier
-- Analyze button → calls `analyzeButtonPressed()` on processor → starts background thread
-- Cancel button → calls `cancelAnalysis()` on processor → `thread.stopThread()`
-- Cancel button: show only during analysis (`analysisComplete == false && threadIsRunning`)
-- Progress display updates from `analysisProgress` atomic (via Timer polling)
-- BPM display updates after analysis (Timer polls `analysisComplete` flag)
-- Key display updates after analysis
-- MIDI clip areas change from "grayed out" to "draggable" state after analysis
+- APVTS bindings for all 10 sliders/knobs via native function bridge
+- REC button → `getNativeFunction("startRecording")()` → `startRecording()`
+- STOP button → `getNativeFunction("stopCurrentOperation")()` → `stopCurrentOperation()`
+- STOP button: visible only when recording or analyzing
+- Analyze button → `getNativeFunction("startAnalysis")()` → `startAnalysis()`; disabled when no buffer content
+- Preview buttons → `getNativeFunction("togglePreview")(band)` → toggles per-band preview; button shows active state
+- 200ms Timer: `updateWaveform()` JS call fills waveform canvas
+- `≈ X bars` label: JS calculates from `detectedBpm` + `captureDuration` slider value
+- 60ms Timer: polls `analysisProgress`, `analysisStep`, `detectedBpm`, `detectedKey` → pushes to JS
+- BPM display: shows float or `?`; updates after each completed step
+- Key display: shows key string or `?`; updates after key detection completes
+- MIDI clips: transition from grayed → draggable as each clip's MIDI file becomes available
 
 **Test Criteria:**
-- [ ] Kick sensitivity slider changes value and is persisted
+- [ ] Kick sensitivity slider changes value and persists across reload
 - [ ] kickFreqLow / kickFreqHigh sliders work correctly
-- [ ] bpmMultiplier dropdown changes value and is persisted
-- [ ] analyzeKick toggle enables/disables kick detection
-- [ ] Analyze button starts analysis (progress indicator appears)
-- [ ] Cancel button stops analysis mid-run (progress indicator disappears)
-- [ ] BPM number updates in UI after analysis completes
-- [ ] Key string updates in UI after analysis completes
-- [ ] MIDI clip areas become draggable after analysis
-- [ ] Analysis toggle controls properly gate sub-analyses
-- [ ] Progress indicator counts up during analysis
+- [ ] captureDuration knob persists correctly
+- [ ] REC button starts recording; waveform fills during playback
+- [ ] Auto-stop fires at correct time (verify captureDuration = 5s stops after ~5s)
+- [ ] STOP during recording preserves partial buffer
+- [ ] REC again clears waveform and starts fresh
+- [ ] Analyze button disabled before first recording, enabled after
+- [ ] Analyze starts analysis; progress bar appears with step label
+- [ ] STOP mid-analysis: progress disappears; completed results shown, incomplete show `?`
+- [ ] Preview button plays filtered buffer through plugin output
+- [ ] Preview loops; adjusting freq sliders changes audio in real-time
+- [ ] Preview cancelled by REC, STOP, or Analyze
+- [ ] BPM and Key update in UI after analysis completes
+- [ ] MIDI clips become draggable after analysis
 
 ---
 
@@ -294,7 +315,7 @@
 
 ### Known Challenges
 
-1. **Audio buffer recording without host API access:** Plugin only receives real-time `processBlock()` blocks — it cannot request the full track audio. The user MUST play back the track while the plugin is recording. This is a fundamental limitation that must be clearly communicated in the UI ("Play your track first, then press Analyze").
+1. **Explicit REC model — user must actively initiate recording:** The user presses REC, then plays their track. Audio only enters the buffer while recording is active. This is a feature (user control) but must be clearly communicated in the UI ("Press REC, then play your track").
 
 2. **BPM accuracy on full mixes:** Full mixes have complex transient profiles. Drum loops = high accuracy (±1 BPM). Full mixes with melody = moderate accuracy (±3 BPM). Ambient music without clear beat = poor accuracy. Document this limitation.
 
@@ -302,11 +323,13 @@
 
 4. **MIDI drag-and-drop across plugin boundary:** The plugin editor is embedded in the DAW's plugin window. Mouse drag events initiated inside the plugin window must escape to the DAW timeline. This works via `performExternalDragDropOfFiles()` on Windows and macOS, but behavior varies by DAW. Test extensively.
 
-5. **Frequency constraint (freqLow < freqHigh):** Parameters are stored independently in APVTS. There is no built-in JUCE mechanism to enforce relative constraints between parameters. Validation must happen at analysis time, not in the UI. Consider adding UI warnings if the constraint is violated.
+5. **Frequency constraint (freqLow < freqHigh):** Parameters are stored independently in APVTS. Validation must happen at analysis time AND at preview filter setup. Consider adding UI warning if constraint is violated.
 
-6. **"Click BPM to set project tempo":** This requires the host to support tempo setting via `AudioPlayHead`. Support varies: Logic Pro and Ableton support this in recent versions, others may not. Implement with feature detection and graceful fallback (log "Host does not support tempo change" and show a tooltip).
+6. **"Click BPM to set project tempo":** Requires host `AudioPlayHead` support. Support varies. Implement with feature detection and graceful fallback (tooltip: "Host does not support tempo change").
 
 7. **MiniBPM as fallback:** If the custom BPM detection proves inaccurate or takes too long to implement, MiniBPM (https://github.com/breakfastquay/minibpm) is a single-file drop-in. It is GPL-3, so check licensing compatibility before embedding.
+
+8. **Preview mode filter recomputation:** IIR filter coefficients are recomputed every `processBlock()` during preview (to enable live slider adjustment). This is safe on the audio thread (no allocation — only coefficient value updates) but adds a small per-block cost. If performance issues arise, throttle recomputation to only when parameter values change.
 
 ---
 

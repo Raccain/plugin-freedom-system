@@ -13,33 +13,35 @@
 
 ### Audio Buffer Recorder
 - **JUCE Class:** Custom implementation using `juce::AudioBuffer<float>` + `std::atomic<bool>`
-- **Purpose:** Accumulates incoming real-time audio blocks into a large pre-allocated recording buffer. Analysis can only run after sufficient audio has been captured. Recording is triggered by a capture mode flag set when the user presses Analyze.
-- **Parameters Affected:** None (internal infrastructure)
+- **Purpose:** Accumulates incoming real-time audio into a large pre-allocated recording buffer on explicit user command. Recording is triggered by the REC button and stopped either by the STOP button or when `captureDuration` seconds have elapsed. The buffer persists until the next REC press (which clears and restarts it). Analysis can only be triggered once the buffer has content.
+- **Parameters Affected:** `captureDuration`
 - **Configuration:**
-  - Pre-allocate recording buffer at `prepareToPlay()` for max expected length (e.g., 30 seconds at current sample rate)
-  - Double-buffered: one buffer accumulates, swap atomically before analysis
+  - Pre-allocate recording buffer at `prepareToPlay()` for max expected length (30 seconds at current sample rate)
   - `std::atomic<int> recordedSamples` tracks fill level
-  - Recording begins immediately on `analyzeTriggered` flag set; if already recording from a prior session, the old buffer is used
+  - Recording begins only when `isCapturing` flag is set by `startRecording()` (called from UI REC button)
+  - Auto-stop: audio thread checks `recordedSamples >= captureDuration * sampleRate`; if true, sets `isCapturing = false` and sets `recordingComplete` flag
+  - Manual stop: `stopCurrentOperation()` sets `isCapturing = false`, buffer contains whatever was recorded up to that point
+  - Re-record: `startRecording()` resets `recordedSamples = 0` and sets `isCapturing = true` (overwrites previous buffer)
   - Audio thread copies from `processBlock()` buffer — no allocation, no locking
-  - Record stereo (mix to mono if needed), or keep stereo for better onset detection
+  - Record stereo; mix to mono at analysis time (not during capture)
+  - Waveform bridge: a separate downsampled RMS accumulator is updated per block during capture; message thread Timer pushes this to WebView JS every 200ms via `evaluateJavascript("updateWaveform([...])")`
 
 ### BPM Detection Engine
 - **JUCE Class:** Custom implementation (onset strength signal + generalized autocorrelation). Alternatively: MiniBPM (single-file C++ library, MIT/GPL dual license)
-- **Purpose:** Estimates tempo from accumulated audio buffer. Runs offline (not real-time) on background thread.
-- **Parameters Affected:** `analyzeBPM`, `bpmMultiplier`
+- **Purpose:** Estimates tempo from accumulated audio buffer. Runs offline (not real-time) on background thread. Always runs — not gated by any parameter.
+- **Parameters Affected:** None (always runs)
 - **Configuration:**
   - Input: mono audio buffer, sample rate
   - Step 1: Compute onset strength signal (OSS) — energy change per frame, typically 512-sample hop
   - Step 2: Generalized autocorrelation of OSS: `GAC = IFFT(FFT(OSS^0.5))` — uses `juce::dsp::FFT`
   - Step 3: Peak-picking from lag range 300ms–1000ms (60–200 BPM)
   - Step 4: Score top candidates via cross-correlation with ideal pulse trains
-  - Step 5: Apply `bpmMultiplier` (0.5x / 1x / 2x) to detected raw BPM
-  - Output: float detectedBPM
+  - Output: float detectedBPM (0.0 if detection failed — UI shows `?`)
 
 ### Key Detection Engine
 - **JUCE Class:** Custom implementation (STFT chroma extraction + Krumhansl-Schmuckler profile matching). Uses `juce::dsp::FFT` for STFT.
-- **Purpose:** Identifies the musical key from accumulated audio. Runs offline on background thread.
-- **Parameters Affected:** `analyzeKey`
+- **Purpose:** Identifies the musical key from accumulated audio. Runs offline on background thread. Always runs — not gated by any parameter.
+- **Parameters Affected:** None (always runs)
 - **Configuration:**
   - Input: mono audio buffer, sample rate
   - Step 1: Compute short-time Fourier transform (STFT) with 4096-point FFT, 50% overlap, Hann window
@@ -52,8 +54,8 @@
 
 ### Band-Separated Onset Detector
 - **JUCE Class:** `juce::dsp::IIR::Filter` (Butterworth bandpass, cascade of LP+HP), custom onset detector
-- **Purpose:** Separate the accumulated audio into three frequency bands and detect onset events (hits) within each band to produce kick, snare, and hihat MIDI patterns.
-- **Parameters Affected:** `kickSensitivity`, `kickFreqLow`, `kickFreqHigh`, `snareSensitivity`, `snareFreqLow`, `snareFreqHigh`, `hihatSensitivity`, `hihatFreqLow`, `hihatFreqHigh`, `analyzeKick`, `analyzeSnare`, `analyzeHihat`
+- **Purpose:** Separate the accumulated audio into three frequency bands and detect onset events (hits) within each band to produce kick, snare, and hihat MIDI patterns. All three bands always run.
+- **Parameters Affected:** `kickSensitivity`, `kickFreqLow`, `kickFreqHigh`, `snareSensitivity`, `snareFreqLow`, `snareFreqHigh`, `hihatSensitivity`, `hihatFreqLow`, `hihatFreqHigh`
 - **Configuration:**
   - Three parallel bandpass filter chains (one per drum):
     - Kick: HP @ kickFreqLow, LP @ kickFreqHigh (default 40–120 Hz)
@@ -95,18 +97,19 @@
 
 ### Background Analysis Thread
 - **JUCE Class:** `juce::Thread` (subclass with `run()` override)
-- **Purpose:** Run the entire analysis pipeline off the audio thread. Cancellable at any time.
-- **Parameters Affected:** All `analyze*` bool parameters (gating which sub-analyses run)
+- **Purpose:** Run the entire analysis pipeline off the audio thread. Stoppable at any time via STOP button. Stopping preserves partial results — completed steps retain their results, incomplete steps show `?` in UI.
+- **Parameters Affected:** None (all analysis steps always run)
 - **Configuration:**
   - Thread class: `GrooveScoutAnalyzer : public juce::Thread`
   - `run()` method checks `threadShouldExit()` after each major analysis step
-  - Analysis steps in order: BPM detection → Key detection → Drum separation → MIDI assembly
-  - Each step individually gated by corresponding `analyze*` bool
-  - Progress reported via `std::atomic<float> analysisProgress` (0.0–1.0)
+  - Analysis steps in order: BPM detection → Key detection → Drum separation (all 3 bands) → MIDI assembly
+  - All steps always run — no per-step gating
+  - Partial results: each completed step atomically publishes its result before proceeding to the next step; if STOP occurs between steps, completed results remain valid and displayed
+  - Progress reported via `std::atomic<int> analysisProgress` (0–100) + `std::atomic<int> analysisStep` (step index for step label in UI)
   - Completion reported via `std::atomic<bool> analysisComplete`
-  - Error state via `std::atomic<int> analysisError` (0 = none, 1 = buffer too short, 2 = cancelled)
+  - Error state via `std::atomic<int> analysisError` (0 = none, 1 = buffer too short, 2 = stopped by user)
   - Thread priority: LOW (not real-time, analysis is batch)
-  - Cancel: UI Cancel button calls `thread.stopThread(2000)` (2-second timeout)
+  - Stop: UI STOP button calls `audioProcessor.stopCurrentOperation()` → `thread.stopThread(2000)` (2-second timeout)
   - Thread reuse: stop and restart for each new analysis
 
 ### Audio Passthrough
@@ -192,32 +195,71 @@ DAW Audio Track
 
 ### Audio Capture / Recording System
 
-**Strategy:** Continuous accumulation with user-triggered analysis
+**Strategy:** Explicit user-initiated recording with auto-stop at `captureDuration`
 
-The plugin accumulates audio during normal playback (the user plays back their track, then hits Analyze). It does NOT require the user to do anything special before playing.
+The plugin only captures audio when the user explicitly presses REC. This gives the user full control over what goes into the analysis buffer. The buffer persists until the next REC press — stopping analysis (STOP) does not clear the buffer.
 
 **Recording lifecycle:**
-1. On `prepareToPlay()`: allocate recording buffer (configurable max duration, e.g., 30s × sampleRate × numChannels)
-2. On `processBlock()`: if `isCapturing` flag is set, append incoming samples to recording buffer. If buffer full, wrap (circular) or stop (and flag "buffer full")
-3. When Analyze pressed: set `analyzeTriggered` atomic flag, snapshot current `recordedSampleCount`
-4. Background thread reads the accumulated buffer up to `recordedSampleCount`
-5. On re-analyze: reset recording buffer, re-capture
+1. On `prepareToPlay()`: allocate recording buffer (max 30s × sampleRate × 2 channels)
+2. REC pressed: `startRecording()` → resets `recordedSamples = 0`, sets `isCapturing = true`
+3. On `processBlock()`: if `isCapturing`, append stereo samples to recording buffer. Check if `recordedSamples >= captureDuration * sampleRate`; if so, auto-stop: set `isCapturing = false`, set `recordingComplete = true`
+4. STOP pressed during recording: `stopCurrentOperation()` → sets `isCapturing = false`, `recordingComplete = true` (buffer has whatever was captured)
+5. Analyze pressed: background thread reads buffer up to `recordedSamples`
+6. STOP pressed during analysis: `stopCurrentOperation()` → `thread.stopThread(2000)`. Buffer unchanged. Partial results retained.
+7. REC pressed again at any time: clears buffer, restarts from step 2
 
 **JUCE classes:**
 - `juce::AudioBuffer<float>` - Recording buffer storage
 - `std::atomic<int>` - `recordedSamples` count (audio thread writes, background thread reads)
-- `std::atomic<bool>` - `isCapturing`, `analyzeTriggered`, `analysisComplete`
+- `std::atomic<bool>` - `isCapturing`, `recordingComplete`, `analysisComplete`
 
 **Thread safety:**
 - Audio thread only writes to recording buffer sequentially (no reads from background during capture)
-- Before background thread reads: set `captureComplete` flag, stop appending
-- Background thread reads a stable snapshot (either a copy or a pointer to the finalized portion)
-- No mutexes needed if capture stops before analysis reads
+- `isCapturing` set to false before background thread reads — no concurrent access window
+- No mutexes needed in normal operation path
 
 **Minimum viable capture:**
 - At least 4 bars needed for reliable BPM detection
 - At least 8 bars recommended for key detection
-- Display warning in UI if recorded length < 2 seconds
+- UI shows `?` for BPM/Key if recorded length is too short for accurate detection (not a hard block — analysis still runs)
+
+### Buffer Preview System
+
+**Strategy:** When user presses a Preview button on a drum card, the plugin enters preview mode: the recording buffer is played back looped, filtered through that drum's current frequency band settings, and routed to the plugin's audio output. This lets the user hear exactly what the analysis filter will isolate, enabling precise frequency tuning before running analysis.
+
+**Preview lifecycle:**
+1. Preview button pressed (kick/snare/hihat): `togglePreview("kick")` sets `previewBand = KICK`, `isPreviewActive = true`, `previewPlayhead = 0`
+2. On `processBlock()` during preview: read from recording buffer at `previewPlayhead`, apply that band's current IIR filter in real-time, write to output buffer (replaces passthrough)
+3. `previewPlayhead` advances by blockSize each block; wraps to 0 when end of `recordedSamples` is reached (looping)
+4. Filter coefficients re-computed each block from current APVTS parameter values — slider changes take effect immediately
+5. Preview button pressed again (toggle off): `isPreviewActive = false`, output reverts to passthrough
+6. STOP pressed, REC pressed, or Analyze pressed: preview cancelled automatically
+
+**JUCE classes:**
+- `juce::dsp::IIR::Filter<float>` - Real-time filter applied to buffer playback (same coefficients as analysis)
+- `std::atomic<int>` - `previewPlayhead`, `previewBand`
+- `std::atomic<bool>` - `isPreviewActive`
+
+**Thread safety:**
+- Preview runs entirely on audio thread (`processBlock`) — no background thread involvement
+- Filter state reset on each preview start to avoid stale state artifacts
+- Recording buffer read-only during preview (no writes if `isCapturing = false`)
+
+### Waveform JS Bridge
+
+**Strategy:** C++ maintains a compact downsampled RMS representation of the recording buffer. A message-thread Timer pushes this data to the WebView JS layer every 200ms for waveform display.
+
+**Implementation:**
+- During capture: per `processBlock()` call, compute RMS of current block, append to `waveformRms` vector (one value per block)
+- Downsample: keep at most 300 values (one per ~100ms at 48kHz/512-block — enough for waveform display resolution)
+- Timer callback (200ms): serialize `waveformRms` vector to JSON array string, call `webView->evaluateJavascript("updateWaveform([" + dataString + "])")`
+- JS `updateWaveform()`: renders amplitude bars on canvas element, filling left-to-right proportional to `recordedSamples / (captureDuration * sampleRate)`
+- Visual latency: up to 200ms behind real audio — acceptable, purely cosmetic
+
+**JUCE classes:**
+- `std::vector<float>` - `waveformRms` buffer (message thread reads, audio thread writes — lock-free ring or simple double-buffer)
+- `juce::Timer` - 200ms update tick on message thread
+- `juce::WebBrowserComponent::evaluateJavascript()` - push data to JS layer
 
 ### MIDI Drag-and-Drop System
 
@@ -280,21 +322,16 @@ The plugin accumulates audio during normal playback (the user plays back their t
 
 | Parameter ID | Type | Range | Component | Usage |
 |---|---|---|---|---|
+| `captureDuration` | Float | 1.0–30.0s | Audio Buffer Recorder | Auto-stops recording after this many seconds; user may stop manually before this point |
 | `kickSensitivity` | Float | 0.0–1.0 | Band Onset Detector | Threshold control: `threshold = movingAvg + (1.0 - sensitivity) * stdDev * 4.0` |
-| `kickFreqLow` | Float | 20–500 Hz | Band Onset Detector | HP filter cutoff for kick band |
-| `kickFreqHigh` | Float | 50–1000 Hz | Band Onset Detector | LP filter cutoff for kick band |
+| `kickFreqLow` | Float | 20–1000 Hz | Band Onset Detector | HP filter cutoff for kick band; also applied during kick preview playback |
+| `kickFreqHigh` | Float | 20–1000 Hz | Band Onset Detector | LP filter cutoff for kick band; also applied during kick preview playback |
 | `snareSensitivity` | Float | 0.0–1.0 | Band Onset Detector | Same formula as kick, for snare band |
-| `snareFreqLow` | Float | 100–2000 Hz | Band Onset Detector | HP filter cutoff for snare band |
-| `snareFreqHigh` | Float | 1000–20000 Hz | Band Onset Detector | LP filter cutoff for snare band |
+| `snareFreqLow` | Float | 100–20000 Hz | Band Onset Detector | HP filter cutoff for snare band; also applied during snare preview playback |
+| `snareFreqHigh` | Float | 100–20000 Hz | Band Onset Detector | LP filter cutoff for snare band; also applied during snare preview playback |
 | `hihatSensitivity` | Float | 0.0–1.0 | Band Onset Detector | Same formula as kick, for hihat band |
-| `hihatFreqLow` | Float | 1000–20000 Hz | Band Onset Detector | HP filter cutoff for hihat band |
-| `hihatFreqHigh` | Float | 5000–20000 Hz | Band Onset Detector | LP filter cutoff for hihat band |
-| `bpmMultiplier` | Choice | 0/1/2 (½x/1x/2x) | BPM Detection | Applied post-detection: `displayBPM = rawBPM * [0.5, 1.0, 2.0][index]` |
-| `analyzeBPM` | Bool | true/false | Analysis Thread | Gates BPM detection step |
-| `analyzeKey` | Bool | true/false | Analysis Thread | Gates key detection step |
-| `analyzeKick` | Bool | true/false | Analysis Thread | Gates kick onset detection |
-| `analyzeSnare` | Bool | true/false | Analysis Thread | Gates snare onset detection |
-| `analyzeHihat` | Bool | true/false | Analysis Thread | Gates hihat onset detection |
+| `hihatFreqLow` | Float | 1000–20000 Hz | Band Onset Detector | HP filter cutoff for hihat band; also applied during hihat preview playback |
+| `hihatFreqHigh` | Float | 1000–20000 Hz | Band Onset Detector | LP filter cutoff for hihat band; also applied during hihat preview playback |
 
 ---
 
@@ -423,38 +460,40 @@ The plugin accumulates audio during normal playback (the user plays back their t
 
 ### Parameter Interactions
 
-- `kickFreqLow` and `kickFreqHigh` interact: freqLow must always be < freqHigh. If the user sets them equal or inverted, the onset detector for that band is skipped with a warning.
-- `bpmMultiplier` and BPM detection: multiplier is applied post-detection, so the underlying beat-tracking algorithm always runs in absolute BPM. The multiplier corrects for half-time / double-time detection errors.
+- `kickFreqLow` and `kickFreqHigh` interact: freqLow must always be < freqHigh. If the user sets them equal or inverted, the onset detector for that band is skipped with a warning. Same constraint applies to snare and hihat bands.
 - `kickSensitivity` / `snareSensitivity` / `hihatSensitivity` each independently scale the adaptive threshold for their band. There is no cross-band interaction.
-- `analyzeBPM` gates whether BPM detection runs. If disabled but BPM is needed for quantization, onset times are stored as sample offsets only (no beat-relative MIDI).
-- `analyzeKick`, `analyzeSnare`, `analyzeHihat` are independent: any combination can be enabled.
+- `captureDuration` interacts with recording: changing the knob mid-recording takes effect immediately (the new duration is checked each block against `recordedSamples`).
+- All drum band parameters (`*FreqLow`, `*FreqHigh`, `*Sensitivity`) also affect the Preview mode in real-time — filter coefficients are recalculated each `processBlock()` during preview, so slider adjustments are heard immediately.
 
 ### Processing Order Requirements
 
-1. **Audio capture** (audio thread, continuous): append blocks to recording buffer
-2. **Analyze trigger** (UI thread): user presses button → `analyzeTriggered = true` → `isCapturing = false`
-3. **Thread start** (message thread): start `GrooveScoutAnalyzer` thread
-4. **BPM detection** (background thread): process full recorded buffer → `detectedBPM`
-5. **Key detection** (background thread): process full recorded buffer → `keyIndex`, `keyString`
-6. **Drum separation** (background thread, parallelizable): apply 3 bandpass filters, onset detect each band
-7. **MIDI assembly** (background thread): convert all onsets + key to MIDI files on disk
-8. **Completion notification** (background thread → message thread): set `analysisComplete` atomic flag
-9. **UI update** (message thread Timer): poll atomic flags, update displays, enable drag
+1. **REC pressed** (message thread): `startRecording()` → clears buffer, sets `isCapturing = true`
+2. **Audio capture** (audio thread): append blocks to recording buffer while `isCapturing`; auto-stop when `recordedSamples >= captureDuration * sampleRate`
+3. **Waveform push** (message thread Timer, 200ms): serialize `waveformRms` → `evaluateJavascript("updateWaveform([...])")`
+4. **STOP during recording** (message thread): sets `isCapturing = false`, buffer frozen
+5. **Analyze pressed** (message thread): `startAnalysis()` → starts `GrooveScoutAnalyzer` thread
+6. **BPM detection** (background thread): process full recorded buffer → publish `detectedBPM` atomically
+7. **Key detection** (background thread): process full recorded buffer → publish `keyIndex`, `keyString` atomically
+8. **Drum separation** (background thread): apply 3 bandpass filters, onset detect all three bands → publish onset lists atomically
+9. **MIDI assembly** (background thread): convert onsets + key to MIDI files on disk → set `analysisComplete`
+10. **STOP during analysis** (message thread): `thread.stopThread(2000)` → partial results already published remain valid
+11. **UI update** (message thread Timer): poll all atomic result flags, update BPM/Key/clip displays, enable drag for completed clips
 
 ### Thread Boundaries
 
 **Audio thread (`processBlock`):**
-- Append audio samples to recording buffer via sequential `memcpy`
-- Read `isCapturing` atomic flag (no allocation, no locks)
-- Write `recordedSamples` atomic counter
-- Zero-latency audio passthrough
+- If `isPreviewActive`: read from recording buffer at `previewPlayhead`, apply per-band IIR filter, write to output. Advance and wrap `previewPlayhead`.
+- Else if `isCapturing`: append stereo samples to recording buffer; check auto-stop condition; update `waveformRms` accumulator
+- Else: zero-latency audio passthrough (no modification)
+- Read atomic flags only (`isCapturing`, `isPreviewActive`, `previewBand`) — no allocation, no locks
 
 **Message thread (UI events):**
-- Handle Analyze/Cancel button clicks
-- Set atomic flags: `analyzeTriggered`, `cancelRequested`
+- Handle REC / STOP / Analyze button triggers from WebView native function bridge
+- Set atomic flags: `isCapturing`, `analyzeTriggered`
 - Start/stop `GrooveScoutAnalyzer` thread
-- Poll analysis state via `juce::Timer` (60ms interval)
-- Update BPM display, key display labels
+- Call `thread.stopThread(2000)` on STOP during analysis
+- Poll analysis state + recording state via `juce::Timer` (60ms interval for analysis state; 200ms for waveform push)
+- Update BPM display, key display, progress label via `evaluateJavascript()`
 - Handle MIDI clip mouse-drag events → `performExternalDragDropOfFiles()`
 
 **Background thread (`GrooveScoutAnalyzer::run()`):**
@@ -500,7 +539,7 @@ The plugin accumulates audio during normal playback (the user plays back their t
 1. Pre-allocate at `prepareToPlay()` — max 30s × sampleRate × channels
 2. Use `std::atomic<int> recordedSamples` for sample count (lock-free)
 3. Set `isCapturing = false` before background thread reads buffer
-4. Document max recording length in UI
+4. Show recording progress in UI waveform (fills left to right) — user can see buffer state clearly
 
 ### BPM Detection
 
@@ -859,7 +898,13 @@ AudioProcessor(BusesProperties()
 ## Notes
 
 - GrooveScout is architecturally unique in this plugin system: it is the first plugin to run offline analysis on recorded audio, the first to use background threading for long-running computation, and the first to produce MIDI output (drag-and-drop) rather than audio.
-- The WebView UI (if used) will need native function calls for: triggering analysis (Analyze/Cancel buttons), receiving analysis results (BPM display, key display), and initiating MIDI drags. These cannot use standard APVTS parameter binding since they are non-parameter actions.
-- Consider using `juce::WebBrowserComponent`'s native function bridge (`getNativeFunction()`) for the Analyze button trigger, rather than an APVTS bool parameter, to get clean action semantics.
-- The analysis result display (BPM number, key text) can be updated by the plugin calling a JS function via `webView->evaluateJavascript()` after the analysis completes.
-- The BPM "click to set project tempo" feature requires `AudioPlayHead::CurrentPositionInfo` — specifically, the host must support `setCurrentPlaybackSamplePosition` or the equivalent tempo-setting API. In JUCE, this requires `AudioProcessor::getPlayHead()` and casting to host-specific interface. This feature may not be universally supported across all DAWs and should be implemented as best-effort with a clear UI fallback.
+- The WebView UI will need native function calls for: REC/STOP/Analyze triggers, preview toggles per drum card, receiving analysis results (BPM, key, progress), waveform data, and MIDI drags. None of these use standard APVTS parameter binding.
+- Use `juce::WebBrowserComponent`'s native function bridge (`getNativeFunction()`) for all action triggers.
+- Analysis results (BPM, key, progress) are pushed to JS via `evaluateJavascript()` from the message thread Timer.
+- Waveform data is pushed separately via a 200ms Timer as a JSON float array.
+- BPM and Key detection always run — there are no per-feature enable/disable parameters.
+- All three drum bands (kick, snare, hihat) always run — no per-drum enable/disable parameters.
+- Partial analysis results are valid: if STOP is pressed between analysis steps, completed results are shown; incomplete steps show `?` in UI.
+- Preview mode and recording mode are mutually exclusive — starting REC or Analyze automatically cancels any active preview.
+- The `≈ X bars` label shown next to the duration knob is computed purely in JS using the last detected BPM value and current knob value. It is not a parameter.
+- The BPM "click to set project tempo" feature requires host `AudioPlayHead` support. Implement as best-effort with graceful fallback (tooltip: "Host does not support tempo change").
